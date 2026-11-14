@@ -1,7 +1,7 @@
-> **Status, 2026-11-14 00:30.** PRD v2.2 (Junction page + side-track criteria) added 🆕 items below. Repo exists (`saliha006/Chooms-chrome`; `main` has `README.md` + `progress.md`). The rest of Block A starts 00:45. Docs on `context`.
+> **Status, 2026-11-14 00:55.** PRD v2.3: you own the personality layer: live reasoning voice and the cowboy switch (ElevenLabs), plus Aiven streaming. F16 dashboard dropped: no frontend. Repo exists (`saliha006/Chooms-chrome`; `main` has `README.md` + `progress.md`). The rest of Block A starts 00:45. Docs on `context`.
 
-# Harry: integration, demo and side tracks (ElevenLabs, Aiven) + submission
-**GitHub:** `{{github}}` · **Branch:** `integration-harry` · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:30 by saliha
+# Harry: integration, ElevenLabs personality voice, Aiven streaming, demo + submission
+**GitHub:** `{{github}}` · **Branch:** `integration-voice-harry` (one branch for all your work) · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:55 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -17,7 +17,7 @@
 ---
 
 ## 1. Ownership
-You own **R5 (with Nate), R11, R12, R14, R17, F6, F7, F8, F9, F13, F15 and F16 (optional)**, co-own R18/F14 with Nate, the scripted fallback and the submission. Criterion 1 (25 points) is your loop.
+You own **R5 (with Nate), R11, R12, R14, R17, F6, F7, F8, F9, F13, F15, F18 and R21/R23**, co-own R18/F14 with Nate, the scripted fallback and the submission. Criterion 1 (25 points) is your loop.
 
 **Owns:**
 - `run.py`, `common/` (you own `common/interfaces.py`; freeze it at **01:00**), `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`
@@ -43,7 +43,8 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 
 ---
 
-## 3. ▶ Current tasks (2026-11-14 00:30)
+## 3. ▶ Current tasks (2026-11-14 00:55)
+🆕 **Vision (PRD v2.3 §1a):** (1) the Intel task done accurately, smoothly and in reasonable time, always first; (2) the robot explains its reasoning out loud, live, in a calm voice; (3) an obstacle or the cowboy hat flips it into a cowboy persona ("Holy smokes!") until the moment passes. Personality never slows the arm or costs a gate. No frontend, ever.
 🆕 **What changed (PRD v2.2):** Aiven's page scores **meaningful use (40%)**, so the database must change what the cell does, not only log (F15). Modal scores a **live deployed app (15%)**: an optional read-only dashboard (F16) covers that and Aiven's impact at once. Intel wants **cameras shared between policy and inspection** (F13). Cameras at the station: **top view + inspection + wrist**; objects are Duplo.
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
@@ -57,8 +58,9 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 | A2b 🆕 | ⬜ | **F13 shared capture:** `common/capture.py` (or in `run.py`), one thread per camera keeps the latest frame; the policy and the inspector both read it, no second grab. Roles in `cameras.yaml`: `top`, `inspect`, `wrist` | 15 min | Mock run reads each camera once per tick |
 | A3 | ⬜ | `run.py` state machine `IDLE→LOCATE→PICK→VERIFY_GRASP→INSPECT→DECIDE→[REINSPECT]→PLACE→LOG→next`; every exception → `HOME` plus a spoken message; flags `--mock`, `--scripted pick,place`. Build it on the `physicalai` runtime pieces (`InferenceModel`, `RobotRuntime`) where they fit (R5). | 30 min | Mock run sorts 5 fake bricks |
 | A4 | ⬜ | `ui/mission_control.py`: one OpenCV window (feed, heatmap overlay, label and score, state, per-stage latency, bricks done); keys S/P/E/Q on the control thread | 20 min | Readable at 2 m |
-| A5 | ⬜ | **Aiven:** free-tier PostgreSQL ($50 credits on sign-up); table `events` (PRD 7.3) 🆕 plus `inspections`, `benchmarks`, `models` (PRD F15); `telemetry/writer.py`: `queue.Queue` → `runs/events.jsonl` → batch insert; offline = JSONL only, sync later; `telemetry/report.sql` (success rate, latency per stage and device) | 20 min | Rows in Aiven from a mock run |
-| A6 | ⬜ | **ElevenLabs:** API key; pick 2 voices (cheerful = perfect, gloomy = defective); `narrator/cache.py` pre-generates about 12 template phrases with `eleven_flash_v2_5` → WAV; `narrator/say.py` plays on a thread; brick IDs and scores come from short cached number clips or a live call with a 1.5 s timeout, falling back to the generic phrase | 20 min | Narration never blocks a state transition |
+| A5 | ⬜ | **Aiven:** 🆕 **Aiven for Apache Kafka** topic `sortsense.events` (+ `sortsense.alerts`) for live streaming, plus free-tier PostgreSQL ($50 credits on sign-up; no Kafka on our plan → PostgreSQL `LISTEN/NOTIFY` instead); producer on the telemetry thread, a consumer that writes rows and runs the drift rule (PRD F15); table `events` (PRD 7.3) 🆕 plus `inspections`, `benchmarks`, `models` (PRD F15); `telemetry/writer.py`: `queue.Queue` → `runs/events.jsonl` → batch insert; offline = JSONL only, sync later; `telemetry/report.sql` (success rate, latency per stage and device) | 20 min | Rows in Aiven from a mock run |
+| A6 | ⬜ | **ElevenLabs:** API key (MLH code: https://mlh.link/junction-26); 🆕 pick 2 voices: **calm** (cool, collected) and **cowboy** (Voice Library western voice, or Voice Design); `narrator/cache.py` pre-generates the template phrases below **in both personas** plus the exclamations ("Holy smokes!", "Well I'll be", "Yeehaw") with the most expressive model → WAV; `narrator/say.py` plays on a thread; live lines (from Saliha's reasoner, or templates with the numbers) via `eleven_flash_v2_5` streaming with a 1.5 s timeout, falling back to the cached phrase; a queue that drops stale lines | 30 min | Narration never blocks a state transition |
+| A6b 🆕 | ⬜ | **F18 persona state machine** `narrator/persona.py`: CALM → COWBOY on `narrator.trigger("obstacle"\|"hat")` (instant, cached exclamation); back after the trigger has cleared and one brick is done, through one half-way line; H key = hat trigger for the demo. Mock test: trigger → cowboy lines → cool-down → calm | 15 min | Mock run switches and returns |
 | A7 | ⬜ | `fallback/scripted.py` skeleton: replays named joint waypoints from `config/waypoints.yaml` via Nate's `robot/io.py` (use his `MockRobot` once pushed around 02:00; until then a local stub with the same 4 methods) `[⏸ waits on @nate: MockRobot]` | 10 min | Works against the mock |
 | A8 | ⬜ | README skeleton and architecture diagram (from PRD 7.1) | 10 min | Committed |
 
@@ -70,15 +72,15 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 | 10:00–10:30 | ⬜ | Hold the inspection pose for Saliha's capture | — |
 | 10:30–14:00 | ⬜ | Resets for Nate's recordings; in between, **F9 localization**: colour blob in the pick zone (overhead webcam) plus RealSense depth → brick present and position; stop when empty | Position logged |
 | **15:30 gate (robot)** | ⬜ | With Saliha: **scripted full loop with real Anomalib, 5 bricks, no human** | Pass; film it as the backup video v1 |
-| 15:30–19:00 | ⬜ | Mission control on the real feed; live narration and telemetry; tune the spoken lines. 🆕 **F15 drift alarm:** run Saliha's drift query every few bricks on the telemetry thread → "lighting changed, rebaseline" on screen and spoken | Live |
+| 15:30–19:00 | ⬜ | Mission control on the real feed; live narration and telemetry; tune the spoken lines. 🆕 **F18 obstacle trigger:** RealSense depth in the workspace (taller than a brick, or not brick-shaped) → `narrator.trigger("obstacle")` and the loop skips it; wire Saliha's `hat_seen` (from 19:00). 🆕 **F15 drift alarm:** run Saliha's drift query every few bricks on the telemetry thread → "lighting changed, rebaseline" on screen and spoken | Live |
 | 19:00–21:00 (robot) | ⬜ | Swap in Nate's policies behind `Mover`; keep `--scripted` working | Both modes |
-| 21:00–23:00 | ⬜ | 🆕 *(only if the 15:30 gate passed)* **F16:** `modal deploy` a read-only FastAPI page (public URL) with sorted count, accuracy, latency and energy from Aiven; never in the control path. Then architecture slide, README (run steps, device rationale, benchmark placeholder for Saliha, credits), submission text draft | Drafts ready |
+| 21:00–23:00 | ⬜ | ~~F16 Modal dashboard~~ (dropped: no frontend). 🆕 Rehearse the cowboy beat (PRD §11, 1:00) on the real table. Architecture slide, README (run steps, device rationale, benchmark placeholder for Saliha, credits), submission text draft | Drafts ready |
 | 23:00–01:00 | ⬜ | **Freeze**; 20 logged trials with Nate; 🆕 F14 shifted and pile trials (F9 picks the most isolated brick first); film the best runs; sleep 01:00–06:00 | Trial table from `report.sql` |
 | 06:00–09:00 | ⬜ | Edit the 2-minute video; finish the README; Junction Platform submission (Intel, plus ElevenLabs, Aiven, Modal, and NVIDIA if we enter it; Nemotron needs a short text on model, role and how we improved its output) **by 09:00** | Submitted |
 | 09:00 → demo | ⬜ | Lead rehearsals: the script in PRD 11, the e-stop drill, the backup video on a second screen | — |
 
 **Seams** (the same note is in the other two briefs):
-- @saliha 🆕: F15 drift SQL comes from Saliha; F12 energy numbers go in the `benchmarks` table and the F16 page.
+- @saliha 🆕: F15 drift rule comes from Saliha; F12 energy numbers go in the `benchmarks` table; F17 reasoner lines arrive through `narrator.say(event, text=..., persona=...)`; `reasoner.hat_seen(top_frame)` feeds F18. Contract lines in PRD 7.3, freeze 01:00.
 - @saliha: `run.py` calls `Inspector.inspect(frame, view, brick_id)` → `DefectSignal`; `label` → instruction via `config/rules.yaml` (F1); mission control draws `heatmap_path`, `bbox`, `score`; `make rebaseline` → `python -m perception.rebaseline`.
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
@@ -94,13 +96,17 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - Camera by-id paths: {{paths}} · ElevenLabs voice IDs: {{voices}} · Aiven service name and env var: {{aiven}}
 
 ## 6a. Reference
-### Narrator templates (deterministic; no LLM)
-- `perfect`: "Looks perfect. Blue bowl."
-- `defective`: "Defect near the {region}. Red bowl."
-- `uncertain`: "Not sure about this one, taking a second look."
-- `grasp_fail`: "Missed it, trying again."
-- `help`: "I need a hand, going home."
-- `empty`: "All done. {n} sorted."
+### Narrator templates (deterministic fallback when the reasoner is late; no LLM)
+| Event | Calm | Cowboy 🆕 |
+|---|---|---|
+| `perfect` | "Looks perfect. Blue bowl." | "Clean as a whistle. Blue bowl, partner." |
+| `defective` | "Defect near the {region}. Red bowl." | "Well I'll be, a mark near the {region}. Red bowl it is." |
+| `uncertain` | "Not sure about this one, taking a second look." | "Hold your horses, lemme look again." |
+| `grasp_fail` | "Missed it, trying again." | "Dang, slipped. One more go." |
+| `help` | "I need a hand, going home." | "Need a hand here, headin' home." |
+| `empty` | "All done. {n} sorted." | "That's the herd. {n} sorted." |
+| trigger 🆕 | — | "Holy smokes!" / "Yeehaw!" |
+| cool-down 🆕 | "Ahem. Where was I. Back to work." | (half-way line, calm voice: "Right, partner... I mean, right.") |
 
 ### Remote setup
 - **On the Intel laptop:** `sudo apt install openssh-server`, then `ssh-copy-id`. If the venue Wi-Fi blocks laptop-to-laptop traffic, use a phone hotspot or a cable.

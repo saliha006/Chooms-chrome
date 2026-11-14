@@ -1,7 +1,7 @@
-> **Status, 2026-11-14 00:30.** PRD v2.2 (Junction page + side-track criteria) added 🆕 items below. Nothing built yet. Block A (Modal + export test) starts 00:45. Docs on `context`, board on `main`.
+> **Status, 2026-11-14 00:55.** PRD v2.3: Intel task first (accurate, smooth, quick), personality layer on top; Modal = training + logs only, no frontend. Nothing built yet. Block A (Modal + export test) starts 00:45. Docs on `context`, board on `main`.
 
 # Nate: robot and policies (Studio, ACT, SmolVLA, Modal)
-**GitHub:** `{{github}}` · **Branch:** `robot-nate` · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:30 by saliha
+**GitHub:** `{{github}}` · **Branch:** `robot-policies-nate` (one branch for all your work) · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:55 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -43,7 +43,9 @@ You own **R1 (Studio), R4, R6, R10, R15, R20 (data quality), F5 and F11**, and y
 
 ---
 
-## 3. ▶ Current tasks (2026-11-14 00:30)
+## 3. ▶ Current tasks (2026-11-14 00:55)
+🆕 **Vision (PRD v2.3 §1a):** (1) the Intel task done accurately, smoothly and in reasonable time, always first; (2) the robot explains its reasoning out loud, live, in a calm voice; (3) an obstacle or the cowboy hat flips it into a cowboy persona ("Holy smokes!") until the moment passes. Personality never slows the arm or costs a gate. No frontend, ever.
+🆕 **For you:** smooth motion matters to the judges (speed cap, temporal ensembling); obstacles are **skipped, never picked** (Harry's F18 tells `run.py`); personality work never takes a robot slot.
 🆕 **What changed (PRD v2.2):** the Junction page scores **dataset and pipeline quality (20%)**: clean teleop data, fine-tuning in Studio, "how few demonstrations are enough"; and **task success (30%)** includes **shifted or cluttered bricks**. Objects are **Duplo** (bigger, easier grasp). Cameras: top view + inspection + wrist. Modal's page gives every participant $100 credits and scores scale-out.
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
@@ -59,7 +61,7 @@ Goal: remove the two biggest unknowns before the robot exists: **Modal training*
 | A4b 🆕 | ⬜ | Agree with Saliha and Harry **before the 01:00 freeze** what `reinspect` means now that it also covers the **re-grasp** (Intel's "anomaly score triggers a re-grasp"), e.g. `reinspect(angle_deg)` with `0` = put down and pick again. Post it in `progress.md` | 5 min | Agreed |
 | A5 | ⬜ | `train/RECORDING.md` (page 1 of the plan):<br>• 10×10 cm pick zone, 9 start positions × 6 = 54 ACT episodes, each ending at the marked inspection pose<br>• SmolVLA: 25 + 25, starting at the inspection pose<br>• Task strings exactly `"place the brick in the red bowl"` / `"…blue bowl"`<br>• Episode about 12 s, reset about 10 s<br>• HF repo names<br>🆕 • Hold back 2 of the 9 start positions plus a few off-grid spots for the F14 test (never recorded)<br>🆕 • Reject and log bad episodes (dropped brick, collision, hesitation) in `train/rejected.md`; a short dataset card on the HF Hub (dataset quality 20%) | 10 min | Shared |
 | A6 | ⬜ | Commit; status in `progress.md` | 5 min | — |
-| A7 | ⬜ | Modal side track (F10): log GPU type, wall time and cost for every run into `train/runs.md` (it goes in the README). No frontend. | 5 min | File exists |
+| A7 | ⬜ | Modal side track (F10): log GPU type, wall time and cost for every run into `train/runs.md` (it goes in the README). No frontend. 🆕 Modal stays **training + logs only**; if its prize ever needs a web app, we drop Modal, not add one | 5 min | File exists |
 | A8 🆕 | ⬜ | Make `modal_train.py` take `--episodes N` (first N episodes) and add a `sweep` entrypoint that `.map`s ACT over `[18, 36, 54]` in parallel (F11). Smoke it on the public dataset with 2 small values | 10 min | Two runs finish in parallel |
 
 ### BLOCK B: Saturday 08:00 → Sunday 09:00 (follow the slot table in PRD 10)
