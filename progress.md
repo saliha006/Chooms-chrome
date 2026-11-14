@@ -62,7 +62,7 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed (red-lego, cameras mapped); N2 done; ACT smoke still training on Modal; next: ACT export test (N1), then N3 |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed; ACT smoke crash found and fixed (no forked loader workers), re-run on red-lego in flight (~07:15); next: ACT export test, then N3 |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4, H6, H7 panel done (H3 clips not generated yet); next 08:00 H5 cameras + waypoints |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
@@ -82,14 +82,23 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## 📊 Latest (volatile facts live only here)
 - **Plan (2026-11-14 05:47):** PRD v2.5, `context` @ `5da0552`.
-- **robot/policies/train (2026-11-14 06:01):** `main` @ `945310a`: 79 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped); mock loop sorts 5 bricks.
-- **Modal (2026-11-14 06:01):** SmolVLA 200 steps on the red-lego set: 1.8 min, ~5 steps/s, loss 0.287, AV1 decodes, checkpoint in the `sortsense-runs` volume (`train/runs.md`). ACT via Studio on the public set: still in Studio's one-off quantile pass (~40 s per episode), result pending.
+- **robot/policies/train (2026-11-14 06:20):** `main` @ `442d39c`: 82 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped); mock loop sorts 5 bricks.
+- **Modal (2026-11-14 06:20):** SmolVLA 200 steps on the red-lego set: 1.8 min, ~5 steps/s, loss 0.287, AV1 decodes (`train/runs.md`). ACT via Studio: first attempt crashed after Studio's 35-min quantile pass (forked loader workers, ≈ $1.33); fixed; re-run on the red-lego set in flight.
 - **perception (2026-11-14 04:30):** `main` @ `99f1d09`: 28 tests pass (4 slow); live Nemotron line 1.7–2.7 s. Not yet run on the Intel laptop or real bricks.
-- **`main` (2026-11-14 06:01):** @ `945310a`, code in every area. Plan docs on `context`.
+- **`main` (2026-11-14 06:20):** @ `442d39c`, code in every area. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 06:20 — fix — Studio ACT training crashed on video decoding; root cause found, fixed — @nate [conflicts: @saliha]
+- **Where:** `robotics-policies-nate` @ `442d39c` · merged to `main`: yes
+- **Did:** The ACT smoke run (Studio's trainer, `lerobot/svla_so100_pickplace`) crashed in training with torchcodec "Invalid data found when processing input". Cause, reproduced on a cheap Modal CPU job: Studio's one-off quantile pass decodes video in the main process, and the forked loader workers inherit those decoders and fail (after 136 frames); no workers, `spawn`, or no parent decode all pass 800 frames. `train/commands.py` now passes `--data.num_workers 0`. Also measured: the quantile pass costs ~40 s per episode on datasets without q01/q99 statistics (35 min for 50 episodes), so our own Studio recordings should carry them (check at N7). Re-run on the red-lego set in flight.
+- **Touched:** `train/commands.py`, `train/tests/test_commands.py`, `train/runs.md`
+- **Brief task:** N1 → 🟡 (ACT re-run in flight)
+- **⚠️ Conflicts:** @saliha: anything else that decodes LeRobot video in a parent process and then forks workers can hit the same bug; ACT IR for your 21:00 benchmark depends on this run
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 06:10 — decision — Gripper and pose thresholds live in `robot/io.py`; Modal keeps its default CPU — @nate [conflicts: @harry]
 - **Where:** `robotics-policies-nate` @ `eb79301` · merged to `main`: yes
