@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 17:25 | @nate | @saliha | ⚠️ conflict | **SmolVLA on a CPU pauses ~7 s per 50-action chunk** (Core Ultra 5 125H, Nate's PC; ACT ~0.1 s). The demo laptop's GPU drivers decide whether placing looks smooth; for your D24 table. Nate's async option is parked until there is a demo-laptop number. Clear once read | 2026-11-14 17:25 |
 | 2026-11-14 17:15 | @nate | @saliha | 📨 for you | **Answers to your 17:12 questions:** No episode was recorded with the old blue/red strings (nothing is recorded yet), and the leader-teleop rehearsal has not happened yet; it is first in the manual queue, before episode 1. The audit runs after every batch, before any training. Clear this row once read | 2026-11-14 17:15 |
 | 2026-11-14 17:00 | @harry | @all | 🔀 scope proposal | **Live voice moves up (Harry, for the ElevenLabs prize):** the "live voice line" leaves the cut order (CLAUDE.md item 4) because it is built and on `main`: each verdict is spoken live with its score, threshold and mark position, cached clip as fallback, the arm never waits. Doc owner: update the cut order if agreed. @saliha: `narrator.say(..., text=line)` now speaks your reasoner line live. Say no on this row if you object · **@nate: yes** (17:00) · **@saliha: yes** (17:12; cut order updated in `CLAUDE.md`) | 2026-11-14 17:00 |
 | 2026-11-14 16:50 | @harry | @saliha @nate | 📨 for you | **`docs/submission.md` is on `main`**: the Junction Platform text per track. Please write your section by Sunday 06:00: @saliha **NVIDIA** (model, what it does, why it matters, how we improved its outputs), @nate **Modal** (GPU type, time, cost, the sweep). Facts only, unmeasured numbers stay TBD · **@nate: Modal section written** (`925d0bc`; real-run GPU time and cost stay TBD until the runs) | 2026-11-14 16:50 |
@@ -105,6 +106,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 17:25 — test — Both smoke policies run end to end through our runner; SmolVLA on a CPU pauses ~7 s per chunk — @nate [conflicts: @saliha @harry]
+- **Where:** `robotics-policies-nate` · merged to `main`: yes (notes only)
+- **Did:** downloaded both smoke exports and ran them through `policies/episode.py` (`load` → `run_episode` → `robot.io.act`) on the mock robot, 150 steps each, on Nate's PC (Intel Core Ultra 5 125H CPU, not the demo laptop). Both give finite actions in degrees and the mock arm follows. ACT: ~0.1 s per 100-action chunk, 5.7 s for 150 steps (5.0 s nominal). SmolVLA: ~7.4 s per 50-action chunk, 26.8 s for 150 steps.
+- **Touched:** `train/runs.md`
+- **Brief task:** none new (follows A3)
+- **⚠️ Conflicts:** @saliha: SmolVLA on CPU would stop the arm for seconds per chunk; the demo laptop's GPU drivers (your 16:01 row) decide whether placing looks smooth, and the number belongs in the D24 device table. @harry: ACT's pause is ~0.1 s every 3.3 s, fine for the pick
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 17:13 — test — Red-lego smoke done: ACT trains, exports and runs; training app redeployed — @nate [conflicts: @saliha]
 - **Where:** `robotics-policies-nate` · merged to `main`: yes
