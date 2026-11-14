@@ -278,6 +278,14 @@
 - **Open question for the mentors (PRD §0 Pending):** SmolVLA is fine-tuned with LeRobot because Studio's SmolVLA loader is marked incomplete (D20); is that acceptable for "VLA & Physical AI Studio Integration", or is there a Studio route in the installed version?
 - **Evidence:** the six judging-slide screenshots (Overview, Required Technology Stack, Technical Implementation Expectations, Judging Criteria, HW/SW, End Goal) read on 2026-11-14 14:19; no measured result yet.
 
+### D32 · Data · Data quality first, hyperparameters second, audited automatically — Status: Planned (auditors being built) · Owner: @saliha (image audit), @nate (protocol, episodes) · Updated: 2026-11-14 14:50
+- **Decision:** a second mentor told Saliha (relayed 2026-11-14 14:50) that data quality matters more than quantity, and that hyperparameter tuning comes second. So: (1) every dataset is audited by code before it trains anything: perception images (blur, exposure, near-duplicates, lighting drift across the session, per-brick coverage) and robot episodes (duration, hesitation, cadence, joint-unit range, end-of-episode hold, start-position balance, exact task strings, camera keys, statistics present); (2) the audit runs before episode 1 on the rehearsal-quality checks, after every recording round, and before every Modal launch; a failing episode is re-taken at the same position (the rejected-episode log stays); (3) no hyperparameter sweep before the audit passes; after that, one small Modal sweep (learning rate and steps, chunk size for ACT) on the same data, run in parallel so it costs no robot time, picked by offline validation loss and confirmed with at most 10 trials; ACT stays at lr 1e-5 until a sweep beats it (1e-4 collapsed to a constant pose in Studio issue #998).
+- **Why:** the Junction page gives 20% to "clean teleoperation data and fine-tuning"; an imitation policy is only as good as its demos (D1); robot time is the scarcest resource (about 4.5 h), while Modal time is cheap.
+- **Alternatives rejected:** tuning first (cannot fix bad demos); more episodes without checking them (the F11 curve would then measure noise).
+- **Trade-off / risk:** the thresholds in the audit (hesitation, blur) are TUNE until real data exists; an audit can flag good episodes, so it flags and a person decides.
+- **Evidence:** TBD (first audit report on real episodes).
+- **Pitch line:** "We checked every demonstration by code before we trusted it."
+
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
 |---|---|---|

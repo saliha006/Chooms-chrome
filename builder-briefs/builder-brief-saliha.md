@@ -46,6 +46,11 @@ Exception: the one import line in `run.py`, agreed in `progress.md` (Block B 13:
 ---
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 2026-11-14 14:50 (D32 data quality first; coding-heavy tasks switched from Nate, hardware-free, in this order)
+1. **`perception/audit.py`** (F21): audits a capture folder before S3/S4 trust it: blur, exposure, near-duplicates, lighting drift across the session, coverage per brick and grasp. Run it on every capture batch.
+2. **N3 and N4** (Nate's, switched): `LearnedMover` grasp band + 0.3 s settle, early exit, wrist roll back before place, place success from `scene.brick_in_bowl`; SmolVLA recipe. Tests on `MockRobot`; Nate reviews.
+3. **`train/audit.py`** (F21, Nate's folder, switched): robot-episode audit, tested on the public SO-101 red-lego dataset.
+4. **N5** colour hedge, then the post-audit hyperparameter sweep entry (launching either needs Modal and recorded data: a human step).
 ### 🆕 v2.5 research pass (2026-11-14 07:10): do these first, in order (same vision; PRD §0 v2.5, decisions.md D1, D7, D22–D26)
 *Must exist by 15:30: real Inspector with measured thresholds; `scene.py` zone gate + bowl-region check for Harry's loop.*
 | # | Status | Task | Hours | Done when |
