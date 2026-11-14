@@ -307,3 +307,21 @@ def test_no_base_means_no_drive_stage(make_cell, tmp_path):
     cell.run()
     telemetry.stop()
     assert "DRIVE" not in events.read_text()
+
+
+def test_a_new_obstacle_is_sent_to_the_namer_once(make_cell, monkeypatch):
+    monkeypatch.setattr(run.narrator, "trigger", lambda kind: None)
+    sent = []
+
+    class Namer:
+        def submit(self, grab, box=None):
+            sent.append((grab().shape, box))
+
+    class Cluttered(CountLocator):
+        obstacles = ["mug"]
+
+    cell, _ = make_cell(("perfect",), bricks=2)
+    cell.locator = Cluttered(2)
+    cell.namer = Namer()
+    cell.run()
+    assert sent == [((8, 8, 3), None)]  # once while it stays; no pixel box until scene.Blob has one

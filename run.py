@@ -77,6 +77,8 @@ class Cell:
         # didn't get there. `approach_cm` is the planned distance, said before it moves. None = no base, no drive.
         self.approach: Callable[[], float | None] | None = None
         self.approach_cm: float | None = None
+        # narrator.naming.ObjectNamer around Saliha's naming model: says what an unfamiliar object is. None = off.
+        self.namer = None
         self.stage_ms: dict[str, float] = {}
         self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
         self.quit = threading.Event()  # Q: finish this brick, then home and stop
@@ -265,6 +267,9 @@ class Cell:
             row["note"] = f"{len(obstacles)} non-brick object(s) in the zone, skipped"
             if not self.obstacle_seen:
                 narrator.trigger("obstacle")
+                if self.namer is not None:
+                    box = getattr(obstacles[0], "box_px", None)  # Saliha's pixel box, once Blob has one
+                    self.namer.submit(lambda: self.capture.frame("top"), box)
         elif not self.hold.is_set():
             narrator.clear("obstacle")
         self.obstacle_seen = bool(obstacles)

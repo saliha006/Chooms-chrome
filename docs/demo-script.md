@@ -12,7 +12,8 @@ Backup video on a second screen by 22:00, cued to the same beats.
 4. Base in its start spot, away from the table (rehearse with `python run.py --mock --drive 42`).
 5. `make run` (or `python run.py --scripted pick,place` if a policy missed its gate; the screen says which).
 5. Cowboy hat and one obstacle (a cup) within reach, out of camera view.
-6. One person on the keyboard (**S**, **H**, **E**), one talking.
+6. **Intel laptop on a phone hotspot, not the venue Wi-Fi:** on the venue Wi-Fi, ElevenLabs requests stalled for 6–12 s at times (17:46–18:07), so live lines fell back or were dropped. Check: `python run.py --mock --headless` logs "live line ready" for most lines.
+7. One person on the keyboard (**S**, **H**, **E**), one talking.
 
 ## The two minutes
 

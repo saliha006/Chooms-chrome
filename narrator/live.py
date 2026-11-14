@@ -13,12 +13,14 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
+from narrator.naming import with_article
+
 _log = logging.getLogger("narrator.live")
 
 # Flash took 625-1563 ms per full line on the venue Wi-Fi (4 calls, 2026-11-14); 3 s keeps nearly every live line
 # while the voice lags the arm by about a second at most (Harry, 2026-11-14). The arm never waits either way.
 TIMEOUT_S = 3.0
-LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit", "drive", "arrived"}
+LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit", "drive", "arrived", "obstacle_named"}
 
 # Conversational on purpose: the robot thinks aloud. {where} is empty or " at the top left".
 TEMPLATES = {
@@ -44,6 +46,12 @@ DRIVE = {
              "arrived": "Made it: {cm} centimetres in {seconds} seconds. I'm in position, let's start sorting."},
     "cowboy": {"drive": "Them bricks are {cm} centimetres yonder, partner. Movin' the whole outfit over.",
                "arrived": "Whoa there. {cm} centimetres in {seconds} seconds. In position, let's get sortin'."},
+}
+
+# An unfamiliar object, once the naming model says what it is (narrator/naming.py). Live only: no cached clip.
+OBSTACLE = {
+    "calm": "There's {thing} in my zone. That's not a brick, so I'll leave it alone.",
+    "cowboy": "Holy smokes, there's {thing} in my zone! That ain't no brick, so I'm leavin' it be.",
 }
 
 # run.py's `after` values -> what a person would say
@@ -78,6 +86,9 @@ def summary(persona: str, event: str, n: int = 0, perfect: int = 0, defective: i
 def compose(persona: str, event: str, score: float | None = None, t_low: float | None = None,
             t_high: float | None = None, where: str | None = None, after: str | None = None, **counts) -> str | None:
     """The live line for a verdict, or None when the numbers it needs are missing (then the cached clip plays)."""
+    if event == "obstacle_named":
+        name = counts.get("name")
+        return OBSTACLE[persona].format(thing=with_article(name)) if name else None
     if event in ("drive", "arrived"):
         cm, seconds = counts.get("cm"), counts.get("seconds")
         if cm is None or (event == "arrived" and seconds is None):
@@ -144,8 +155,10 @@ class Live:
             if took > self.timeout_s:
                 raise TimeoutError(f"{took:.2f} s")
         except Exception as exc:  # network, quota or timeout: the cached clip says the same verdict
-            _log.info("live line fell back to the cached clip (%s)", type(exc).__name__)
-            if fallback is not None and fallback.exists():
+            cached = fallback is not None and fallback.exists()
+            _log.info("live line %s (%s)", "fell back to the cached clip" if cached else "dropped, no cached clip",
+                      type(exc).__name__)
+            if cached:
                 self._submit(fallback, priority)
             return
         self._count += 1
