@@ -40,7 +40,10 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
-| 2026-11-14 05:15 | @saliha | @nate | 📨 waiting on | **Your Block A code is on `main` (`ac2e2f2`)**: review it; then `modal token new`, add a Modal secret `huggingface` (HF_TOKEN), run the A2 smoke (`modal run train/modal_train.py --dataset lerobot/svla_so100_pickplace --steps 200`) and the A3 export test on those checkpoints. Pick the 🟠 in `train/RECORDING.md` | 2026-11-14 05:15 |
+| 2026-11-14 06:00 | @saliha | @nate | ⚠️ conflict | Kept **your** `train/` rework (D20) as the best version and dropped my overlapping edits; added one thing on top in `train/modal_train.py` (`38ce0cb`): it uses your `huggingface` Modal secret, or forwards `HF_TOKEN` from the shell when that secret isn't set up (fresh machine). Tests green. `git pull` before your next push | 2026-11-14 06:00 |
+| 2026-11-14 05:50 | @saliha | @nate | 📨 for you | **`handoff/nate-catch-up.md` on `context`** (sync, then have your agent read it first): setup, libraries, what's done, what's left (A2 smoke runs, A3 export test, A8 sweep), TUNE values. Your D20 rework is the version in force; I dropped my overlapping local edits. Export probe evidence for D20 added to `decisions.md`: the LeRobot wrapper in `physicalai-train` exports torch only | 2026-11-14 05:50 |
+| 2026-11-14 05:12 | @nate | @all | 🔀 scope proposal | **Training stack and F14 positions changed in my area** (`main` @ `8bc38a6`, `decisions.md` D20): ACT now trains with **Physical AI Studio's trainer** (`physicalai fit`), so it exports straight into the `physicalai` runtime; SmolVLA stays on LeRobot (Studio's SmolVLA loader is unfinished). ACT demos: **all 9 positions × 6, recorded in rounds**. @harry: F14's "new positions" trials use only the off-grid spots. Say no on this row if you object | 2026-11-14 05:12 |
+| 2026-11-14 05:15 | @saliha | @nate | 📨 waiting on | **Your Block A code is on `main` (`ac2e2f2`)**: review it; then `modal token new`, add a Modal secret `huggingface` (HF_TOKEN), run the A2 smoke (`modal run train/modal_train.py --dataset lerobot/svla_so100_pickplace --steps 200`) and the A3 export test on those checkpoints. Pick the 🟠 in `train/RECORDING.md`. **@nate 05:12:** `train/` reviewed and reworked (see Log), 🟠 picked (all 9 in rounds); Modal login, A2 and A3 next | 2026-11-14 05:15 |
 | 2026-11-14 01:35 | @saliha | @all | ⚠️ conflict | **Branches renamed again, by discipline:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry` (older rows below use the previous names; none were pushed yet). New file **`decisions.md`** on `context` (design choices and why, for pitching): your agent updates it on its own as you build (CLAUDE.md §4a). Re-sync from `context` | 2026-11-14 01:35 |
 | 2026-11-14 01:00 | @saliha | @all | 🔀 scope proposal | **PRD v2.3 on `context` (`b423fc4`), re-sync.** The team vision is now written in: Intel task first (accurate, smooth, quick); then the robot **explains its reasoning out loud live** (Nemotron writes, ElevenLabs speaks) and an **obstacle or cowboy hat flips it into a cowboy persona**. NVIDIA Nemotron is in (@saliha, `reasoner/`). Aiven = Kafka streaming → PostgreSQL (@harry). Modal = training + logs only; the F16 dashboard is dropped (no frontend). **Branches renamed, one per person:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`. Contract additions in PRD 7.3 (`narrator.trigger`, `reasoner.explain`, `reasoner.hat_seen`) need @harry's yes before the 01:00 freeze. **@nate 01:42: yes** | 2026-11-14 01:00 |
 | 2026-11-14 00:35 | @saliha | @all | 🔀 scope proposal | **PRD v2.2 on `context` (`84364a8`), re-sync.** New 🆕 items in every brief from the Junction challenge page + side-track pages: F11 demo-count sweep on Modal (@nate), F12 power/energy/thermal benchmark (@saliha), F13 shared cameras (@harry), F14 shifted + pile trials (@nate @harry), F15 Aiven drift alarm + more tables (@harry), F16 optional Modal dashboard (@harry), F4 now includes a re-grasp. Object = Duplo, cameras = top + inspection + wrist. Say no on this row if you object to any item in your brief. **@nate 01:42: yes** | 2026-11-14 00:35 |
@@ -57,7 +60,7 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A code on `main` (written by Saliha's agent); next: Modal login + smoke run, export test |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A: `train/` reworked (Studio ACT + LeRobot SmolVLA, `main` @ `8bc38a6`); next: Modal login, A2 smoke run, A3 export test |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A3, A7 done (scripted fallback + teach tool); next real-hardware mode in `run.py`, A4 mission control, A5 Aiven |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
@@ -76,14 +79,25 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 6. Read your brief's `▶ Current tasks`, then the 📌 Open board above.
 
 ## 📊 Latest (volatile facts live only here)
-- **Plan (2026-11-14 01:35):** PRD v2.4 + `decisions.md` on `context` @ `c67ba2b` (Nate's brief and `decisions.md` D7 updated).
-- **robot/policies/train (2026-11-14 05:15):** `main` @ `ac2e2f2`: whole suite 55 pass (4 slow skipped); Modal not yet run.
+- **Plan (2026-11-14 05:12):** `context` @ `68b1afd` (Nate's brief; `decisions.md` D9, D15, D20).
+- **robot/policies (2026-11-14 05:15):** `main` @ `ac2e2f2`: whole suite 55 pass (4 slow skipped).
+- **train (2026-11-14 05:12):** `main` @ `8bc38a6`: 7 tests pass, and the ACT command parses with Studio 0.3.0's own `fit` parser; Modal not yet run.
 - **perception (2026-11-14 04:30):** `main` @ `99f1d09`: 28 tests pass (4 slow); live Nemotron line 1.7–2.7 s. Not yet run on the Intel laptop or real bricks.
-- **`main` (2026-11-14 00:10):** `README.md` + `progress.md` only; no code yet. Plan docs on `context`.
+- **`main` (2026-11-14 05:12):** @ `8bc38a6`, code in every area. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 05:12 — scope — ACT trains with Studio, SmolVLA stays on LeRobot; ACT demos in rounds (`train/` reworked) — @nate [conflicts: @saliha @harry]
+- **Where:** `robotics-policies-nate` @ `8bc38a6` · merged to `main`: yes
+- **Did:** Reviewed the Block A `train/` code. ACT now trains with Physical AI Studio's trainer (`physicalai fit`, `physicalai-train` 0.3.0), so its checkpoint exports straight into the `physicalai` runtime; SmolVLA keeps LeRobot 0.7.0 because Studio's SmolVLA loader is marked "intentionally incomplete" (D20). Fixed three things that would have stopped the first run: the `--wandb` flag LeRobot 0.7 dropped, the missing `smolvla` extra, and reruns hitting an existing output folder (job names now carry a timestamp). `--lr` is optional: ACT 1e-5, SmolVLA its own 1e-4. `RECORDING.md`: all 9 positions × 6, recorded in rounds, so the sweep's first 18 / 36 / 54 episodes are 2 / 4 / 6 per position; F14 uses the off-grid spots. 7 tests; the ACT command is parsed by Studio's own `fit` parser.
+- **Touched:** `train/commands.py`, `train/modal_train.py`, `train/tests/test_commands.py`, `train/requirements.txt`, `train/RECORDING.md`; on `context`: my brief, `decisions.md` D9, D15, D20
+- **Brief task:** A1 → 🟡 part (done once the A2 smoke runs); A5 → ✅ (🟠 picked)
+- **⚠️ Conflicts:** @saliha: your agent's `train/` code changed as above; the ACT IR you benchmark at 21:00 will come from Studio's export. @harry: F14's "new positions" trials use only the off-grid spots (all 9 grid positions get recorded)
+- **📨 Needs:** none
+- **Agreed by:** @nate; team asked on the Open board (🔀 05:12)
+- **Status:** open
 
 ### 2026-11-14 04:38 — merge — A7: scripted fallback mover + waypoint teaching tool — @harry [conflicts: @nate]
 - **Where:** `systems-voice-harry` @ `b7c2f6e` · merged to `main`: yes
