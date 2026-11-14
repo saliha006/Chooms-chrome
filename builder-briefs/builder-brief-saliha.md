@@ -1,4 +1,4 @@
-> **Status, 2026-11-14 03:55.** Block A done on `main` @ `dd1c4d7` except the live Nemotron call (needs `NVIDIA_API_KEY` + model id). Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3 (team vision: Intel task first, then the live reasoning voice and the cowboy switch). You now also own the Nemotron reasoner. Nothing built yet. Block A (stand-in pipeline) starts 00:45. Docs on `context`, board on `main`.
+> **Status, 2026-11-14 04:30.** Block A fully done on `main` @ `99f1d09`, including the live Nemotron call (`nvidia/nemotron-3.5-super-vl-120b-a12b`, ~1.7–2.7 s per line, thinking off). Next: Saturday 08:00 on the Intel laptop. Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3 (team vision: Intel task first, then the live reasoning voice and the cowboy switch). You now also own the Nemotron reasoner. Nothing built yet. Block A (stand-in pipeline) starts 00:45. Docs on `context`, board on `main`.
 
 # Saliha: AI/ML (computer vision, edge-AI optimisation, LLM reasoning) + doc owner
 **GitHub:** `saliha006` · **Branch:** `aiml-perception-saliha` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 03:55 by saliha
@@ -10,7 +10,7 @@
 3. **Want a different route, more features or another decision in your area? Go ahead.** Your Claude always asks first: "Have you told the team? Who agreed?" (CLAUDE.md §2c). Changes to another builder's path or a shared contract wait for that owner's yes.
 4. Before starting, read `progress.md`'s 📌 Open board (CLAUDE.md §2b). Rows To @saliha come first: tell the user, then resolve or schedule them.
 5. Ship each task with the CLAUDE.md §7 sequence (code → `no-slop` → test → push → merge if safe), then log it (CLAUDE.md §2b). Use the `debug` skill on every issue.
-6. Times are on the plan clock of PRD §10.
+6. Times are **Espoo local (EET, UTC+2)**, the event's clock (PRD §0).
 
 **Task tags:** `[⚠ touches @name: what]` = changes someone else's area or a shared contract; get that owner's yes before merging (§2c). `[⏸ waits on @name: what]` = blocked until they deliver (a 📨 row on the Open board). `[🟠 your call]` = a design decision for the user (CLAUDE.md §1).
 
@@ -65,7 +65,7 @@ Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday 
 | A7 | ✅ | `python -m perception.rebaseline` (Harry wires it to `make rebaseline`): capture 60 good → retrain PaDiM → recalibrate, in under 2 minutes | 10 min | Timed |
 | A8 | ✅ | `bench/benchmark.py`: N=100 warm runs per (model × precision × device); p50/p95; model size; first vs cached compile; writes `bench/results.md` | 15 min | CPU rows filled |
 | A9 | ✅ | Commit; post status in `progress.md` | 5 min | — |
-| A11 🆕 | 🟡 | *(if time)* NVIDIA Build key (`NVIDIA_API_KEY` in `.env`); `reasoner/client.py`: one call to Nemotron 3.5 Super VL with a stand-in crop + its `DefectSignal` as JSON → one short line back; print the latency | 10 min | A line comes back, latency known |
+| A11 🆕 | ✅ | *(if time)* NVIDIA Build key (`NVIDIA_API_KEY` in `.env`); `reasoner/client.py`: one call to Nemotron 3.5 Super VL with a stand-in crop + its `DefectSignal` as JSON → one short line back; print the latency | 10 min | A line comes back, latency known |
 | A10 🆕 | ✅ | `bench/power.py`: a context manager that reads Intel RAPL package energy (`/sys/class/powercap/intel-rapl:0/energy_uj`, which wraps around) and the max of `/sys/class/thermal/thermal_zone*/temp` before and after a run → joules, average watts, peak °C. Returns `None` off Linux (this laptop), so the benchmark still runs. `benchmark.py` adds mJ-per-inference columns | 15 min | Unit test with a fake sysfs folder passes |
 
 ### BLOCK B: Saturday 08:00 → Sunday 09:00 (Intel laptop and robot; follow the slot table in PRD 10)
@@ -92,6 +92,7 @@ Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday 
 - @nate: F4 re-grasp and wrist roll call Nate's `Mover.reinspect(angle_deg)` (🆕 re-grasp = put down and pick again; exact signature agreed in `progress.md` before the 01:00 freeze); Nate's ACT/SmolVLA OpenVINO IR files come to `bench/` for the 21:00 GPU-slot benchmark.
 
 ## 4. Done log (newest first)
+- ✅ **A11 live + conversational lines** (2026-11-14 04:30, `main` @ `99f1d09`): Super VL is a reasoning model and spent all 80 tokens thinking, so thinking is off (`chat_template_kwargs.enable_thinking=false`). Lines think aloud (what it sees, what the score means, what it will do). It inverted a perfect verdict until the decided action and the band's meaning were passed in; now 4/4 correct on stand-in bricks, 1.7–2.7 s per line. Answers @harry's 04:16 request.
 - ✅ **Block A, A1–A10 + A11 client** (2026-11-14 03:55, `main` @ `dd1c4d7`, 28 tests incl. a slow end-to-end pipeline test). Python 3.12 venv via `uv` (`perception/requirements.txt`). Stand-in data = `perception/synth.py` (synthetic bricks with marker strokes; scaffolding only, no number reported). Export is static 1×3×256×256 via `ov_kwargs`; INT8 calibration needs batch 1. The inspector compiles the IR itself (NPU→GPU→CPU, `runs/ov_cache`), not `OpenVINOInferencer` (no fallback). Rebaseline on this laptop: train 26 s + INT8 export 71 s + calibrate ≈ 102 s, plus ~18 s capture. A11: `reasoner/client.py` built and tested with a fake response; the live call waits on the key and the exact model id. **Gotchas:** run with `PYTHONUTF8=1` on Windows (torch's ONNX exporter prints emoji); the Intel GPU compiler drops `kernel.errors.txt` in the cwd (harmless, delete); RAPL `energy_uj` is root-only on Linux (`sudo chmod a+r`).
 
 ## 5. Working-style notes for the agent
@@ -104,7 +105,7 @@ Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday 
 - Which Anomalib model ships (Block B 10:30): {{model}}
 - Plan clock vs Espoo time for the Sunday 10:00 deadline: {{timezone}}
 - Good bricks: one colour or several? {{colours}} · Which station camera is the RealSense? {{camera}}
-- Exact Nemotron 3.5 Super VL model id on NVIDIA Build: {{model id}} (the page's example id is a different, text-only model)
+- Nemotron model id: `nvidia/nemotron-3.5-super-vl-120b-a12b` (in `.env` as `NEMOTRON_MODEL`)
 
 ## 6a. Reference
 ### Minimal code (check names against the 2.7.0 docs)

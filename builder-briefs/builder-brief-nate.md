@@ -10,7 +10,7 @@
 3. **Want a different route, more features or another decision in your area? Go ahead.** Your Claude always asks first: "Have you told the team? Who agreed?" (CLAUDE.md §2c). Changes to another builder's path or a shared contract wait for that owner's yes.
 4. Before starting, read `progress.md`'s 📌 Open board (CLAUDE.md §2b). Rows To @nate come first: tell the user, then resolve or schedule them.
 5. Ship each task with the CLAUDE.md §7 sequence (code → `no-slop` → test → push → merge if safe), then log it (CLAUDE.md §2b). Use the `debug` skill on every issue.
-6. Times are on the plan clock of PRD §10.
+6. Times are **Espoo local (EET, UTC+2)**, the event's clock (PRD §0).
 
 **Task tags:** `[⚠ touches @name: what]` = changes someone else's area or a shared contract; get that owner's yes before merging (§2c). `[⏸ waits on @name: what]` = blocked until they deliver (a 📨 row on the Open board). `[🟠 your call]` = a design decision for the user (CLAUDE.md §1).
 

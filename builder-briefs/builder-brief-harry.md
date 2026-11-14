@@ -10,7 +10,7 @@
 3. **Want a different route, more features or another decision in your area? Go ahead.** Your Claude always asks first: "Have you told the team? Who agreed?" (CLAUDE.md §2c). Changes to another builder's path or a shared contract wait for that owner's yes.
 4. Before starting, read `progress.md`'s 📌 Open board (CLAUDE.md §2b). Rows To @harry come first: tell the user, then resolve or schedule them.
 5. Ship each task with the CLAUDE.md §7 sequence (code → `no-slop` → test → push → merge if safe), then log it (CLAUDE.md §2b). Use the `debug` skill on every issue.
-6. Times are on the plan clock of PRD §10.
+6. Times are **Espoo local (EET, UTC+2)**, the event's clock (PRD §0).
 
 **Task tags:** `[⚠ touches @name: what]` = changes someone else's area or a shared contract; get that owner's yes before merging (§2c). `[⏸ waits on @name: what]` = blocked until they deliver (a 📨 row on the Open board). `[🟠 your call]` = a design decision for the user (CLAUDE.md §1).
 
@@ -82,6 +82,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 **Seams** (the same note is in the other two briefs):
 - @saliha 🆕: F15 drift rule comes from Saliha; F12 energy numbers go in the `benchmarks` table; F17 reasoner lines arrive through `narrator.say(event, text=..., persona=...)`; `reasoner.hat_seen(top_frame)` feeds F18. Contract lines in PRD 7.3, freeze 01:00.
 - @saliha: `run.py` calls `Inspector.inspect(frame, view, brick_id)` → `DefectSignal`; `label` → instruction via `config/rules.yaml` (F1); mission control draws `heatmap_path`, `bbox`, `score`; `make rebaseline` → `python -m perception.rebaseline`.
+- @nate: `reinspect(0)` = put down + pick again, `reinspect(±90)` = wrist roll, `True` only back at the inspection pose (agreed by all three 04:16); `fallback/scripted.py` implements the same.
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)

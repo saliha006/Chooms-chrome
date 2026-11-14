@@ -115,7 +115,7 @@
 - **Why:** the NVIDIA track needs the model to do real work in the product, visibly; a vision-language model can describe where the defect is. Grounding in measured numbers keeps the explanation true.
 - **Alternatives rejected:** fixed template sentences only (kept as the fallback); a text-only model (cannot see the brick).
 - **Trade-off / risk:** the free NVIDIA Build tier is rate limited (about 40 requests per minute per key); requests start while the arm moves and are dropped if late.
-- **Evidence:** TBD (20-frame eval: label agreement, region correct, hat accuracy, latency; one measured prompt revision. This table is the NVIDIA "how we improved its outputs" text).
+- **Evidence so far (stand-in bricks, Saliha's laptop, NVIDIA Build API):** model `nvidia/nemotron-3.5-super-vl-120b-a12b`. Improvement 1: it is a reasoning model and spent the whole 80-token budget thinking (empty answer), so thinking is turned off for live speech; answers then take 1.7–2.7 s. Improvement 2: given only the score and thresholds, it read "below t_low" as bad and told a perfect brick to be set aside; passing the already-decided action and the band's meaning fixed it (4/4 correct on a small check, including an uncertain brick). Full 20-frame eval on real bricks: TBD (Saturday 22:00).
 - **Pitch line:** "The model explains what it sees using our measured scores, so it can't make things up."
 
 ### D12 · Voice · Live reasoning through ElevenLabs, calm voice by default — Status: Planned · Owner: @harry · Updated: 2026-11-14 04:14

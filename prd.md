@@ -14,6 +14,8 @@
 
 ## 0. NOW (decisions in force, pending, gates)
 **In force**
+- **All plan times and board stamps are Espoo local time (EET, UTC+2)**, the event's clock: Sunday 10:00 deadline, 09:00 internal submit, 23:00 freeze. Board stamps before 2026-11-14 04:30 were written in UK time (UTC); treat them as 2 hours earlier than Espoo.
+- **`reinspect` agreed by all three (2026-11-14 04:16):** `reinspect(0)` = put the brick down in the pick zone and pick it again (the F4 re-grasp); `reinspect(±90)` = wrist roll in place; both return `True` only when the brick is back at the inspection pose. Signature unchanged.
 - Only the follower arm moves; the leader is teleop only (Intel slides).
 - Contracts in §7.3 frozen at 01:00 Sat; changes need all three and a `progress.md` decision entry.
 - Docs: `CLAUDE.md`, `prd.md`, `builder-briefs/`, `skills/` live on the `context` branch; `progress.md` and code on `main` (a `.gitignore` keeps everything else local). **One branch per person:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`.
@@ -37,7 +39,7 @@
   - Items more than ~10 hours of work live in a local-only `extension-if-more-time.md` (never pushed). Items within ~1–2 hours of slack are the stretch list in §8a.
 
 **Pending (confirm with mentors, §13)**
-- Is 11:50 Sunday our demo slot? Is the 10:00 Sunday deadline on Espoo time, and does our plan clock match it?
+- Is 11:50 Sunday our demo slot?
 - Challenge-Day task and kickoff sorting rules.
 - Which Intel rubric is used (slides or Junction page)?
 - Is a cowboy hat (soft, light) in the workspace OK under the printed safety rules?
@@ -201,7 +203,7 @@ class Inspector(Protocol):               # perception/ (Saliha)
 class Mover(Protocol):                   # policies/ (Nate) and fallback/ (Harry)
     def pick_and_present(self) -> bool: ...
     def place(self, instruction: str) -> bool: ...
-    def reinspect(self, angle_deg: int) -> bool: ...
+    def reinspect(self, angle_deg: int) -> bool: ...  # 0 = put down + pick again (re-grasp), ±90 = wrist roll; True only back at the inspection pose
     def gripper_empty(self) -> bool: ...
     def home(self) -> None: ...
     def estop(self) -> None: ...
