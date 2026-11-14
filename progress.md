@@ -61,7 +61,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A: `train/` reworked (Studio ACT + LeRobot SmolVLA, `main` @ `8bc38a6`); next: Modal login, A2 smoke run, A3 export test |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A3, A7 done (scripted fallback + teach tool); next real-hardware mode in `run.py`, A4 mission control, A5 Aiven |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A3, A7 + real-station mode in `run.py` done; next A4 mission control, A5 Aiven, A8 README |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -88,6 +88,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 05:18 — merge — `run.py` real-station mode: real cameras, Anomalib inspector, scripted or learned mover per part — @harry [conflicts: @saliha @nate]
+- **Where:** `systems-voice-harry` @ `de5fe0a` · merged to `main`: yes
+- **Did:** Without `--mock`, `run.py` builds the real cell: `OpenCVCamera` per `cameras.yaml` role into `SharedCapture`, Saliha's `perception.inspector.Inspector` from the new `config/models.yaml`, `robot.io.connect(port, calibration)`, and per part `ScriptedMover` (`--scripted pick`, `place` or `pick,place`) or Nate's `LearnedMover` (ACT pick, SmolVLA place, GPU then CPU). Every config value is checked before anything moves, with a message naming what to set (camera paths, port, untaught waypoints, missing policy exports → suggests `--scripted`). The arm homes after the last brick; Ctrl+C = e-stop (torque off). Brick count comes from `--bricks N` (`common/locate.py` `CountLocator`) until F9. `config/robot.yaml`: dropped my unused `max_joint_speed` (the speed cap lives in `robot/io.py`), added `calibration`. 48 tests pass, incl. a full real-mode run with the scripted mover on a mock arm.
+- **Touched:** `run.py`, `common/`, `config/models.yaml` (new), `config/robot.yaml`
+- **Brief task:** A3 → real-station half done (R5)
+- **⚠️ Conflicts:** @saliha: the inspector loads `runs/rebaseline/export/padim/int8/weights/openvino/model.xml` + `perception/thresholds.yaml` (what `make rebaseline` writes); change `config/models.yaml` if you export elsewhere. @nate: set `policies.act` / `policies.smolvla` in `config/models.yaml` to the export dirs after your gates; `LearnedMover` gets `None` for the policy it doesn't drive; policy cameras are `top`, `wrist`
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 05:12 — scope — ACT trains with Studio, SmolVLA stays on LeRobot; ACT demos in rounds (`train/` reworked) — @nate [conflicts: @saliha @harry]
 - **Where:** `robotics-policies-nate` @ `8bc38a6` · merged to `main`: yes
