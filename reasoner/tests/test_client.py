@@ -3,7 +3,7 @@ import json
 
 import numpy as np
 
-from perception.contract import DefectSignal
+from common.interfaces import DefectSignal
 from reasoner import client
 
 SIGNAL = DefectSignal(3, "webcam", "defective", 0.64, 0.2, 0.63, (1, 2, 3, 4), None, "padim", "CPU", 50.0)

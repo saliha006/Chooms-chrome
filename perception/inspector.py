@@ -13,7 +13,7 @@ import numpy as np
 import openvino as ov
 
 from perception import thresholds
-from perception.contract import DefectSignal
+from common.interfaces import DefectSignal
 
 DEVICE_CHAIN = ("NPU", "GPU", "CPU")
 INPUT_SIDE = 256
