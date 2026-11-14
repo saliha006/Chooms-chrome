@@ -122,6 +122,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 19:05 · hat by voice · ElevenLabs speech-to-text listener + phrase check, hat on until taken off, H toggle; blocked on the API key's speech_to_text permission; 217 tests; `main` `789142a`
 - 2026-11-14 18:10 · object naming (voice side) + wrist MJPG · `narrator/naming.py`, `Cell.namer` seam for Saliha's model; wrist camera asks for MJPG; 198 tests pass; `main` `7821e3e`
 - 2026-11-14 17:55 · voice polish + base drive voice-over · spoken run summary, subtitles on mission control, live narration of the base driving to the table (`Cell.approach` seam for Nate, `DRIVE` stage, `--mock --drive CM`), camera paths committed; all tests green on both laptops (283 + 5 slow here, 282 on the Intel laptop); `main` `5730a47`
 - 2026-11-14 17:15 · A6 live line + Nemotron add-on · verdicts spoken live with score, threshold and mark position (Flash, 3 s timeout + warm-up, cached fallback, `--no-live`); Saliha's Nemotron `LiveLine` wired into `run.py` (real runs); 625–1953 ms per line on the venue Wi-Fi; merged to `main` (`d6fbc81`), 171 tests pass
