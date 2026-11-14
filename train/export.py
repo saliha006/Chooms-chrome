@@ -10,7 +10,8 @@ the action chunk is finite. A job is exported once and later runs only re-check 
 Volume to export a newer checkpoint.
 
 Runs on Modal's Linux because the `physicalai` CLI does not start on Windows. The IR is device-independent; the
-Intel laptop compiles it for CPU, GPU or NPU. Back up the checkpoint first (Studio PR #1403 could delete one).
+Intel laptop compiles it for CPU, GPU or NPU. Back up the checkpoint first: older Studio exports could delete it
+on a crash (fixed by Studio PR #1403).
 """
 
 import time
@@ -54,7 +55,8 @@ def export(job: str, policy: str, task: str) -> str:
         else:
             from physicalai.policies.smolvla import SmolVLA
 
-            model = SmolVLA(pretrained_name_or_path=str(checkpoint), dtype="float32")  # f32: the CPU NaN bug (#1414)
+            # float32: the CPU fallback (PRD 7.2) runs at full precision
+            model = SmolVLA(pretrained_name_or_path=str(checkpoint), dtype="float32")
         model.export(str(out), backend="openvino")
         volume.commit()
         report.append(f"exported {checkpoint.relative_to(job_dir)} -> openvino")
