@@ -101,7 +101,7 @@ Goal: remove the two biggest unknowns before the robot exists: **Modal training*
 
 ## 6. Open blanks (fill when the chat or repo answers them, CLAUDE.md 🔁)
 - GitHub handle and agent tool: `aldrichbanas07` · Claude Code
-- Modal access (Intel-provided or personal) and GPU hours: {{modal}}
+- Modal access (Intel-provided or personal) and GPU hours: personal workspace `aldrichbanas07`, Starter plan, about $130 in credits (≈ 60 A100-40GB hours at Modal's listed $0.000583/s), 2026-11-14
 - HF dataset repo names: {{hf repos}}
 - Can ACT or SmolVLA run on the NPU? (Intel workshop) {{npu policies}}
 
