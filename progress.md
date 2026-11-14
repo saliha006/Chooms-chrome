@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 05:52 | @harry | @nate | 📨 waiting on | **Stage deadline for N2's `abort_event`:** `run.py` arms `common.deadline` around PICK, REINSPECT, PLACE and HOME (`DEADLINE_S`, TUNE). In `LearnedMover`, pass `abort_event=deadline.abort` (a `threading.Event`, `from common import deadline`) to `run_episode` and return `False` when it fires; `run.py` turns that into a TIMEOUT reason. `ScriptedMover` already does this | 2026-11-14 05:52 |
 | 2026-11-14 07:15 | @saliha | @all | 🔀 scope proposal | **PRD v2.5 on `context` (`5da0552`), re-sync.** A research pass (6 research agents + design + critic) put an ordered 🆕 v2.5 block at the top of each brief's ▶ Current tasks. Same vision. Highlights: no RL (D1, numbers in), every stage verified with reason codes/deadlines (D22), recovery order look-again → roll → re-grasp (D7), two fixed VLA strings + language-swap test + single-colour ACT hedge (D23), device/efficiency measured (D24), Nemotron advisory only (D25), **red-lego smoke test first** (D26). Bugs listed per person. Say no on this row to anything in your block. **@harry 05:41: yes** to the whole block, and yes to `run.py` calling `perception/scene.py` (zone gate + bowl-region check) | 2026-11-14 07:15 |
 | 2026-11-14 05:32 | @harry | @saliha | 📨 waiting on | **`opencv-python` instead of `opencv-python-headless`** in `perception/requirements.txt`: mission control (F6) needs a window, the headless build has none, and the two can't be installed together. Same library and API; perception code is unaffected | 2026-11-14 05:32 |
 | 2026-11-14 05:12 | @nate | @all | 🔀 scope proposal | **Training stack and F14 positions changed in my area** (`main` @ `8bc38a6`, `decisions.md` D20): ACT now trains with **Physical AI Studio's trainer** (`physicalai fit`), so it exports straight into the `physicalai` runtime; SmolVLA stays on LeRobot (Studio's SmolVLA loader is unfinished). ACT demos: **all 9 positions × 6, recorded in rounds**. @harry: F14's "new positions" trials use only the off-grid spots. Say no on this row if you object | 2026-11-14 05:12 |
@@ -61,7 +62,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | A2: ACT training on Modal, SmolVLA waits on v2.5 N1 (camera rename); e-stop check in `robot/io.act` done; next: v2.5 yes/no, then N1 |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H2 bug fixes done, H4 already done (JSONL); next H1 reason codes, deadlines, PAUSE_HUMAN, recovery chain |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1, H2, H4 done; next H3 cached lines per reason, H6 physicalai notebook, H7 ReasonTrace panel |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -88,6 +89,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 05:52 — merge — H1: reason codes, stage deadlines, PAUSE_HUMAN, hold flag — @harry [conflicts: @nate @saliha]
+- **Where:** `systems-voice-harry` @ `18ae0d7` · merged to `main`: yes
+- **Did:** `common/reasons.py` `Reason` (grasp_failed, brick_lost, place_failed, timeout, camera, inspect_failed, unexpected) + `HelpNeeded(reason, detail)`; the code goes in the `events` row's `outcome` (no schema change) and every stage logs its outcome. `common/deadline.py`: `run.py` arms a deadline around PICK (20 s), REINSPECT (25 s), PLACE (15 s), HOME (15 s), all TUNE; `ScriptedMover` stops when it fires; a stuck pick is a TIMEOUT and is not retried. Any failure (including a bug) → home, say the reason, **PAUSE_HUMAN**: P carries on with the next brick, Q stops at home, E still wins; `--headless` stops instead. `Cell.hold` waits at stage boundaries for "something tall" (to be set by depth / `perception/scene.py`), announces it once (`narrator.trigger("obstacle")`), and Q cannot override it. Mission control shows NEED HELP + reason and HOLD. 68 tests pass with Nate's. Recovery chain was H2.
+- **Touched:** `run.py`, `common/reasons.py`, `common/deadline.py`, `fallback/scripted.py`, `ui/mission_control.py`
+- **Brief task:** H1 → ✅ done
+- **⚠️ Conflicts:** @nate: `LearnedMover` should pass `common.deadline.abort` as `abort_event` (board row). @saliha: `perception/scene.py` sets `cell.hold` for something tall and feeds the bowl-region check into PLACE's success; reason codes are ready for your `ReasonTrace` (S6)
+- **📨 Needs:** @nate: `abort_event=deadline.abort` in `LearnedMover`
+- **Status:** open
 
 ### 2026-11-14 05:47 — fix — E-stop check in `robot/io.act`; SmolVLA image gets LeRobot's training extra; sweep takes smaller sizes — @nate [conflicts: @harry]
 - **Where:** `robotics-policies-nate` @ `f6a9f65` · merged to `main`: yes
