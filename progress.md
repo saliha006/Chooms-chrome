@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 17:00 | @harry | @all | 🔀 scope proposal | **Live voice moves up (Harry, for the ElevenLabs prize):** the "live voice line" leaves the cut order (CLAUDE.md item 4) because it is built and on `main`: each verdict is spoken live with its score, threshold and mark position, cached clip as fallback, the arm never waits. Doc owner: update the cut order if agreed. @saliha: `narrator.say(..., text=line)` now speaks your reasoner line live. Say no on this row if you object | 2026-11-14 17:00 |
 | 2026-11-14 16:50 | @harry | @saliha @nate | 📨 for you | **`docs/submission.md` is on `main`**: the Junction Platform text per track. Please write your section by Sunday 06:00: @saliha **NVIDIA** (model, what it does, why it matters, how we improved its outputs), @nate **Modal** (GPU type, time, cost, the sweep). Facts only, unmeasured numbers stay TBD | 2026-11-14 16:50 |
 | 2026-11-14 16:33 | @nate | @all | ⚠️ conflict | **Gates move (recording has not started at 16:33; the brief's rule):** ACT gate about **21:30** (was 17:00) and SmolVLA gate about **22:15** (was 19:00). Estimates: recording about 17:30–19:30 after the Intel laptop drivers, rehearsal and a test episode, then the brief's 2–3 h of training. The 23:00 freeze stays; the scripted loop is the insurance meanwhile | 2026-11-14 16:33 |
 | 2026-11-14 16:19 | @saliha | @nate | ⚠️ conflict | **N4 done on `main` (`668933e`): `train/commands.py` `smolvla()`** now passes `--policy.scheduler_decay_steps=<steps>` (LeRobot's default of 30,000 would leave a 10k run near the peak learning rate) and `--save_freq=2500`; the optional flags stay last (your tests read them by position); 14 train tests pass. Batch size stays 8: raise it only after you see the GPU memory (hyperparameters come after the data audit, D32). Not touched: your `launch.py` and `modal_train.py`. N5 (colour hedge) is still open: say if you want me to take it | 2026-11-14 16:19 |
@@ -102,6 +103,16 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 17:00 — feat — Live spoken reasoning with each brick's numbers (ElevenLabs Flash) — @harry [conflicts: @saliha]
+- **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
+- **Did:** `narrator/live.py`: every verdict is spoken live with the real score, the threshold it crossed and where the mark is ("That scores 0.41, over my 0.63 line, with a mark at the top left. Orange bowl."), plus the recovery step in words ("After a wrist roll, ..."), in both personas. Own thread; a newer line replaces one not started; a line not back in 3 s or any network error plays the cached clip; a warm-up call opens the connection at start; `--no-live` = cached only. Measured on the venue Wi-Fi: 625–1953 ms per full line over 8 calls; one mock run: warm-up 1734 ms, live lines ready 1812 / 2812 ms after the verdict. 156 tests pass (offline: tests never call ElevenLabs).
+- **Touched:** `narrator/live.py`, `narrator/__init__.py`, `run.py` (`spoken_numbers`, `--no-live`), tests
+- **Brief task:** A6 (live line)
+- **⚠️ Conflicts:** @saliha: `narrator.say(event, text=...)` is now spoken live too (no longer console-only), so the reasoner's line plugs straight in
+- **📨 Needs:** none
+- **Agreed by:** @harry (3 s timeout + warm-up; live voice emphasised for ElevenLabs)
+- **Status:** open
 
 ### 2026-11-14 17:05 — feat — Live Nemotron line: `reasoner/live.py`, off the control thread — @saliha [conflicts: @harry]
 - **Where:** `aiml-perception-saliha` @ `74b19ae` · merged to `main`: yes
