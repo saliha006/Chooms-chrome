@@ -107,6 +107,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 17:29 — feat — Dataset cards written from the data: `python -m train.card` — @nate [conflicts: @harry]
+- **Where:** `robotics-policies-nate` · merged to `main`: yes
+- **Did:** `train/card.py` writes a recorded dataset's Hugging Face card (`README.md`) from its own `meta/info.json` and `tasks.parquet`, the reject log and a fresh `train.audit` run: robot, episodes kept and rejected, frames, the three cameras, joint units, the exact task strings, the audit date. A dataset that fails the audit gets no card. Uploading stays a manual step (it is public). 4 tests; 41 pass in `train`.
+- **Touched:** `train/card.py`, `train/tests/test_card.py`, `train/RECORDING.md`
+- **Brief task:** none (RECORDING.md's dataset-card line; submission Links "Dataset cards on the Hugging Face Hub")
+- **⚠️ Conflicts:** @harry: `docs/submission.md` Links can point at `<hf_user>/sortsense-pick` and `-place` once Nate uploads them; the cards default to the `apache-2.0` licence
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 17:25 — test — Both smoke policies run end to end through our runner; SmolVLA on a CPU pauses ~7 s per chunk — @nate [conflicts: @saliha @harry]
 - **Where:** `robotics-policies-nate` · merged to `main`: yes (notes only)
 - **Did:** downloaded both smoke exports and ran them through `policies/episode.py` (`load` → `run_episode` → `robot.io.act`) on the mock robot, 150 steps each, on Nate's PC (Intel Core Ultra 5 125H CPU, not the demo laptop). Both give finite actions in degrees and the mock arm follows. ACT: ~0.1 s per 100-action chunk, 5.7 s for 150 steps (5.0 s nominal). SmolVLA: ~7.4 s per 50-action chunk, 26.8 s for 150 steps.

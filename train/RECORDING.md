@@ -51,7 +51,10 @@ Re-take it at the same position before moving on, so the round order (and the sw
 
 ## Hugging Face datasets
 - ACT: `{{hf_user}}/sortsense-pick` · SmolVLA: `{{hf_user}}/sortsense-place`
-- Each gets a short dataset card: setup, episode counts, rejected count, task strings, cameras.
+- Each gets a short dataset card: setup, episode counts, rejected count, task strings, cameras. After the last round:
+  `python -m train.card <dataset folder> --kind pick` (or `place`) writes it as the dataset's `README.md` from the
+  dataset's own metadata, `train/rejected.md` and a fresh audit (no card if the audit fails). Then upload it:
+  `huggingface-cli upload <hf_user>/sortsense-pick <dataset folder>/README.md README.md --repo-type dataset`.
 
 ## Training (Modal)
 ```
