@@ -14,6 +14,7 @@ def test_act_trains_with_studio_at_the_safe_lr():
     assert cmd[:2] == ["physicalai", "fit"]
     assert arg(cmd, "--model.optimizer_lr") == str(ACT_LR)
     assert arg(cmd, "--trainer.default_root_dir") == "/runs/x"
+    assert arg(cmd, "--data.num_workers") == "0"  # forked workers corrupt inherited video decoders
     assert "--data.episodes" not in cmd
 
 
@@ -61,4 +62,5 @@ def test_act_command_parses_with_studios_own_parser():
     assert cfg.model.class_path == "physicalai.policies.ACT"
     assert cfg.model.init_args.optimizer_lr == ACT_LR
     assert cfg.data.init_args.episodes == [0, 1, 2]
+    assert cfg.data.init_args.num_workers == 0
     assert cfg.trainer.max_steps == 200

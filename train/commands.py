@@ -29,6 +29,9 @@ def act(dataset: str, steps: int, output_dir: str, lr: float | None = None, epis
         "--data", "physicalai.data.lerobot.LeRobotDataModule",
         "--data.repo_id", dataset,
         "--data.train_batch_size", str(BATCH_SIZE),
+        # Forked loader workers inherit the video decoders Studio's quantile pass opened and fail with
+        # "Invalid data found when processing input" (reproduced 2026-11-14); no workers, no fork.
+        "--data.num_workers", "0",
         "--trainer.max_steps", str(steps),
         "--trainer.accelerator", "gpu",
         "--trainer.devices", "1",
