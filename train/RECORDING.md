@@ -31,6 +31,7 @@ for recording and runtime.
   position order every round, 6 rounds. The F11 sweep trains on the first 18 / 36 / 54 episodes, which is then
   exactly 2 / 4 / 6 per position. F14 tests only the off-grid spots, which are never recorded (Nate, 2026-11-14).
 - Start: arm at home, one brick at the start dot. End: brick held still at the inspection pose for ~1 s.
+- **Vary the brick's angle on its dot** each round (0°, 45°, 90°, then repeat), and the brick colour. The policy learns from the wrist and top cameras how far to turn the wrist and when to close, only from what the demos show: a single angle teaches a single grasp. Record everything with the board against the stop block (the parked spot, PRD §0), never during the drive.
 - About **8–10 s** per episode after the practice runs, ~10 s reset. Smooth, unhurried motion: the policy copies the speed.
 - Mix good and defective bricks so the grasp doesn't depend on the marking.
 - **Where Studio keeps a recording:** `~/.local/share/physicalai/datasets/<dataset uuid>` (LeRobot v3; camera keys `observation.images.top`, `.inspect`, `.wrist`). Leave record mode first: the dataset is finalized only then. The uuid is in Studio's URL on the dataset page.
