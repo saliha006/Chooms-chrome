@@ -10,6 +10,7 @@ import json
 SWEEP_EPISODES = (18, 36, 54)  # F11: success vs number of demonstrations (decisions.md D9)
 ACT_LR = 1e-5  # 1e-4 makes ACT output one pose whatever it sees (Studio #998)
 BATCH_SIZE = 8
+SAVE_FREQ = 2500  # a checkpoint every 2,500 steps: LeRobot's default of 20,000 would leave a 10k run with only its last one to back up
 
 
 def job_name(policy: str, episodes: int, steps: int, stamp: str) -> str:
@@ -50,6 +51,9 @@ def smolvla(dataset: str, steps: int, output_dir: str, lr: float | None = None, 
         f"--dataset.repo_id={dataset}",
         f"--steps={steps}",
         f"--batch_size={BATCH_SIZE}",
+        # LeRobot decays the learning rate over 30,000 steps by default; a 10,000-step run would end still near the peak rate.
+        f"--policy.scheduler_decay_steps={steps}",
+        f"--save_freq={SAVE_FREQ}",
         "--policy.device=cuda",
         "--policy.push_to_hub=false",
         f"--output_dir={output_dir}",

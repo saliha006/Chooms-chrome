@@ -22,11 +22,11 @@ from pathlib import Path
 import numpy as np
 from anomalib.data import Folder
 from anomalib.engine import Engine
-from scipy.stats import beta
 from sklearn.metrics import roc_auc_score
 
 from perception import thresholds
 from perception.capture import brick_id
+from perception.stats import interval, upper_bound
 from perception.train import MODELS, build_model
 
 FOLDS = 5
@@ -81,18 +81,6 @@ def brick_bootstrap_auroc(good: dict[str, list[float]], bad: dict[str, list[floa
         b = [s for k in rng.choice(bad_keys, len(bad_keys)) for s in bad[k]]
         values.append(roc_auc_score([0] * len(g) + [1] * len(b), g + b))
     return float(np.percentile(values, 2.5)), float(np.percentile(values, 97.5))
-
-
-def upper_bound(k: int, n: int, confidence: float = 0.95) -> float:
-    """Exact one-sided upper bound on a rate seen k times in n."""
-    return 1.0 if k >= n else float(beta.ppf(confidence, k + 1, n - k))
-
-
-def interval(k: int, n: int, confidence: float = 0.95) -> tuple[float, float]:
-    tail = (1 - confidence) / 2
-    low = 0.0 if k == 0 else float(beta.ppf(tail, k, n - k + 1))
-    high = 1.0 if k == n else float(beta.ppf(1 - tail, k + 1, n - k))
-    return low, high
 
 
 def evaluate(root: Path, model_name: str, out_yaml: Path, report: Path, work: Path) -> dict:

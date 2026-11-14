@@ -64,3 +64,17 @@ def test_act_command_parses_with_studios_own_parser():
     assert cfg.data.init_args.episodes == [0, 1, 2]
     assert cfg.data.init_args.num_workers == 0
     assert cfg.trainer.max_steps == 200
+
+
+def test_smolvla_decays_the_learning_rate_over_the_run_it_actually_does():
+    assert "--policy.scheduler_decay_steps=10000" in smolvla("user/bricks", 10000, "/runs/y")
+    assert "--policy.scheduler_decay_steps=200" in smolvla("user/bricks", 200, "/runs/y")
+
+
+def test_smolvla_checkpoints_every_2500_steps():
+    assert "--save_freq=2500" in smolvla("user/bricks", 10000, "/runs/y")
+
+
+def test_the_optional_flags_stay_last_so_callers_can_read_them_by_position():
+    cmd = smolvla("user/bricks", 10, "/runs/y", episodes=3, cameras=("top", "wrist", "inspect"))
+    assert cmd[-2].startswith("--dataset.episodes=") and cmd[-1].startswith("--rename_map=")
