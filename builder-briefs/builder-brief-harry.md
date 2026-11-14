@@ -103,6 +103,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 12:35 · A6 (part) · cached clips play on a player thread (newest wins, help/e-stop kept, winsound/aplay, no new package); merged to `main` (`bb177c4`), 107 tests pass. Left: live streaming line (add-on)
 - 2026-11-14 12:28 · A5 (part) · event log → Aiven PostgreSQL (`telemetry/sync.py`, offline-safe, duplicate-free), `check_aiven`, `report.sql`; verified live (37/37 rows, re-send stays 37, ~0.4 s connect); merged to `main` (`992a89b`). Left: Kafka service + stream, drift alarm
 - 2026-11-14 11:41 · H3 clips · 37 WAV clips generated (1,632 characters, 98 s, 4.3 MB) and committed in `narrator/clips/` (`7bd7d7b`); bowl check: wanted, timing settled at the venue
 - 2026-11-14 11:37 · Saliha's 08:50 wiring (part): `SceneLocator` once the zone is clicked, obstacle trigger, `ReasonTrace` note + region, end-of-run dance; `ui/click_regions.py` for H5; fallback on `io` thresholds (Nate's ask); merged to `main` (`ac268a7`), 95 tests pass. Open: bowl check timing, depth hold
