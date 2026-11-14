@@ -28,7 +28,7 @@ RUNS_MD = Path(__file__).with_name("runs.md")
 app = modal.App("sortsense-train")
 base_image = modal.Image.debian_slim(python_version="3.12").apt_install("ffmpeg", "git")  # LeRobot datasets store camera streams as video
 studio_image = base_image.pip_install("physicalai-train[cu128]==0.3.0").add_local_python_source("train")
-lerobot_image = base_image.pip_install("lerobot[smolvla]==0.7.0").add_local_python_source("train")
+lerobot_image = base_image.pip_install("lerobot[smolvla,training]==0.7.0").add_local_python_source("train")  # lerobot-train needs the training extra (datasets)
 volume = modal.Volume.from_name("sortsense-runs", create_if_missing=True)
 # The named secret on the team's Modal account; on a fresh machine HF_TOKEN from the shell is forwarded instead.
 hf_secret = modal.Secret.from_local_environ(["HF_TOKEN"]) if os.environ.get("HF_TOKEN") else modal.Secret.from_name("huggingface")
