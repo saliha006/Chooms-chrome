@@ -1,0 +1,4 @@
+# Whole app (Python 3.12). Install: uv pip install --python .venv -r requirements.txt
+-r perception/requirements.txt
+elevenlabs==2.78.0
+python-dotenv
