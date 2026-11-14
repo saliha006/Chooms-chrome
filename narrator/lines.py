@@ -31,6 +31,7 @@ LINES: dict[str, dict[str, str]] = {
         "drift": "My perfect bricks are scoring closer to the line. The light may have changed, so please rebaseline me.",
         "cooldown": "Ahem. Where was I? Back to work.",
         "halfway": "Right, partner... I mean, right.",  # the cowboy drifting back, so in the calm voice
+        "hat_off": "Ohhh, I'm no longer a cowboy... Ahem. Back to business.",
     },
     "cowboy": {
         "perfect": "Clean as a whistle, partner. Purple bowl.",
@@ -54,6 +55,7 @@ LINES: dict[str, dict[str, str]] = {
         "arrived": "Whoa there. We're in position. Let's get sortin'.",
         "drift": "Light's shiftin' out here, partner. My scores are driftin', best rebaseline me.",
         "obstacle": "Holy smokes!",
+        "hat_on": "Well I'll be, a cowboy hat! Yeehaw, partner. Let's ride.",
         "yeehaw": "Yeehaw!",
         "well_ill_be": "Well I'll be!",
     },
