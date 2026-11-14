@@ -44,7 +44,10 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 ---
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
-### 🆕 2026-11-14 14:30 from Saliha (decisions.md D23, D31)
+### 🆕 2026-11-14 14:53 DO NOW, ranked (Saliha: who does what; manual = you at the station, agent = your coding agent in parallel)
+**Manual, you:** (1) H5 station: camera by-id paths, which one is the RealSense, click the zone and both bowls, teach the waypoints (re-teach any that moved after Nate's rehearsal); (2) the scripted full loop with the real Anomalib (the 15:30 gate): it needs Saliha's real-brick capture first, so agree a slot with Saliha; (3) if Aiven offers Kafka on our plan, create the service and the two topics.
+**Agent, now, in parallel:** (a) wire the place check into `run.py`: build a `bowl_check` from `scene.brick_in_bowl` and the clicked bowl masks and pass it to `LearnedMover(bowl_check=...)`; let `fallback/scripted.py` use `io.holding()` for its grasp check (same numbers as the learned mover); (b) **A6b** persona state machine (`narrator/persona.py`); (c) the drift alarm: call `perception.drift.drift` from your consumer (PostgreSQL is enough; Kafka only if the service exists); (d) **A8** README skeleton and the architecture diagram with the four layers named (perception, reasoning, planning, manipulation: PRD §5); (e) draft the H8 demo script and the n = 20 slide. If you want me to take (b) or (d), say so on the board.
+### 🆕 2026-11-14 14:26 from Saliha (decisions.md D23, D31)
 1. ✅ *(14:40, `main` `5e99561`)* **`config/rules.yaml` strings:** `perfect: the brick is perfect, place it in the blue bowl` and `defective: the brick is defective, place it in the red bowl` (they carry the verdict; the VLA is recorded with exactly these). Tests that pass other strings keep working; `fallback/scripted.py` still reads "red bowl" / "blue bowl" from the text. Do it before Nate records SmolVLA.
 2. **Layout:** Nate rehearses every stage by teleop before recording; if a tape dot or bowl moves, re-click the zone and bowls (`ui/click_regions.py`) and re-teach the waypoints that moved.
 ### 🆕 v2.5 research pass (2026-11-14 07:10): do these first, in order (same vision; PRD §0 v2.5, decisions.md D1, D7, D22–D26)
