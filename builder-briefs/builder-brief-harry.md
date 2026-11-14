@@ -45,7 +45,7 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
 ### 🆕 2026-11-14 14:30 from Saliha (decisions.md D23, D31)
-1. ✅ *(14:40, `main` `5e99561`)* **`config/rules.yaml` strings:** `perfect: the brick is perfect, place it in the blue bowl` and `defective: the brick is defective, place it in the red bowl` (they carry the verdict; the VLA is recorded with exactly these). Tests that pass other strings keep working; `fallback/scripted.py` still reads "red bowl" / "blue bowl" from the text. Do it before Nate records SmolVLA.
+1. **`config/rules.yaml` strings:** `perfect: the brick is perfect, place it in the blue bowl` and `defective: the brick is defective, place it in the red bowl` (they carry the verdict; the VLA is recorded with exactly these). Tests that pass other strings keep working; `fallback/scripted.py` still reads "red bowl" / "blue bowl" from the text. Do it before Nate records SmolVLA.
 2. **Layout:** Nate rehearses every stage by teleop before recording; if a tape dot or bowl moves, re-click the zone and bowls (`ui/click_regions.py`) and re-teach the waypoints that moved.
 ### 🆕 v2.5 research pass (2026-11-14 07:10): do these first, in order (same vision; PRD §0 v2.5, decisions.md D1, D7, D22–D26)
 *Must exist by 15:30: real-wired `run.py` with the scripted mover, shared capture on real cameras, real Inspector, localisation zone gate, grasp band and bowl-region checks, reason codes and deadlines, the recovery chain, JSONL telemetry, cached lines.*
@@ -107,7 +107,6 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
-- 2026-11-14 14:40 · DO FIRST 1 · VLA strings carry the verdict in `config/rules.yaml`; `config/models.yaml` policy cameras `[top, wrist, inspect]` (Nate 11:53); merged to `main` (`5e99561`), 118 tests pass, mock sorts 5
 - 2026-11-14 12:35 · A6 (part) · cached clips play on a player thread (newest wins, help/e-stop kept, winsound/aplay, no new package); merged to `main` (`bb177c4`), 107 tests pass. Left: live streaming line (add-on)
 - 2026-11-14 12:28 · A5 (part) · event log → Aiven PostgreSQL (`telemetry/sync.py`, offline-safe, duplicate-free), `check_aiven`, `report.sql`; verified live (37/37 rows, re-send stays 37, ~0.4 s connect); merged to `main` (`992a89b`). Left: Kafka service + stream, drift alarm
 - 2026-11-14 11:41 · H3 clips · 37 WAV clips generated (1,632 characters, 98 s, 4.3 MB) and committed in `narrator/clips/` (`7bd7d7b`); bowl check: wanted, timing settled at the venue

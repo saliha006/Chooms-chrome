@@ -207,7 +207,7 @@
 - **Evidence:** tests: a scripted move stops part way within 0.5 s of E with torque off; E mid-run never homes; Q finishes the brick and homes; P holds at a stage boundary; with E requested, `io.act` and `io.move_to` raise with torque off and no command sent (`robot/tests/test_io.py`). TBD (stop latency on the real arm).
 - **Pitch line:** "The stop button never fights the robot for the wire: one thread drives the motors, and it checks for the stop every step."
 
-### D22 · Reliability · Every stage verified: grasp band, bowl-region check, early exit, reason codes — Status: Built (reasons, deadlines, PAUSE_HUMAN in `run.py`) / Planned (grasp band, bowl check, early exit) · Owner: @nate @harry @saliha · Updated: 2026-11-14 05:53
+### D22 · Reliability · Every stage verified: grasp band, bowl-region check, early exit, reason codes — Status: Built (reasons, deadlines, PAUSE_HUMAN in `run.py`; grasp band, early exit and the bowl-check hook in `policies/mover.py`, 2026-11-14 15:20) / Planned (band limits from the N8 readings, bowl check wired in `run.py`) · Owner: @nate @harry @saliha · Updated: 2026-11-14 05:53
 - **Decision:** grasp = gripper position inside a band (not just "not fully closed") after a 0.3 s settle; place = the bowl region on the top camera changes and the gripper is open; policies stop early when their stage succeeds; every failure gets a reason code, a deadline and a retry budget, ending in "I need help" (PAUSE_HUMAN) rather than a crash.
 - **Why:** "correct bowl" can't be counted automatically otherwise, and fixed 12 s episodes made 24 s per brick a floor against a 25 s target. A gripper watchdog paper (arXiv 2604.07395) detected 43/50 empty grasps with 5/50 false alarms; a 2026 SO-101 benchmark (arXiv 2606.08881) measured learned recovery at 3–6%, so recovery belongs in the state machine.
 - **Alternatives rejected:** servo-current grasp detection (no source for the STS3215; saved); a behaviour tree (more machinery for a short controlled task).
@@ -220,7 +220,7 @@
 - **Why:** SmolVLA's tokenizer is capped at 48 tokens and we have 25 episodes per string, so scores or regions in the string would be unseen text. A 2026 SO-101 benchmark (arXiv 2606.08881, 20 trials per cell) got ACT 0% and SmolVLA 5% on a colour-sorting task, so the language-chosen bowl is the riskiest step.
 - **Why the verdict is in the string (D31):** Intel's expectation 2 and the 20-point criterion say the VLA translates perception results and the task instruction into actions; both words are perfectly correlated, so it costs no data and no extra learning, and `fallback/scripted.py` still finds "red bowl" / "blue bowl" in the text. Uncertain bricks go through the recovery chain and end as defective, so they use the defective string.
 - **Alternatives rejected:** region- or score-conditioned instructions; co-training with public SO-101 data (saved for later).
-- **Evidence:** both strings live in `config/rules.yaml` on `main` (`5e99561`, 14:40); swap test TBD (19:00 gate).
+- **Evidence:** TBD (swap test, 19:00 gate).
 - **Pitch line:** "We prove the robot listens: swap the words, the brick goes to the other bowl."
 
 ### D24 · Deployment · Device placement measured, no overlap claims — Status: Built (harness) / Planned (Intel laptop runs) · Owner: @saliha · Updated: 2026-11-14 07:10
