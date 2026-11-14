@@ -7,10 +7,11 @@
 
 ACT trains with Physical AI Studio's trainer and SmolVLA with LeRobot (decisions.md D20), so each has its own image.
 `--lr` is optional: ACT defaults to 1e-5, SmolVLA to its own 1e-4.
-Needs `modal token new` once, and a Modal secret named `huggingface` holding HF_TOKEN.
+Needs `modal token new` once, and either a Modal secret named `huggingface` holding HF_TOKEN or HF_TOKEN set in the shell.
 Each run appends GPU type and wall time to train/runs.md (the Modal side track, F10).
 """
 
+import os
 import subprocess
 import time
 from datetime import datetime
@@ -28,7 +29,9 @@ base_image = modal.Image.debian_slim(python_version="3.12").apt_install("ffmpeg"
 studio_image = base_image.pip_install("physicalai-train[cu128]==0.3.0").add_local_python_source("train")
 lerobot_image = base_image.pip_install("lerobot[smolvla]==0.7.0").add_local_python_source("train")
 volume = modal.Volume.from_name("sortsense-runs", create_if_missing=True)
-on_gpu = dict(gpu=GPU, timeout=4 * 3600, volumes={"/runs": volume}, secrets=[modal.Secret.from_name("huggingface")])
+# The named secret on the team's Modal account; on a fresh machine HF_TOKEN from the shell is forwarded instead.
+hf_secret = modal.Secret.from_local_environ(["HF_TOKEN"]) if os.environ.get("HF_TOKEN") else modal.Secret.from_name("huggingface")
+on_gpu = dict(gpu=GPU, timeout=4 * 3600, volumes={"/runs": volume}, secrets=[hf_secret])
 
 
 def run(cmd: list[str]) -> float:
