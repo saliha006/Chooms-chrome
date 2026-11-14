@@ -33,6 +33,7 @@ for recording and runtime.
 - Start: arm at home, one brick at the start dot. End: brick held still at the inspection pose for ~1 s.
 - About **8–10 s** per episode after the practice runs, ~10 s reset. Smooth, unhurried motion: the policy copies the speed.
 - Mix good and defective bricks so the grasp doesn't depend on the marking.
+- **Where Studio keeps a recording:** `~/.local/share/physicalai/datasets/<dataset uuid>` (LeRobot v3; camera keys `observation.images.top`, `.inspect`, `.wrist`). Leave record mode first: the dataset is finalized only then. The uuid is in Studio's URL on the dataset page.
 - After each round: `python -m train.audit <dataset folder> --kind pick --cameras top,inspect,wrist`. It exits 1 on a
   failure; fix that before the next round.
 
@@ -56,6 +57,7 @@ Re-take it at the same position before moving on, so the round order (and the sw
   `python -m train.card <dataset folder> --kind pick` (or `place`) writes it as the dataset's `README.md` from the
   dataset's own metadata, `train/rejected.md` and a fresh audit (no card if the audit fails). Then upload it:
   `huggingface-cli upload <hf_user>/sortsense-pick <dataset folder>/README.md README.md --repo-type dataset`.
+- **Push the whole dataset from Studio** (record mode closed): `physicalai-studio hf dataset export <hf_user>/sortsense-pick --dataset-id <dataset uuid> --dry-run`, then the same without `--dry-run` (new repos are private; the token comes from Studio's Settings or `HF_TOKEN`). The CLI lives in `~/work/physical-ai-studio/application/backend/.venv/bin/`.
 
 ## Training (Modal)
 ```
@@ -63,4 +65,4 @@ modal run train/modal_train.py --policy act --dataset {{hf_user}}/sortsense-pick
 modal run train/modal_train.py --dataset {{hf_user}}/sortsense-pick --steps 20000 --sweep                 # F11 curve
 modal run train/modal_train.py --policy smolvla --dataset {{hf_user}}/sortsense-place --steps 10000 --cameras top,wrist,inspect
 ```
-Back up every checkpoint before any OpenVINO export (Studio PR #1403 can delete it).
+Back up every checkpoint before any OpenVINO export (cheap insurance; the checkpoint-deleting crash was fixed by Studio PR #1403).
