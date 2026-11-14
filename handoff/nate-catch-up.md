@@ -1,5 +1,7 @@
 # Nate catch-up (read this first, then your brief)
 
+> **07:10 update:** a research pass (PRD v2.5) put a new ordered block **N1–N9** at the top of your brief's ▶ Current tasks. It supersedes §3 below: start with **N1, the red-lego smoke test** (`eruedas/so101_3cams_pickplace-red-lego_real`, exact commands in the brief), then early exit + abort, the gripper band and the wrist roll-back bug. RL was researched and rejected (decisions.md D1).
+
 Written 2026-11-14 ~05:50 Espoo by Saliha's agent, which wrote the first version of your hardware-free Block A code at
 Saliha's request (Saliha has the most Claude usage). **You have since reworked `train/` (D20, `main` @ `c65c275`); your
 version is the one in force.** Everything below is on `main` / `robotics-policies-nate` and the `context` branch.

@@ -1,7 +1,7 @@
 > **Status, 2026-11-14 04:30.** Block A fully done on `main` @ `99f1d09`, including the live Nemotron call (`nvidia/nemotron-3.5-super-vl-120b-a12b`, ~1.7–2.7 s per line, thinking off). Next: Saturday 08:00 on the Intel laptop. Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3 (team vision: Intel task first, then the live reasoning voice and the cowboy switch). You now also own the Nemotron reasoner. Nothing built yet. Block A (stand-in pipeline) starts 00:45. Docs on `context`, board on `main`.
 
 # Saliha: AI/ML (computer vision, edge-AI optimisation, LLM reasoning) + doc owner
-**GitHub:** `saliha006` · **Branch:** `aiml-perception-saliha` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 03:55 by saliha
+**GitHub:** `saliha006` · **Branch:** `aiml-perception-saliha` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 07:10 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -45,7 +45,22 @@ Exception: the one import line in `run.py`, agreed in `progress.md` (Block B 13:
 
 ---
 
-## 3. ▶ Current tasks (2026-11-14 00:55)
+## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 v2.5 research pass (2026-11-14 07:10): do these first, in order (same vision; PRD §0 v2.5, decisions.md D1, D7, D22–D26)
+*Must exist by 15:30: real Inspector with measured thresholds; `scene.py` zone gate + bowl-region check for Harry's loop.*
+| # | Status | Task | Hours | Done when |
+|---|---|---|---|---|
+| S1 | ⬜ | **Evaluation harness + raw scores** (fixes bugs below): own brick-level splits (no Anomalib `Folder` val split), raw unclamped scores (check `Padim(post_processor=...)` accepts normalisation off in 2.7.0, 15 min; fallback: keep the clamp and say so), out-of-fold `t_low`, `t_high` from a dev split, bootstrap-by-brick AUROC interval, Clopper-Pearson false-alarm bound. Also check `from anomalib.models import AnomalyDino` imports. Built and tested tonight on synthetic data | 3.25 | Tests green on synthetic |
+| S2 | ⬜ | 08:00 Intel laptop: install, NPU compile, check RAPL readable, `intel_vpu` sysfs (`npu_busy_time_us`), `uname -r`, `intel_gpu_top` | 1 | Notes in `progress.md` |
+| S3 | ⬜ | 10:00–10:30 capture (robot 30 min): ~12 good bricks × 4 real grasps × 3 frames, 3 whole good bricks held out, ~12 defective bricks; ledger prepared beforehand (0.5 h) | 0.5 + slot | Data saved |
+| S4 | ⬜ | 10:30–12:00 bake-off PaDiM vs PatchCore, thresholds, FP16/INT8 parity (INT8 only if ΔAUROC ≤ 0.01) | 3 | Model chosen with intervals |
+| S5 | ⬜ | `perception/scene.py`: colour blob, table homography from taped corners, most-isolated brick, `brick_in_bowl` (bowl-region change), "something tall is here" from depth. Parallel agent session; Harry's loop calls it (his yes) | 3 | Works on synthetic, then real frames |
+| S6 | ⬜ | `ReasonTrace` assembly (score, band, margin, region, chain steps, decision) for the panel and the log | 0.5 | Logged per brick |
+| S7 | ⬜ | From 15:30: device table (`benchmark_app` + PyTorch baseline row; extend the bench glob to the `physicalai` IR layout) 2.5 h · efficiency protocol (idle baseline, 1 Hz power/thermal, NPU busy, J per brick net of idle; the 20 trials are the sustained run) 2 h · ACT-on-NPU compile probe 0.5 h · Intel-stack slide with the honest "not used" list 1 h | 6 | `bench/results.md` complete |
+**Your bugs to fix (critic):** `perception/inspector.py`: `MAP_THRESHOLD` and clamped scores depend on Anomalib normalisation; the global `CACHE_DIR` replaces the NPU driver's cache (set it per compile); compile loop catches only `RuntimeError`. `train.py` + `calibrate.py`: the same defectives set `t_high` and are the test set. `bench/benchmark.py`: no PyTorch baseline, wrong glob for policy IRs; `bench/power.py`: temperature only at start and end.
+**Add-ons (in order, each stop leaves the product working):** in-graph PrePostProcessor before/after (1 h) · live Nemotron line, uncertain bricks only, 4 s timeout (1 h, with Harry) · ACT on NPU in the loop if the probe passes (1.5 h, with Nate) · rule-text compiler only if Challenge-Day rules differ (1.5 h) · AnomalyDINO only if PaDiM's lower interval < 0.90 (0.75 h) · spatial-lift check (0.5 h).
+**Parallel sessions:** your load is ~16 h; run 2 agent sessions in separate git worktrees on disjoint files (S1 and S5 in parallel). Local notes for this: `saved for later + agents/multi-agent-workflow.md` (read when you say so).
+
 🆕 **Vision (PRD v2.3 §1a):** (1) the Intel task done accurately, smoothly and in reasonable time, always first; (2) the robot explains its reasoning out loud, live, in a calm voice; (3) an obstacle or the cowboy hat flips it into a cowboy persona ("Holy smokes!") until the moment passes. Personality never slows the arm or costs a gate. No frontend, ever.
 🆕 **What changed (PRD v2.2):** objects are **Duplo bricks with marker-drawn defects**; the Junction page scores **power, thermal headroom and latency** (20%), so the benchmark gains energy and temperature (A10, F12); Intel asks for **re-grasp on the anomaly score** (F4 chain below); if the good bricks come in **several colours**, PaDiM is the wrong default (10:30 row).
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*

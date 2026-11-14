@@ -1,7 +1,7 @@
 > **Status, 2026-11-14 01:30.** Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3: Intel task first (accurate, smooth, quick), personality layer on top; Modal = training + logs only, no frontend. Nothing built yet. Block A (Modal + export test) starts 00:45. Docs on `context`, board on `main`.
 
 # Nate: robotics and robot learning (robot I/O, imitation-learning policies, Modal training)
-**GitHub:** `aldrichbanas07` · **Branch:** `robotics-policies-nate` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 01:35 by nate
+**GitHub:** `aldrichbanas07` · **Branch:** `robotics-policies-nate` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 07:10 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -43,7 +43,23 @@ You own **R1 (Studio), R4, R6, R10, R15, R20 (data quality), F5 and F11**, and y
 
 ---
 
-## 3. ▶ Current tasks (2026-11-14 00:55)
+## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 v2.5 research pass (2026-11-14 07:10): do these first, in order (same vision; PRD §0 v2.5, decisions.md D1, D7, D22–D26)
+| # | Status | Task | Hours | Done when |
+|---|---|---|---|---|
+| N1 | ⬜ | **Red-lego smoke test before robot time** (D26): first add SmolVLA's `--rename_map` (dataset keys top/gripper/left → camera1/2/3; verify with `lerobot-train --help`); then `modal run train/modal_train.py --policy act --dataset eruedas/so101_3cams_pickplace-red-lego_real --steps 300` and the same with `--policy smolvla --steps 200`; copy the checkpoint, back it up, `physicalai export --policy ACT --ckpt_path <ckpt> --backend openvino` (verify with `--help`); `InferenceModel(dir, backend="openvino", device="CPU").select_action(obs)` with a task string for SmolVLA. Record in `train/runs.md`: AV1 decode ok?, export flags that worked, camera mapping, which known bug (#1384, #1414, #1169) | 0.5–1 | An action vector comes back for ACT (SmolVLA failure doesn't block ACT) |
+| N2 | ⬜ | `policies/episode.py`: `stop` (early exit when the stage succeeds) and `abort_event` arguments | 0.5 | Tests |
+| N3 | ⬜ | `LearnedMover`: gripper **band** + 0.3 s settle (not `< 5`), early exit, **roll the wrist back before `place`** (bug), place success from the bowl-region check | 1.75 | Tests |
+| N4 | ⬜ | SmolVLA recipe: `scheduler_decay_steps` = steps, checkpoint every 2,500, batch above 8 if memory allows | 0.5 | `train/commands.py` tests |
+| N5 | ⬜ | Colour hedge (D23): two single-colour ACT place policies on Modal from the SmolVLA data, in parallel with SmolVLA; evaluate at 19:00 only if SmolVLA < 6/10 | 0.5 | Jobs launched at 14:00 |
+| N6 | ⬜ | `train/RECORDING.md` data tips: neutral constant lighting and exposure, static background, leader arm out of frame, ≥ 640×480, camera keys top/inspect/wrist, 8–10 s pace after 6 practice runs, reject log, a break at episode 27; check effective Hz with `lerobot-replay` / a cadence check before recording | 0.75 | Shared before 10:30 |
+| N7 | ⬜ | 08:00 Studio install, calibration, 200-step ACT smoke on our first episodes, export, `InferenceModel` load. **Hard cutoff 10:30** | — | Smooth teleop + export works |
+| N8 | ⬜ | 09:00 (robot 10 min): gripper band readings empty vs holding; weigh the brick, measure width and gripper opening | — | Numbers in `progress.md` |
+| N9 | ⬜ | 15:30–19:00: gates 17:00 and 19:00 with Wilson intervals, language-swap test (20 trials, ~15 robot-min), per-step inference ms (10 min), early-exit tuning (15 min), repeatability by replay (15 min, first cut under slot pressure) | — | Logged |
+**Your bugs to fix (critic):** `policies/mover.py` never rolls the wrist back after `reinspect(±90)`; `gripper_empty` only catches a closed gripper; place success is only "gripper open"; fixed 360-step episodes; `episode.py` has no abort or early exit; `train/commands.py` SmolVLA gaps (above).
+**Add-ons (triggered):** DAgger / teleop top-up only if ACT < 6/10 at 17:00 (2 h, 35 robot-min; `lerobot-rollout dagger` exists in LeRobot's main docs, unverified in 0.7.0) · policy async only if measured inference > 33 ms/step (1.5 h, with Harry) · IK scripted pick from localisation (`RobotKinematics` + URDF) becomes CORE only if ACT misses 17:00 (Harry, 2 h).
+**Not doing (researched, saved for later):** reinforcement learning (D1), co-training with public SO-101 data, starting SmolVLA from someone else's SO-101 fine-tune.
+
 🆕 **Vision (PRD v2.3 §1a):** (1) the Intel task done accurately, smoothly and in reasonable time, always first; (2) the robot explains its reasoning out loud, live, in a calm voice; (3) an obstacle or the cowboy hat flips it into a cowboy persona ("Holy smokes!") until the moment passes. Personality never slows the arm or costs a gate. No frontend, ever.
 🆕 **For you:** smooth motion matters to the judges (speed cap, temporal ensembling); obstacles are **skipped, never picked** (Harry's F18 tells `run.py`); personality work never takes a robot slot.
 🆕 **What changed (PRD v2.2):** the Junction page scores **dataset and pipeline quality (20%)**: clean teleop data, fine-tuning in Studio, "how few demonstrations are enough"; and **task success (30%)** includes **shifted or cluttered bricks**. Objects are **Duplo** (bigger, easier grasp). Cameras: top view + inspection + wrist. Modal's page gives every participant $100 credits and scores scale-out.

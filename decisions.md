@@ -26,7 +26,8 @@
 ### D1 · Learning method · Imitation learning, not reinforcement learning — Status: Planned · Owner: @nate · Updated: 2026-11-14 01:30
 - **Decision:** the arm learns from human teleoperated demonstrations (behaviour cloning): ACT for the pick, SmolVLA for the place. No reinforcement learning (RL).
 - **Why:** Intel's challenge page frames the task as "show a robot a task a few dozen times and it learns a policy", and Physical AI Studio is built around recording demonstrations and fine-tuning. RL needs a reward signal and very many trials; on a real arm with a 48-hour budget, one station per team and the printed safety rules, that is slow and risks the hardware. Demonstrations give a usable policy from ~54 episodes.
-- **Alternatives rejected:** RL fine-tuning of the policy (reward design plus many real-robot trials; no simulator in scope); hand-scripted motion only (kept as the fallback, D6, not as the main system).
+- **Alternatives rejected:** RL fine-tuning of the policy (reward design plus many real-robot trials; no simulator in scope); hand-scripted motion only (kept as the fallback, D3, not as the main system).
+- **Why not reinforcement learning, with numbers (research pass, 2026-11-14 07:10):** the most sample-efficient real-robot method, HIL-SERL (arXiv 2410.21845), needs 1–2.5 h of online training per task with a person intervening, i.e. 22–55% of our ~4.5 h robot allowance before a single scoring trial; its LeRobot implementation is SAC from scratch with a reward classifier (~200 positive / 1,000 negative frames), not ACT, SmolVLA or Physical AI Studio, so it would give up the Studio/VLA story (20 + 20 points). Our anomaly score measures defects, not grasp or placement success, so it is not a usable reward. Residual RL and ConRFT were only seen as snippets (WEAK). **Kept from the idea:** automatic success labels (gripper band, bowl region) and one correction round (DAgger, LeRobot HIL docs) if ACT misses its 17:00 gate. Pitch: "Failures become demonstrations, not gradient steps."
 - **Trade-off / risk:** an imitation policy is only as good as its demonstrations, so dataset quality matters (it is 20% of the Junction page rubric): tight 10×10 cm pick zone, rejected-episode log, dataset card, and a success-vs-number-of-demos sweep (D9).
 - **Evidence:** TBD (10-trial gate results, `progress.md`).
 - **Pitch line:** "We taught the arm by showing it, the way Intel designed the stack, and measured how few demonstrations are enough."
@@ -57,6 +58,8 @@
 
 ## B. Perception ML (Anomalib)
 
+> **07:10 update to D5–D7 (research pass):** evaluation uses our own brick-level splits, raw (unclamped) scores, out-of-fold `t_low` and intervals (bootstrap by brick for AUROC, Clopper-Pearson for false alarms): Anomalib's `Folder` default silently moves half the test set into validation, and the exported score is clamped to [0, 1]. With ~150 good normals the honest claim is about 2% false alarms at 95% confidence (299 needed for 1%; Deng 2026). The AUROC target is now the lower end of the interval. Recovery chain order (D7): fresh same-camera look → wrist roll 90° → re-grasp → defective and flagged; a second camera can't be scored by a model trained on the inspection camera. EfficientAd dropped; AnomalyDINO only if PaDiM's lower interval < 0.90.
+
 ### D5 · Detector · Anomaly detection trained on good bricks, not a defect classifier — Status: Built · Owner: @saliha · Updated: 2026-11-14 03:55
 - **Decision:** Anomalib learns what a good brick looks like and flags deviations. We use our marker-drawn defective bricks to set thresholds and measure quality, not as the main training signal.
 - **Why:** in inspection, defects are rare and varied; the task says we draw our own defects with markers, so a supervised classifier would only learn our marker style. Anomaly detection generalises to new marks.
@@ -73,7 +76,7 @@
 - **Evidence:** TBD (comparison table in `bench/results.md`).
 - **Pitch line:** "We chose the model by measuring three on our own bricks, not by guessing."
 
-### D7 · Reliability · Two-threshold uncertainty band and re-grasp — Status: Built (band) / Planned (re-grasp chain) · Owner: @saliha @nate · Updated: 2026-11-14 04:16
+### D7 · Reliability · Two-threshold uncertainty band and recovery chain (order changed 07:10) — Status: Built (band) / Planned (re-grasp chain) · Owner: @saliha @nate · Updated: 2026-11-14 04:16
 - **Decision:** `t_low` = 99th percentile of good-brick scores, `t_high` = 5th percentile of defective scores; below `t_low` perfect, above `t_high` defective, between uncertain. Uncertain → second camera view → re-grasp (Intel's own suggested idea: use the anomaly score to trigger a re-grasp) → wrist roll if time → defective, said aloud. Re-grasp and wrist roll share one motion call, `Mover.reinspect(angle_deg)`: `0` puts the brick down in the pick zone and picks it again, `±90` rolls the wrist in place, and it returns `True` only when the brick is back at the inspection pose (agreed by @nate and @saliha 2026-11-14 01:35, @harry 2026-11-14 04:16).
 - **Why:** anomaly scores are distances, not probabilities, so thresholds must come from data; the rubric scores recovery from uncertain detections. One call keeps the `Mover` signature that froze at 01:00 Saturday, so the learned policies and the scripted fallback implement the same thing.
 - **Alternatives rejected:** a single threshold (every borderline brick is a coin flip); a separate `regrasp()` method (reopens the frozen contract); re-grasping before every wrist roll (each roll would cost a full re-grasp).
@@ -201,6 +204,37 @@
 - **Trade-off / risk:** until `io.act` checks the flag, a learned policy mid-episode only stops at the next stage boundary; the scripted fallback stops within a step. E = torque off, so the arm drops: a person always watches it (PRD §9).
 - **Evidence:** tests: a scripted move stops part way within 0.5 s of E with torque off; E mid-run never homes; Q finishes the brick and homes; P holds at a stage boundary. TBD (stop latency on the real arm).
 - **Pitch line:** "The stop button never fights the robot for the wire: one thread drives the motors, and it checks for the stop every step."
+
+### D22 · Reliability · Every stage verified: grasp band, bowl-region check, early exit, reason codes — Status: Planned · Owner: @nate @harry @saliha · Updated: 2026-11-14 07:10
+- **Decision:** grasp = gripper position inside a band (not just "not fully closed") after a 0.3 s settle; place = the bowl region on the top camera changes and the gripper is open; policies stop early when their stage succeeds; every failure gets a reason code, a deadline and a retry budget, ending in "I need help" (PAUSE_HUMAN) rather than a crash.
+- **Why:** "correct bowl" can't be counted automatically otherwise, and fixed 12 s episodes made 24 s per brick a floor against a 25 s target. A gripper watchdog paper (arXiv 2604.07395) detected 43/50 empty grasps with 5/50 false alarms; a 2026 SO-101 benchmark (arXiv 2606.08881) measured learned recovery at 3–6%, so recovery belongs in the state machine.
+- **Alternatives rejected:** servo-current grasp detection (no source for the STS3215; saved); a behaviour tree (more machinery for a short controlled task).
+- **Trade-off / risk:** thresholds are TUNE on the arm; bowl-region check needs a lit, fixed top camera.
+- **Evidence:** TBD (20-trial log with per-stage reasons).
+- **Pitch line:** "Every step proves it worked before the next one starts."
+
+### D23 · VLA · Two fixed instructions, a language-swap test, and a colour hedge — Status: Planned · Owner: @nate · Updated: 2026-11-14 07:10
+- **Decision:** perception picks one of two fixed strings ("place the brick in the red/blue bowl"); at the 19:00 gate a language-swap test (same brick, swapped string) proves SmolVLA reads the instruction. Hedge: two single-colour ACT place policies trained on Modal in parallel from the same data (no extra robot time), evaluated only if SmolVLA < 6/10; scripted placement remains the fallback.
+- **Why:** SmolVLA's tokenizer is capped at 48 tokens and we have 25 episodes per string, so scores or regions in the string would be unseen text. A 2026 SO-101 benchmark (arXiv 2606.08881, 20 trials per cell) got ACT 0% and SmolVLA 5% on a colour-sorting task, so the language-chosen bowl is the riskiest step.
+- **Alternatives rejected:** region- or score-conditioned instructions; co-training with public SO-101 data (saved for later).
+- **Evidence:** TBD (swap test, 19:00 gate).
+- **Pitch line:** "We prove the robot listens: swap the words, the brick goes to the other bowl."
+
+### D24 · Deployment · Device placement measured, no overlap claims — Status: Planned · Owner: @saliha · Updated: 2026-11-14 07:10
+- **Decision:** detector on the NPU (GPU, CPU fallback); ACT on the GPU with a 30-minute NPU compile probe (a failed compile is a reported result); SmolVLA on the GPU via OpenVINO if its export works, otherwise PyTorch, and the table says which. Device table from OpenVINO `benchmark_app` plus a PyTorch baseline row; efficiency = idle baseline, 1 Hz power and thermal series, NPU busy time, joules per brick net of idle. No AsyncInferQueue headline, no cross-device "overlap" (the loop is sequential), no HETERO/MULTI/NPU_TURBO.
+- **Why:** the rubric asks for appropriate NPU/GPU/CPU use and efficiency evidence; OpenVINO's own hints guide says async only helps with several requests in flight.
+- **Evidence:** TBD (Saturday 21:00 GPU slot).
+- **Pitch line:** "Each model is on the chip that suits it, and we measured joules per brick."
+
+### D25 · Reasoning · Nemotron is advisory, never gating — Status: Planned · Owner: @saliha · Updated: 2026-11-14 07:10
+- **Decision:** the decision is always the thresholds + rules; Nemotron only explains (and, on uncertain bricks, adds a second opinion that is logged, not obeyed), with a 4 s timeout and a template fallback. Camera-based hat detection is saved for later; the H key triggers the cowboy persona.
+- **Why:** control must never wait on the network (D4); the live line is the personality layer, not the sorter.
+- **Pitch line:** "The robot decides with measured thresholds and explains itself out loud."
+
+### D26 · Process · Pipeline smoke-tested on public SO-101 data before robot time — Status: Planned · Owner: @nate · Updated: 2026-11-14 07:10
+- **Decision:** train ACT (Studio) and SmolVLA (LeRobot) for a few hundred steps on `eruedas/so101_3cams_pickplace-red-lego_real` (Apache-2.0, SO-101, 50 episodes, top + gripper + side cameras, 30 fps), export, and run the `physicalai` runtime on it before our own recording. Not used for final training. Starting SmolVLA from someone else's SO-101 fine-tune and co-training with public data were researched and saved for later (no evidence they beat the base model; choosing by trials would need ~78 trials per arm).
+- **Why:** the SmolVLA export is the biggest unknown; finding it at 09:00 beats finding it at 19:00.
+- **Pitch line:** "We proved the whole train-export-deploy chain before the robot moved."
 
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |

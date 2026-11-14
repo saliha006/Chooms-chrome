@@ -6,7 +6,7 @@
 | Main track | **Intel x Ignite Next: Physical AI** (scored out of 100 by Intel) |
 | Side tracks | **ElevenLabs** (MLH: live reasoning voice + the cowboy personality switch, F7/F18) · **NVIDIA Nemotron 3.5 Super VL** (the reasoning brain behind the voice, F17) · **Aiven** (live event streaming that the cell reacts to, F15) · **Modal** (training + training logs only, F10/F11; **no frontend ever**, dropped if it would need one). Nothing else. |
 | Team | **AI/ML:** Saliha (perception ML, edge optimisation, Nemotron reasoning) · **Robotics and robot learning:** Nate (robot I/O, policies, Modal training) · **Systems and integration:** Harry (state machine, ElevenLabs voice, Aiven streaming, demo). See §1b |
-| Version | v2.4, Sat 14 Nov 01:30 (v2.3 + roles by discipline, branches renamed, `decisions.md`; changes listed in §0) |
+| Version | v2.5, Sat 14 Nov 07:10 (v2.4 + research pass: 6 research agents, a system-design agent and a critic; changes in §0, same vision) |
 | **Hard deadline** | **Final submission SUNDAY 15 Nov 10:00** (Junction official). **Internal: everything submitted by 09:00 Sunday.** Ask the mentors whether 11:50 is our demo slot. |
 | Work blocks | **Block A:** tonight 00:45–02:30, at home, **no Intel laptop, no arms**. **Block B:** Sat 08:00 → Sun 09:00, all hardware. **Feature freeze Sat 23:00.** |
 
@@ -28,6 +28,18 @@
   - New features: F11 demo-count sweep on Modal (Nate) · F12 power, energy and thermal benchmark (Saliha) · F13 shared capture (Harry) · F14 shifted/cluttered test (Nate + Harry) · F15 Aiven as system of record + drift alarm (Harry + Saliha) · F16 Modal live dashboard (Harry, optional, after the freeze is safe) · F17 Nemotron (pending).
   - Anomalib model choice: if the good bricks come in **several colours**, PaDiM's one-Gaussian-per-patch assumption breaks; use PatchCore or one PaDiM per colour (§7.2, Saliha's brief).
 
+- **v2.5 (2026-11-14 07:10), research pass (local files `Research-Context/pass-0..6`, `final-in-scope.md`). Same vision; these are stepping stones:**
+  - **No reinforcement learning** (decisions.md D1): real-robot RL (HIL-SERL) needs 1–2.5 h online robot time per task (22–55% of our ~4.5 h), on a stack that is not ACT, SmolVLA or Studio. Kept from the idea: automatic success labels and one correction (DAgger) round if ACT misses its gate.
+  - **Every stage is verified** (decisions.md D22, "success verification"): grasp = gripper-position band + 0.3 s settle; place = bowl-region change on the top camera + gripper open; policies stop early when the stage succeeds (fixed 12 s episodes made 24 s a floor); every failure carries a reason code, a deadline and a retry budget, ending in "I need help" (PAUSE_HUMAN), not a crash.
+  - **Recovery order:** look again (fresh frame, same inspection camera) → wrist roll 90° → re-grasp → defective and flagged. A model trained on the inspection camera can't score another camera.
+  - **Honest detector evaluation:** our own brick-level splits, raw (unclamped) scores, out-of-fold `t_low`, intervals on AUROC and false alarms. Bake-off PaDiM vs PatchCore (AnomalyDINO only if PaDiM's lower interval < 0.90); EfficientAd dropped. INT8 only if it loses ≤ 0.01 AUROC vs FP16.
+  - **Localisation = zone gate + brick picker** (colour blob + table homography; depth only for "something tall is here"), never a policy input.
+  - **VLA keeps two fixed strings + a language-swap test** at the 19:00 gate (the only proof SmolVLA reads the instruction). Hedge: a published SO-101 benchmark (arXiv 2606.08881) got ACT 0% and SmolVLA 5% on colour sorting, so two single-colour ACT place policies are trained on Modal alongside SmolVLA (no extra robot time); scripted placement stays the fallback.
+  - **Intel stack, measured and named:** device table via `benchmark_app` + a PyTorch baseline row; ACT-on-NPU compile probe; efficiency protocol (idle baseline, 1 Hz power/thermal, NPU busy time, joules per brick net of idle); `physicalai` runtime pieces named only where we call them, plus an honest "not used" list for the Robotics AI Suite. No "async overlap" claim (our loop is sequential).
+  - **Smoke test the whole training → export → runtime chain on public SO-101 data before our own recording** (`eruedas/so101_3cams_pickplace-red-lego_real`, Apache-2.0, 50 episodes, top + gripper + side cameras). Not used for final training.
+  - **Personality and side tracks are unchanged in vision, ordered after the 15:30 gate:** cached voice lines keyed by reason first, then the live Nemotron + ElevenLabs line; cowboy persona on obstacle + the H key (camera hat detection saved for later); Aiven after the gate.
+  - **Code reuse is allowed** (Junction volunteers and Intel developers on site), as long as the whole project is not a copy.
+  - Overflow ideas live in a local-only `saved for later + agents/` folder (never committed).
 - **v2.4 (2026-11-14 01:30):** roles grouped by discipline (§1b); branches renamed `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`; new shared file `decisions.md` (design choices, features and their reasons for pitching; agents keep it current, CLAUDE.md §4a).
 - **v2.3 (2026-11-14 00:55), the team's vision (§1a):**
   - **Priority 1, always:** the Intel task done accurately, with smooth arm motion and a reasonable cycle time. Nothing in the personality layer may slow or risk it.
@@ -95,7 +107,7 @@ Every criterion must be covered, but effort follows **points × how much we cont
 | Metric | Target | Minimum to demo |
 |---|---|---|
 | Correct bowl over 20 logged trials | ≥ 90% | ≥ 70% |
-| Anomalib AUROC on held-out real bricks | ≥ 0.95 | ≥ 0.90 |
+| Anomalib AUROC on held-out real bricks (lower end of its interval, v2.5) | ≥ 0.95 | ≥ 0.90 |
 | Anomalib latency, best device | ≤ 15 ms | ≤ 50 ms |
 | Cycle time per brick / throughput | ≤ 25 s / ≥ 2.4 bricks per min | ≤ 45 s |
 | Unhandled failures | 0 | 0 |
@@ -151,7 +163,7 @@ Every criterion must be covered, but effort follows **points × how much we cont
    - The voice explains the verdict live, in the current persona (calm by default).
    - The instruction goes to SmolVLA, which places the brick.
    - Log the result.
-3. If the verdict is **uncertain**: score a second view from a shared camera (free, no motion). Still uncertain → **re-grasp** (put the brick back down, pick it again, re-inspect: Intel's "anomaly score triggers a re-grasp"); wrist roll ±90° if time allows. Still uncertain → red bowl, said aloud.
+3. If the verdict is **uncertain**: score a fresh frame from the same inspection camera (median of 3). Still uncertain → wrist roll 90° and re-score → **re-grasp** (Intel's "anomaly score triggers a re-grasp") → still uncertain = red bowl, flagged and said aloud. Each step has a deadline; the wrist rolls back before placing.
 4. If the grasp fails (the gripper closes fully): retry once, then say "need help" and go home.
 5. **Obstacle** in the workspace (depth says something taller than a brick, or not brick-shaped) or the **cowboy hat** in view → "Holy smokes!", cowboy persona; the arm skips the obstacle (never picks it) and carries on with the bricks. Trigger cleared + one brick done → half-way line → calm.
 6. When the zone is empty, stop and speak the run summary. **P** pauses, **E** is the e-stop (torque off), **Q** goes home and quits.
@@ -231,7 +243,7 @@ Plus p50/p95, model size (MB) FP32 vs INT8, first-compile vs cached-compile time
 | F1 | `DefectSignal` → instruction | 1–2 | Saliha → Harry | 2, 3 |
 | F2 | Device map, INT8, async, PrePostProcessor, compile cache, benchmark | 4–6 | Saliha | 4 |
 | F3 | Uncertainty band (thresholds from histograms) | 0.5–1 | Saliha | 2, 5 |
-| F4 | Re-inspection chain: second shared-camera view → **re-grasp triggered by the anomaly score** (Intel's named idea; Nate's `reinspect` primitive puts the brick down and picks it again) → wrist roll ±90° if time → defective. Saliha owns the decision logic, Nate the motion | 2–4 | Saliha + Nate | 5 |
+| F4 | Re-inspection chain (v2.5): fresh same-camera look → wrist roll 90° → **re-grasp triggered by the anomaly score** (Intel's named idea) → defective and flagged; wrist rolled back before place. Saliha owns the decision logic, Nate the motion | 2–4 | Saliha + Nate | 5 |
 | F5 | Grasp check (gripper position) plus one retry | 1–2 | Nate | 5 |
 | F6 | Mission-control window, keys S/P/E/Q | 2–3 | Harry | 1, 6 |
 | F7 | **Live reasoning voice (ElevenLabs):** two voices, **calm** (cool, collected) and **cowboy** (Voice Library western voice or Voice Design). Live lines through `eleven_flash_v2_5` streaming with a 1.5 s timeout; exclamations and fallback lines pre-generated (expressive model with emotion tags) and cached as WAV. A queue that drops stale lines, so speech never lags the arm | 2–3 | Harry | ElevenLabs, innovation |
@@ -250,9 +262,9 @@ Plus p50/p95, model size (MB) FP32 vs INT8, first-compile vs cached-compile time
 ### 8a. Stretch (only after the gates pass; each ≤ ~2 h)
 | # | Stretch | Hours | Owner |
 |---|---|---|---|
-| S1 | Wrist roll ±90° as the last re-inspection step (F4) | 1 | Nate + Saliha |
+| S1 | ~~Wrist roll~~ now part of the CORE F4 chain (v2.5) | — | — |
 | S2 | More persona moments: "grumpy" after three defects in a row; a victory line at the run summary | 1 | Harry |
-| S3 | Placement check: top camera confirms the brick landed in the bowl, said aloud if not | 1–1.5 | Harry |
+| S3 | ~~Placement check~~ now CORE (bowl-region check, v2.5) | — | — |
 | S4 | Local on-device TTS on OpenVINO (for example Kokoro-82M) as the offline voice fallback: more Intel story | 2 | Saliha |
 | S5 | Workspace guard: an Anomalib model of the empty table flags any foreign object (a second obstacle detector) | 1.5 | Saliha |
 
@@ -330,7 +342,7 @@ After 09:00: rehearse 3–4 times, including the e-stop drill and the uncertain-
 Keep the backup video on a second screen.
 
 ## 12. Submission checklist (09:00 Sunday)
-- [ ] Public MIT repo, with every reused repo credited
+- [ ] Public MIT repo
 - [ ] README: how to run, architecture, device rationale, benchmark table, trial results
 - [ ] Video ≤ 2 minutes
 - [ ] Junction Platform: Intel challenge, plus ElevenLabs (MLH), Aiven, NVIDIA (text: model, what it does, why it matters, how we improved its outputs) and Modal if allowed
@@ -339,7 +351,7 @@ Keep the backup video on a second screen.
 ## 13. Open questions for mentors (Saturday 08:00–09:00)
 1. Is 11:50 our demo slot? What exactly is the **Challenge-Day task**, and does it use new bricks or positions?
 2. Modal access, GPU hours, and whether Studio connects to it.
-3. Is reuse of open-source code confirmed?
+3. ~~Is reuse of open-source code confirmed?~~ Yes (volunteers and Intel developers, 2026-11-14), as long as the project is not a copy.
 4. Is there a stack-verification script for Ubuntu 26.04 / Anomalib 2.7.0? Can policies export to the NPU?
 5. Can we enter ElevenLabs (MLH), Aiven, NVIDIA and Modal alongside Intel? Is a soft cowboy hat in the workspace OK under the safety rules?
 6. Which rubric scores us: the kickoff slides (25/20/20/20/10/5) or the Junction page (30/30/20/20)? How do you want power and thermal measured on the laptop? What should we use from the Robotics AI Suite?

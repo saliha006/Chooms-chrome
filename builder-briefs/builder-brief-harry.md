@@ -1,7 +1,7 @@
 > **Status, 2026-11-14 01:30.** Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3: you own the personality layer: live reasoning voice and the cowboy switch (ElevenLabs), plus Aiven streaming. F16 dashboard dropped: no frontend. Repo exists (`saliha006/Chooms-chrome`; `main` has `README.md` + `progress.md`). The rest of Block A starts 00:45. Docs on `context`.
 
 # Harry: systems and integration (orchestration, ElevenLabs voice, Aiven streaming, demo) + submission
-**GitHub:** `Harryt3nn` · **Branch:** `systems-voice-harry` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 01:30 by saliha
+**GitHub:** `Harryt3nn` · **Branch:** `systems-voice-harry` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 07:10 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -43,7 +43,23 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 
 ---
 
-## 3. ▶ Current tasks (2026-11-14 00:55)
+## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 v2.5 research pass (2026-11-14 07:10): do these first, in order (same vision; PRD §0 v2.5, decisions.md D1, D7, D22–D26)
+*Must exist by 15:30: real-wired `run.py` with the scripted mover, shared capture on real cameras, real Inspector, localisation zone gate, grasp band and bowl-region checks, reason codes and deadlines, the recovery chain, JSONL telemetry, cached lines.*
+| # | Status | Task | Hours | Done when |
+|---|---|---|---|---|
+| H1 | ⬜ | `run.py`: `HelpNeeded` with a **reason enum**, per-state deadlines and retry budget, `PAUSE_HUMAN` instead of exit-after-home, hold flag checked at stage boundaries (depth/blob "something tall"), `abort_event` into episodes, recovery chain `[look again, roll 90, re-grasp]` | 4 | Mock run shows reasons per stage |
+| H2 | ⬜ | Bug fixes: `_resolve_uncertain` re-scores a stale frame (pass `newer_than=time.monotonic()` after a settle); `config/rules.yaml` `second_view: inspect` (not `top`) and add the roll to `reinspect_angles`; the help line speaks a reason, not an exception class name | 0.5 | Tests |
+| H3 | ⬜ | Cached-WAV table keyed by reason (calm + cowboy) | 1 | Every reason has a line |
+| H4 | ⬜ | JSONL telemetry writer (Aiven later, after the gate) | 1 | Rows per stage |
+| H5 | ⬜ | 08:00–10:00 cameras by-id, decide which is the RealSense, click the zone corners (homography), waypoints | — | All streams open by path |
+| H6 | ⬜ | Read Intel's `physicalai/examples/tutorials/collect_train_deploy.ipynb` cells 5–9 (0.5 h) to confirm import paths and camera API; adopt `RobotRuntime` only if it accepts our abort and early-exit callbacks (add-on, 1 h max). Keep `Cell`, the `robot/io.py` clip + speed cap and shared capture | 0.5 | Notes |
+| H7 | ⬜ | Intel-stack items wired where we really call them (time-boxed 2 h); `ReasonTrace` panel (0.5 h) | 2.5 | On screen |
+| H8 | ⬜ | 21:00–23:00 demo script built around a real borderline-brick recovery, a disturbance pause, and an n = 20 slide with intervals; backup video by 22:00 | 2 | Rehearsed |
+**If you're behind at 12:00:** Saliha's agent takes the telemetry writer and the cached-WAV table.
+**Add-ons (after the 15:30 gate, in order):** persona obstacle trigger + cowboy voice on the hold flag, H key for the hat (1 h) · one live ElevenLabs line from the Nemotron text (1 h, with Saliha) · Aiven producer thread + drift alarm, JSONL stays the default (2 h; Kafka free plan unconfirmed, fallback LISTEN/NOTIFY) · IK scripted pick only if ACT misses 17:00 (2 h).
+**Saved for later:** camera-based hat detection (H key instead).
+
 🆕 **Vision (PRD v2.3 §1a):** (1) the Intel task done accurately, smoothly and in reasonable time, always first; (2) the robot explains its reasoning out loud, live, in a calm voice; (3) an obstacle or the cowboy hat flips it into a cowboy persona ("Holy smokes!") until the moment passes. Personality never slows the arm or costs a gate. No frontend, ever.
 🆕 **What changed (PRD v2.2):** Aiven's page scores **meaningful use (40%)**, so the database must change what the cell does, not only log (F15). Modal scores a **live deployed app (15%)**: an optional read-only dashboard (F16) covers that and Aiven's impact at once. Intel wants **cameras shared between policy and inspection** (F13). Cameras at the station: **top view + inspection + wrist**; objects are Duplo.
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
@@ -74,7 +90,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 | **15:30 gate (robot)** | ⬜ | With Saliha: **scripted full loop with real Anomalib, 5 bricks, no human** | Pass; film it as the backup video v1 |
 | 15:30–19:00 | ⬜ | Mission control on the real feed; live narration and telemetry; tune the spoken lines. 🆕 **F18 obstacle trigger:** RealSense depth in the workspace (taller than a brick, or not brick-shaped) → `narrator.trigger("obstacle")` and the loop skips it; wire Saliha's `hat_seen` (from 19:00). 🆕 **F15 drift alarm:** run Saliha's drift query every few bricks on the telemetry thread → "lighting changed, rebaseline" on screen and spoken | Live |
 | 19:00–21:00 (robot) | ⬜ | Swap in Nate's policies behind `Mover`; keep `--scripted` working | Both modes |
-| 21:00–23:00 | ⬜ | ~~F16 Modal dashboard~~ (dropped: no frontend). 🆕 Rehearse the cowboy beat (PRD §11, 1:00) on the real table. Architecture slide, README (run steps, device rationale, benchmark placeholder for Saliha, credits), submission text draft | Drafts ready |
+| 21:00–23:00 | ⬜ | ~~F16 Modal dashboard~~ (dropped: no frontend). 🆕 Rehearse the cowboy beat (PRD §11, 1:00) on the real table. Architecture slide, README (run steps, device rationale, benchmark placeholder for Saliha), submission text draft | Drafts ready |
 | 23:00–01:00 | ⬜ | **Freeze**; 20 logged trials with Nate; 🆕 F14 shifted and pile trials (F9 picks the most isolated brick first); film the best runs; sleep 01:00–06:00 | Trial table from `report.sql` |
 | 06:00–09:00 | ⬜ | Edit the 2-minute video; finish the README; Junction Platform submission (Intel, plus ElevenLabs, Aiven, Modal, and NVIDIA if we enter it; Nemotron needs a short text on model, role and how we improved its output) **by 09:00** | Submitted |
 | 09:00 → demo | ⬜ | Lead rehearsals: the script in PRD 11, the e-stop drill, the backup video on a second screen | — |
