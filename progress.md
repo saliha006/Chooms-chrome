@@ -91,6 +91,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 08:20 — feat — S1: brick-level detector evaluation and raw anomaly scores — @saliha [conflicts: @harry]
+- **Where:** `aiml-perception-saliha` @ `882232a` · merged to `main`: yes
+- **Did:** (1) Images carry their brick (`capture --brick`, synth `b<brick>_<n>.png`). (2) Raw scores: Anomalib's default post-processor clamped every good brick to **0.0** (measured), so models now export unclamped scores (good ~40-55, defective ~200-290 on stand-in data); `thresholds.yaml` gains `pixel_threshold` for the region box. (3) `python -m perception.evaluate`: out-of-fold good scores by brick set t_low, a dev half of defective bricks sets t_high, the other half only reports; AUROC with a bootstrap-by-brick interval, exact false-alarm bound, recall interval → `bench/detector_report.md`. (4) Fix: no core-wide `CACHE_DIR` (it replaced the NPU driver's cache). 123 tests pass across all packages.
+- **Touched:** `perception/` (capture, synth, train, export, calibrate, thresholds, inspector, evaluate), `reasoner/client.py` docstring
+- **Brief task:** S1 → ✅ done (synthetic); real-brick run is S4 at 10:30
+- **⚠️ Conflicts:** @harry: the inspector's scores are now raw distances, not 0-1; anything that displays or compares `DefectSignal.score` against a fixed number should use `t_low`/`t_high` from the signal instead. Re-run calibrate or evaluate before using an old `thresholds.yaml`
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 06:20 — fix — Studio ACT training crashed on video decoding; root cause found, fixed — @nate [conflicts: @saliha]
 - **Where:** `robotics-policies-nate` @ `442d39c` · merged to `main`: yes
 - **Did:** The ACT smoke run (Studio's trainer, `lerobot/svla_so100_pickplace`) crashed in training with torchcodec "Invalid data found when processing input". Cause, reproduced on a cheap Modal CPU job: Studio's one-off quantile pass decodes video in the main process, and the forked loader workers inherit those decoders and fail (after 136 frames); no workers, `spawn`, or no parent decode all pass 800 frames. `train/commands.py` now passes `--data.num_workers 0`. Also measured: the quantile pass costs ~40 s per episode on datasets without q01/q99 statistics (35 min for 50 episodes), so our own Studio recordings should carry them (check at N7). Re-run on the red-lego set in flight.
