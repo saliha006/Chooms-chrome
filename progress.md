@@ -126,6 +126,14 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 19:50 — feat — Chatty but relevant: tally between bricks, recovery steps out loud; live lines in parallel; credit floor; follower port — @harry [conflicts: @saliha @nate]
+- **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
+- **Did:** (1) Between bricks the robot says the tally ("That's 3 sorted so far: 2 perfect, 1 defective. On to the next one.") and before each recovery step the borderline score it rechecks ("Still 0.27, right between my lines. Rolling it ninety degrees…"), cached fallbacks in both voices. (2) Fix found by a run at real-arm pace (~3 s per move): a single synthesis queue made most live lines wait and time out; each line now has its own request (3 at once) and a late older line is dropped, never said out of order. Same run after the fix: all 9 live lines in 547–1594 ms. (3) Credit floor: live lines stop after 12,000 characters per run; a run starting under 10,000 account credits uses cached lines (balance read needs the key's `user_read` permission, not set yet). (4) `config/robot.yaml` follower by-id port + `config/so101_follower.json`. 220 tests pass; narrator tests 5/5 repeat runs.
+- **Touched:** `narrator/`, `run.py`, `config/robot.yaml`, `config/so101_follower.json`, tests
+- **⚠️ Conflicts:** @saliha: move the untracked `config/so101_follower.json` on the Intel laptop aside before pulling (19:55 row)
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 19:30 — decision — Nate's answers: normalized units, Studio SmolVLA in parallel, box-room drive, tonight's order — @nate [conflicts: @saliha @harry]
 - **Where:** `robotics-policies-nate` → `main`; `context` (D20, D29, D33, Nate's brief) · merged to `main`: yes
 - **Did:** (1) yes to normalized joint units (D29); (2) SmolVLA: LeRobot stays the proven path, plus one Studio SmolVLA job on Modal on the same data after a smoke test of Studio's Modal target (D20, N11); (3) yes to the box-room demo: the base drives in the demo and Nate owns the motion through `cell.approach` (D33, N10); (4) yes to tonight's station order, flexible on the freeze; pandas, pyarrow and pyyaml declared in `train/requirements.txt`.
