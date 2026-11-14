@@ -44,6 +44,14 @@ Then give one clear starting point and proceed.
 
 **"Start the demo" / "run the demo" / anything demo-related**: follow PRD §11 (demo script, 2:00) on the Intel laptop. Steps: home pose check → `make rebaseline` if the lighting or table changed → `make run` → press **S**. **E** = e-stop (torque off), **P** pause, **Q** home and quit. Backup video on a second screen. Change the demo path only on the user's say-so.
 
+### 🛠 Station debugging (Intel laptop; Saliha, 2026-11-14)
+Read the real log first (Studio: the terminal it runs in, or `~/work/studio-backend.log`; kernel: `sudo dmesg`), find the *first* error, reproduce the device outside the app (pyserial for an arm, pyrealsense2 or OpenCV for a camera), then fix the narrowest layer.
+- **"Permission denied: /dev/ttyACM*"**: a group added with `usermod` only reaches new logins. Fixed for good by `/etc/udev/rules.d/99-so101-arms.rules` (`SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d3", MODE="0666"`). Check a process's groups with `grep Groups /proc/<pid>/status`.
+- **Studio camera "no publisher responded within timeout"**: stop Studio, `rm -rf /tmp/iceoryx2 /dev/shm/iox2_*`, start it again; also check the camera still exists (`ls /dev/v4l/by-id/`), because a re-plugged camera gets a new `/dev/videoN`.
+- **Arm "Sync read failed with comm result -6"** or cameras dropping out in `dmesg`: USB power or a tugged cable (powered hub; RealSense and wrist camera straight on the laptop), not code.
+- **One owner per port:** Studio (an open robot page or session) and our scripts can't hold an arm at the same time; leave the Studio page before `fallback.teach` or `run.py`.
+- **Agent traps:** `printf pw | sudo -S tee file` writes an empty file (use `sudo -S sh -c 'echo ... > file'`); `pkill -f <pattern>` kills the agent's own shell when the pattern is in its command line. Don't start Studio's backend from an agent session unless asked; never store a sudo password.
+
 ### 🔄 Context sync (session start, before each new brief task, and before editing a shared doc)
 Never work from a stale plan: fetch fresh context at least at those three points (and every ~30 min in a long task). Plain git, no scripts. The synced commit is kept in `.git/context-synced`.
 1. `git fetch -q origin context`. If `git rev-parse origin/context` equals the stamp (`cat .git/context-synced`), you're current.
