@@ -4,9 +4,9 @@
 |---|---|
 | Event | Junction 2026, Espoo |
 | Main track | **Intel x Ignite Next: Physical AI** (scored out of 100 by Intel) |
-| Side tracks | ElevenLabs (voice narration), Aiven (managed PostgreSQL), Modal (training; no extra build). Nothing else. |
+| Side tracks | ElevenLabs (voice narration), Aiven (PostgreSQL as the cell's system of record, §8 F15), Modal (training fan-out + optional live dashboard, F10/F16). **NVIDIA Nemotron: pending Saliha's call** (F17). Nothing else. |
 | Team | Saliha (perception, AI/ML, OpenVINO), Nate (robot and policies), Harry (integration, demo, side tracks) |
-| Version | v2.1, Sat 14 Nov 00:10 (v2.0 + Modal side track + the §0 contradiction fixes) |
+| Version | v2.2, Sat 14 Nov 00:30 (v2.1 + the Junction challenge page, the slides re-read, side-track criteria; changes listed in §0) |
 | **Hard deadline** | **Final submission SUNDAY 15 Nov 10:00** (Junction official). **Internal: everything submitted by 09:00 Sunday.** Ask the mentors whether 11:50 is our demo slot. |
 | Work blocks | **Block A:** tonight 00:45–02:30, at home, **no Intel laptop, no arms**. **Block B:** Sat 08:00 → Sun 09:00, all hardware. **Feature freeze Sat 23:00.** |
 
@@ -19,15 +19,24 @@
 - Docs: `CLAUDE.md`, `prd.md`, `builder-briefs/`, `skills/` live on the `context` branch; `progress.md` and code on `main`. Branches `perception-saliha`, `robot-nate`, `integration-harry`.
 - v2.1 fixes (2026-11-14 00:10): ACT = **54** episodes (9 start positions × 6); SmolVLA 19:00 gate follows Nate's brief (keep at ≥ 4/10 unless scripted placement is clearly better); Modal added to §13 Q5; Saliha's §10 slots aligned with Saliha's brief. Where §10 and a brief still differ on times, **the brief wins**.
 
+- **v2.2 (2026-11-14 00:30), from the Junction challenge page and side-track pages:**
+  - **Two Intel rubrics exist.** The kickoff slides (§2: 25/20/20/20/10/5) and the Junction page (§2a: task success 30, Intel integration 30, dataset and pipeline quality 20, system efficiency 20). We plan to the slides and cover the page's extras: robustness to shifted and cluttered bricks, the Robotics AI Suite, clean teleop data, **power and thermal headroom**. Ask which one scores us (§13 Q6).
+  - Objects are **Duplo** bricks; **we draw the defects ourselves with markers**. Cameras: one **top view**, one **inspection** (at least one is the RealSense D415), plus the wrist cam.
+  - Intel's wish list, now in scope: **anomaly score triggers a re-grasp** (F4), **cameras shared between policy and inspection** (F13), **INT8 quantization** (F2), **"how few demonstrations are enough"** (F11), **bricks in new positions** (F14).
+  - New features: F11 demo-count sweep on Modal (Nate) · F12 power, energy and thermal benchmark (Saliha) · F13 shared capture (Harry) · F14 shifted/cluttered test (Nate + Harry) · F15 Aiven as system of record + drift alarm (Harry + Saliha) · F16 Modal live dashboard (Harry, optional, after the freeze is safe) · F17 Nemotron (pending).
+  - Anomalib model choice: if the good bricks come in **several colours**, PaDiM's one-Gaussian-per-patch assumption breaks; use PatchCore or one PaDiM per colour (§7.2, Saliha's brief).
+
 **Pending (confirm with mentors, §13)**
 - Is 11:50 Sunday our demo slot? Is the 10:00 Sunday deadline on Espoo time, and does our plan clock match it?
 - Challenge-Day task and kickoff sorting rules.
-- ElevenLabs, Aiven and Modal criteria.
+- Which Intel rubric is used (slides or Junction page)?
+- **NVIDIA Nemotron side track: in or out? (Saliha's call; F17).** ElevenLabs criteria still not found.
+- Aiven criteria found: meaningful use 40, technical 30, impact 20, creativity 10 ($50 credits). Modal criteria found: effective use 40, ambition 25, impact 20, **demo = live deployed app 15** ($100 credits per person). A web app is scored but not required, so F10 stays and F16 is the optional dashboard.
 
 **Gates:** Sat 15:30 scripted full loop · 17:00 ACT ≥ 6/10 · 19:00 SmolVLA (Nate's brief) · 23:00 freeze · Sun 09:00 submit.
 
 ## 1. Summary
-An SO-101 follower arm picks a Lego brick and holds it up to the camera (ACT). Anomalib scores it as perfect, defective or uncertain. The verdict becomes a language instruction for SmolVLA, which places the brick in the blue bowl (perfect) or the red bowl (defective). The whole loop runs on the Core Ultra X9 388H with OpenVINO, with each model placed deliberately on the NPU, GPU or CPU, and it recovers from uncertain detections and failed grasps.
+An SO-101 follower arm picks a Duplo brick (we mark the defective ones ourselves with markers) and holds it up to the inspection camera (ACT). Anomalib scores it as perfect, defective or uncertain. The verdict becomes a language instruction for SmolVLA, which places the brick in the blue bowl (perfect) or the red bowl (defective). The whole loop runs on the Core Ultra X9 388H with OpenVINO, with each model placed deliberately on the NPU, GPU or CPU, and it recovers from uncertain detections and failed grasps.
 
 ## 2. Where we win: how we weight effort
 Every criterion must be covered, but effort follows **points × how much we control the outcome**.
@@ -41,6 +50,14 @@ Every criterion must be covered, but effort follows **points × how much we cont
 | ★★★ | Reliability (10) | The uncertainty band and grasp retry are cheap and named explicitly in the rubric. |
 | ★ | Innovation (5) | Comes for free from narration, mission control and a clear explanation. |
 
+### 2a. The Junction page rubric (cover it with the same work)
+| Junction page criterion | What scores it | Our features |
+|---|---|---|
+| Task success (30%): accuracy, cycle time, robustness to shifted or cluttered bricks | Correct-bowl rate, bricks per minute, a test on unseen start positions and a 3-brick pile | 20 trials, F9, F14 |
+| Intel technology integration (30%): OpenVINO Physical AI, Robotics AI Suite, NPU and iGPU offload | `physicalai` runtime in `run.py`, device map, NPU + GPU both used | R5, R8, F2 |
+| Dataset and pipeline quality (20%): clean teleop data, fine-tuning in Studio | Recording protocol, rejected-episode log, dataset card on the HF Hub, success vs number of demos | A5 (Nate), F11 |
+| System efficiency (20%): inference latency, thermal headroom, power on Core Ultra | p50/p95 latency, **energy per inference and per brick, package power, temperature during the 20 trials** | F2, F12 |
+
 ## 3. Goals, non-goals, metrics
 **Goals:** one integrated closed loop (PERCEIVE → DETECT → REASON → ACT → OPTIMIZE); measured detection; measured optimization; reliable live demo with a planned recovery.
 **Non-goals (decided):** second actuated arm (the leader is a teleop device), freeing cables, removing obstacles or transparent objects, Lego reach tool, rolling plate, web frontend.
@@ -52,6 +69,9 @@ Every criterion must be covered, but effort follows **points × how much we cont
 | Anomalib latency, best device | ≤ 15 ms | ≤ 50 ms |
 | Cycle time per brick / throughput | ≤ 25 s / ≥ 2.4 bricks per min | ≤ 45 s |
 | Unhandled failures | 0 | 0 |
+| Correct bowl on **unseen start positions** (F14) | ≥ 80% | reported honestly |
+| Energy per Anomalib inference, best device (F12) | lowest of CPU/GPU/NPU, reported in mJ | measured |
+| Package temperature over 20 trials (F12) | no thermal throttling | logged |
 
 ## 4. Requirements traceability (re-checked against every Intel slide)
 | ID | Requirement (slide) | Crit. | Owner | Test |
@@ -73,6 +93,9 @@ Every criterion must be covered, but effort follows **points × how much we cont
 | R15 | Train on the provided **Modal** GPU (HW/SW) | 3 | Nate | Checkpoints back and exported |
 | R16 | Follow the **printed robot safety guidelines** (HW/SW) | — | All | E-stop drill; speed cap |
 | R17 | Deliverables: prototype, VLA + Anomalib integration, OpenVINO deployment, live demo (End Goal) | all | Harry | Section 12 checklist |
+| R18 | Robustness to **shifted or cluttered** bricks (Junction page, task success) | 5, page 30% | Nate + Harry | F14 trials logged |
+| R19 | **Thermal headroom and power** on Core Ultra (Junction page, system efficiency) | 4, page 20% | Saliha | F12 numbers in `bench/results.md` |
+| R20 | **Clean teleop data** and fine-tuning in Studio; how few demos are enough (Junction page, dataset quality) | 3, page 20% | Nate | Rejected-episode log, dataset card, F11 curve |
 
 ## 5. Judging evidence
 | Criterion | What judges see |
@@ -82,7 +105,7 @@ Every criterion must be covered, but effort follows **points × how much we cont
 | VLA + Studio (20) | Studio used for record/train/export (live view and screenshots); verdict → "place the brick in the red bowl" → SmolVLA; app built on the Studio runtime |
 | OpenVINO (20) | PyTorch vs OV FP16 vs INT8 × CPU/GPU/NPU per stage; cycle time before and after; model size; compile time with cache; reason for each device choice |
 | Reliability (10) | 20 logged trials (Aiven query); live uncertain-brick recovery; grasp retry; e-stop |
-| Innovation (5) | Spoken reasoning; mission control; one-slide architecture |
+| Innovation (5) | Spoken reasoning; mission control; one-slide architecture; success-vs-demos curve (F11); energy per brick (F12) |
 
 ## 6. Operator flow
 1. Place 1–5 bricks in the taped pick zone and press **S**.
@@ -93,7 +116,7 @@ Every criterion must be covered, but effort follows **points × how much we cont
    - The voice states the verdict.
    - The instruction goes to SmolVLA, which places the brick.
    - Log the result.
-3. If the verdict is **uncertain**: take a second view (RealSense, or a wrist roll) and re-score. If it is still uncertain, put it in the red bowl and say so.
+3. If the verdict is **uncertain**: score a second view from a shared camera (free, no motion). Still uncertain → **re-grasp** (put the brick back down, pick it again, re-inspect: Intel's "anomaly score triggers a re-grasp"); wrist roll ±90° if time allows. Still uncertain → red bowl, said aloud.
 4. If the grasp fails (the gripper closes fully): retry once, then say "need help" and go home.
 5. When the zone is empty, stop and speak the run summary. **P** pauses, **E** is the e-stop (torque off), **Q** goes home and quits.
 
@@ -102,8 +125,8 @@ Every criterion must be covered, but effort follows **points × how much we cont
 ### 7.1 Diagram
 ```
 Own laptops (Claude Code, git) --SSH+tmux--> INTEL LAPTOP = only runtime
- Webcam 2K (inspect) ─┐            ┌────────────────────────────────────────────────┐
- RealSense D415 ──────┼─ capture ─▶│ run.py state machine (CPU) on physicalai runtime │
+ Inspection cam ─────┐            ┌────────────────────────────────────────────────┐
+ Top view (RealSense)─┼─ capture ─▶│ run.py state machine (CPU) on physicalai runtime │
  Wrist cam ───────────┘   (CPU)    │ IDLE→LOCATE→PICK→VERIFY_GRASP→INSPECT→DECIDE     │
                                    │  →[REINSPECT]→PLACE→LOG→next | HOME on any error │
                                    │ PICK: ACT (OV, GPU) · PLACE: SmolVLA (OV GPU→CPU→PT)│
@@ -117,11 +140,12 @@ Own laptops (Claude Code, git) --SSH+tmux--> INTEL LAPTOP = only runtime
 Modal GPU: ACT and SmolVLA training (datasets via HF Hub) → checkpoints → OpenVINO export
 ```
 Control and inference never touch the network. Narration and telemetry are non-blocking and work offline.
+**Cameras (F13):** one capture thread per camera grabs each frame once and hands the same frame to the policy (top + wrist) and the inspector (inspection cam; second view = whichever shared camera sees the held brick, checked Sat 08:00). Which physical camera is the RealSense: confirm at the station.
 
 ### 7.2 Device map
 | Workload | Device | Why | Fallback |
 |---|---|---|---|
-| Anomalib (PaDiM/EfficientAd, static 1×3×256×256, INT8_PTQ) | **NPU** | Small convolutional net with static shapes; low power; frees the GPU | GPU → CPU |
+| Anomalib (PaDiM/EfficientAd, static 1×3×256×256, INT8_PTQ; PatchCore or per-colour PaDiM if the good bricks come in several colours) | **NPU** | Small convolutional net with static shapes; low power (F12 measures it); frees the GPU | GPU → CPU |
 | ACT | **GPU** | Transformer, called often | CPU |
 | SmolVLA (450M parameters) | **GPU** | Heaviest model | CPU with f32 hint → PyTorch |
 | Capture, pre-processing, state machine, serial | **CPU** | Control-critical | n/a |
@@ -166,13 +190,20 @@ Plus p50/p95, model size (MB) FP32 vs INT8, first-compile vs cached-compile time
 | F1 | `DefectSignal` → instruction | 1–2 | Saliha → Harry | 2, 3 |
 | F2 | Device map, INT8, async, PrePostProcessor, compile cache, benchmark | 4–6 | Saliha | 4 |
 | F3 | Uncertainty band (thresholds from histograms) | 0.5–1 | Saliha | 2, 5 |
-| F4 | Re-inspection: RealSense second view first, wrist roll ±90° if time allows | 2–4 | Saliha + Nate | 5 |
+| F4 | Re-inspection chain: second shared-camera view → **re-grasp triggered by the anomaly score** (Intel's named idea; Nate's `reinspect` primitive puts the brick down and picks it again) → wrist roll ±90° if time → defective. Saliha owns the decision logic, Nate the motion | 2–4 | Saliha + Nate | 5 |
 | F5 | Grasp check (gripper position) plus one retry | 1–2 | Nate | 5 |
 | F6 | Mission-control window, keys S/P/E/Q | 2–3 | Harry | 1, 6 |
 | F7 | ElevenLabs narration (template text, 2 voices, cached clips) | 1–2 | Harry | 6, side track |
 | F8 | Aiven telemetry plus success-rate query | 1–2 | Harry | 5, side track |
 | F9 | Brick localization and empty-zone stop (R12) | 1–2 | Harry | 5, 1 |
-| F10 | Modal side track: reproducible `train/modal_train.py`, ACT + SmolVLA trained in parallel on Modal GPUs, GPU type, time and cost in the README. **No frontend, no extra endpoint.** Drop it if the Modal brief requires a deployed web app. | 0.5 | Nate | side track |
+| F10 | Modal side track: reproducible `train/modal_train.py`, ACT + SmolVLA trained in parallel on Modal GPUs, GPU type, time and cost in the README. (Modal's page scores a live deployed app at 15% but doesn't require one: see F16.) | 0.5 | Nate | side track |
+| F11 | **"How few demos are enough"** (Intel's insight): Modal fans out ACT runs on 18 / 36 / 54 episodes in parallel (`.map`), each exported and tried 5 times → success-vs-demos curve in the README. Also scores Modal "scale out" and dataset quality | 1 (mostly waiting) | Nate | Junction 20%, Modal |
+| F12 | **Power, energy and thermal benchmark:** sample Intel RAPL package energy (`/sys/class/powercap/intel-rapl*`) and temperatures (`/sys/class/thermal`) around every benchmark run → mJ per inference per device, watts during the loop, max temperature over the 20 trials, throttling yes/no | 1–1.5 | Saliha | Junction 20%, crit. 4 |
+| F13 | **Shared cameras** (Intel's idea): one grab per camera, the same frame goes to the policy and the inspector; saves a USB stream and latency | 0.5–1 | Harry | crit. 4, Junction 30% |
+| F14 | **Shifted and cluttered bricks:** 5 trials from start positions not in the recordings, 3 trials with a 3-brick pile (F9 picks the most isolated brick first) | 0.5 | Nate + Harry | Junction 30%, crit. 5 |
+| F15 | **Aiven as the cell's system of record:** tables `events`, `inspections` (every `DefectSignal`), `benchmarks` (F2/F12 rows), `models` (version, thresholds, AUROC); a **drift alarm** query (mean score of recent perfect bricks rising toward `t_low` → "lighting changed, rebaseline" on screen and spoken). Gives Aiven a job that changes what the robot does, not just a log | 1–1.5 | Harry (Saliha writes the drift query) | Aiven 40% |
+| F16 | *(optional, only once the 15:30 gate passes)* **Live dashboard on Modal:** `modal deploy` a read-only FastAPI page (public URL) showing sorted count, accuracy, latency and energy from Aiven. One page serves both side tracks' "demo" criteria. Read-only, never in the control path | 1 | Harry | Modal 15%, Aiven 20% |
+| F17 | *(pending Saliha's call)* **NVIDIA Nemotron 3.5 Super VL:** (a) turn the kickoff / Challenge-Day rules text into a checked `rules.yaml` once, before the run; (b) per defective brick, describe the defect from the crop + heatmap ("marker stroke on the top face") for narration and the Aiven log. Off the control path, with a template fallback | 1.5–2 | TBC | NVIDIA side track |
 
 ## 9. Fail-safes (from teams that failed this before, and from our own mistakes)
 | Risk | Guard |
@@ -254,7 +285,9 @@ Keep the backup video on a second screen.
 2. Modal access, GPU hours, and whether Studio connects to it.
 3. Is reuse of open-source code confirmed?
 4. Is there a stack-verification script for Ubuntu 26.04 / Anomalib 2.7.0? Can policies export to the NPU?
-5. ElevenLabs, Aiven and Modal challenge criteria, and whether we can enter them alongside Intel (Modal: does it need a deployed web app?).
+5. ElevenLabs criteria (Aiven and Modal found, §0), and whether we can enter them alongside Intel.
+6. Which rubric scores us: the kickoff slides (25/20/20/20/10/5) or the Junction page (30/30/20/20)? How do you want power and thermal measured on the laptop? What should we use from the Robotics AI Suite?
+7. Which station camera is the RealSense: the top view or the inspection camera? Do the good Duplo bricks come in one colour or several?
 
 ## 14. References
 - Physical AI Studio: https://github.com/open-edge-platform/physical-ai-studio

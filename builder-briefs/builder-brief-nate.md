@@ -1,7 +1,7 @@
-> **Status, 2026-11-14 00:10.** Nothing built yet. Block A (Modal + export test) starts 00:45. Docs on `context`, board on `main`.
+> **Status, 2026-11-14 00:30.** PRD v2.2 (Junction page + side-track criteria) added 🆕 items below. Nothing built yet. Block A (Modal + export test) starts 00:45. Docs on `context`, board on `main`.
 
 # Nate: robot and policies (Studio, ACT, SmolVLA, Modal)
-**GitHub:** `{{github}}` · **Branch:** `robot-nate` · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:10 by saliha
+**GitHub:** `{{github}}` · **Branch:** `robot-nate` · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:30 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -17,7 +17,7 @@
 ---
 
 ## 1. Ownership
-You own **R1 (Studio), R4, R6, R10, R15 and F5**, and you co-own R5 and F4: criterion 3 (20) and most of criterion 5 (10).
+You own **R1 (Studio), R4, R6, R10, R15, R20 (data quality), F5 and F11**, and you co-own R5, R18, F4 (re-grasp motion) and F14: criterion 3 (20) and most of criterion 5 (10).
 
 **Owns:**
 - `robot/`: `io.py` (connect, observe, act, torque_off) + `MockRobot`
@@ -43,7 +43,8 @@ You own **R1 (Studio), R4, R6, R10, R15 and F5**, and you co-own R5 and F4: crit
 
 ---
 
-## 3. ▶ Current tasks (2026-11-14 00:10)
+## 3. ▶ Current tasks (2026-11-14 00:30)
+🆕 **What changed (PRD v2.2):** the Junction page scores **dataset and pipeline quality (20%)**: clean teleop data, fine-tuning in Studio, "how few demonstrations are enough"; and **task success (30%)** includes **shifted or cluttered bricks**. Objects are **Duplo** (bigger, easier grasp). Cameras: top view + inspection + wrist. Modal's page gives every participant $100 credits and scores scale-out.
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
 ### BLOCK A: tonight 00:45–02:30 (own laptop, no hardware)
@@ -55,9 +56,11 @@ Goal: remove the two biggest unknowns before the robot exists: **Modal training*
 | A2 | ⬜ | Smoke-train on a public dataset (e.g. `lerobot/svla_so100_pickplace`): ACT 200 steps (`optimizer_lr=1e-5`), SmolVLA 200 steps from `lerobot/smolvla_base` | 20 min (runs alone) | Checkpoints in the Volume |
 | A3 | ⬜ | **Export test** on your laptop: `pip install physicalai` (and/or Studio); export the smoke checkpoints with `backend="openvino"`; `InferenceModel(..., device="CPU")` on a dummy observation **with a task string**. Record which of the known bugs (#1384, #1414, #1169) you hit and the workaround. | 30 min | OV inference returns an action |
 | A4 | ⬜ | `robot/io.py` on the LeRobot SO-101 API plus `MockRobot` (same methods); `policies/act.py`, `policies/smolvla.py` implementing `Mover` against the mock | 20 min | `run.py --mock` works with your policies |
-| A5 | ⬜ | `train/RECORDING.md` (page 1 of the plan):<br>• 10×10 cm pick zone, 9 start positions × 6 = 54 ACT episodes, each ending at the marked inspection pose<br>• SmolVLA: 25 + 25, starting at the inspection pose<br>• Task strings exactly `"place the brick in the red bowl"` / `"…blue bowl"`<br>• Episode about 12 s, reset about 10 s<br>• HF repo names | 10 min | Shared |
+| A4b 🆕 | ⬜ | Agree with Saliha and Harry **before the 01:00 freeze** what `reinspect` means now that it also covers the **re-grasp** (Intel's "anomaly score triggers a re-grasp"), e.g. `reinspect(angle_deg)` with `0` = put down and pick again. Post it in `progress.md` | 5 min | Agreed |
+| A5 | ⬜ | `train/RECORDING.md` (page 1 of the plan):<br>• 10×10 cm pick zone, 9 start positions × 6 = 54 ACT episodes, each ending at the marked inspection pose<br>• SmolVLA: 25 + 25, starting at the inspection pose<br>• Task strings exactly `"place the brick in the red bowl"` / `"…blue bowl"`<br>• Episode about 12 s, reset about 10 s<br>• HF repo names<br>🆕 • Hold back 2 of the 9 start positions plus a few off-grid spots for the F14 test (never recorded)<br>🆕 • Reject and log bad episodes (dropped brick, collision, hesitation) in `train/rejected.md`; a short dataset card on the HF Hub (dataset quality 20%) | 10 min | Shared |
 | A6 | ⬜ | Commit; status in `progress.md` | 5 min | — |
 | A7 | ⬜ | Modal side track (F10): log GPU type, wall time and cost for every run into `train/runs.md` (it goes in the README). No frontend. | 5 min | File exists |
+| A8 🆕 | ⬜ | Make `modal_train.py` take `--episodes N` (first N episodes) and add a `sweep` entrypoint that `.map`s ACT over `[18, 36, 54]` in parallel (F11). Smoke it on the public dataset with 2 small values | 10 min | Two runs finish in parallel |
 
 ### BLOCK B: Saturday 08:00 → Sunday 09:00 (follow the slot table in PRD 10)
 | Time | Status | Task | Done when |
@@ -65,20 +68,20 @@ Goal: remove the two biggest unknowns before the robot exists: **Modal training*
 | 08:00–09:00 | ⬜ | Install Studio on the Intel laptop (Docker `--profile xpu` or `uv run --extra xpu physicalai-studio serve`); `lerobot-find-port`; calibrate leader and follower; save calibration; read the safety guidelines | Smooth teleop |
 | 09:00–09:30 (robot) | ⬜ | 5 test episodes in Studio → push → Modal 200-step run with **your** data shape | Checkpoint back |
 | 10:30–12:30 (robot) | ⬜ | Record **54 ACT** episodes (Harry resets) | Dataset on the HF Hub |
-| 12:30 | ⬜ | **Launch ACT** on Modal (lr 1e-5; about 2–3 h) | Running |
+| 12:30 | ⬜ | **Launch ACT** on Modal (lr 1e-5; about 2–3 h). 🆕 Launch the **F11 sweep** (18 / 36 / 54 episodes) in parallel at the same time; the 54 run is the main policy | Running |
 | 12:30–14:00 (robot) | ⬜ | Record **50 SmolVLA** episodes | Dataset pushed |
 | 14:00 | ⬜ | **Launch SmolVLA** (10k steps, about 2–2.5 h). **Back up checkpoints before any export.** | Running |
 | 14:00–16:00 | ⬜ | F5 grasp check (gripper position after close below the empty threshold → retry once); `reinspect(±90°)` wrist-roll primitive; test both in the 15:30 robot slot | Works 3 times in a row |
-| **17:00 gate** | ⬜ | ACT → OpenVINO (GPU) → 10 trials. ≥6/10 → keep; else scripted pick (no time for a retrain) | Logged in `progress.md` |
+| **17:00 gate** | ⬜ | ACT → OpenVINO (GPU) → 10 trials. ≥6/10 → keep; else scripted pick (no time for a retrain). 🆕 Also 5 tries each of the 18- and 36-episode checkpoints → success-vs-demos curve (F11) | Logged in `progress.md` |
 | **19:00 gate** | ⬜ | SmolVLA → OV on GPU → CPU f32 → PyTorch; 10 trials. ≥6/10 correct bowl → keep. Below that, **still use SmolVLA if it is ≥4/10 and the scripted placement is not clearly better** (criterion 3 rewards the real VLA); otherwise scripted placement chosen by the same instruction | Logged |
 | 19:00–21:00 | ⬜ | Integrate the policies with Harry through `Mover` (`--scripted pick,place` stays available) | Both modes run |
 | 21:00–22:00 | ⬜ | Hand the IR files to Saliha for benchmarking; don't use the GPU | — |
-| 23:00–01:00 | ⬜ | **Freeze**; 20 logged trials with Harry; sleep 01:00–06:00 | Success rate in Aiven |
+| 23:00–01:00 | ⬜ | **Freeze**; 20 logged trials with Harry; 🆕 plus F14: 5 trials from held-back start positions and 3 with a 3-brick pile; sleep 01:00–06:00 | Success rates in Aiven |
 | 06:00–09:00 | ⬜ | Check the home pose and recalibrate on the demo table; final runs | Ready |
 
 **Seams** (the same note is in the other two briefs):
 - @harry: `fallback/scripted.py` replays waypoints through your `robot/io.py`; push `MockRobot` around 02:00 so Harry's stub can go. `run.py` calls your policies through `Mover`; `--scripted pick,place` must keep working.
-- @saliha: F4 wrist roll calls your `Mover.reinspect(angle_deg)`; your ACT/SmolVLA OpenVINO IR files go to Saliha for the 21:00 GPU-slot benchmark.
+- @saliha: F4 re-grasp (🆕) and wrist roll call your `Mover.reinspect(angle_deg)`; your ACT/SmolVLA OpenVINO IR files go to Saliha for the 21:00 GPU-slot benchmark.
 
 ## 4. Done log (newest first)
 - *(empty)*
@@ -91,6 +94,7 @@ Goal: remove the two biggest unknowns before the robot exists: **Modal training*
 - GitHub handle and agent tool: {{github}} · {{tool}}
 - Modal access (Intel-provided or personal) and GPU hours: {{modal}}
 - HF dataset repo names: {{hf repos}}
+- Can ACT or SmolVLA run on the NPU? (Intel workshop) {{npu policies}}
 
 ## 6a. Reference
 ### Pitfalls

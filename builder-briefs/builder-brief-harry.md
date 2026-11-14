@@ -1,7 +1,7 @@
-> **Status, 2026-11-14 00:10.** Repo exists (`saliha006/Chooms-chrome`; `main` has `README.md` + `progress.md`). The rest of Block A starts 00:45. Docs on `context`.
+> **Status, 2026-11-14 00:30.** PRD v2.2 (Junction page + side-track criteria) added 🆕 items below. Repo exists (`saliha006/Chooms-chrome`; `main` has `README.md` + `progress.md`). The rest of Block A starts 00:45. Docs on `context`.
 
 # Harry: integration, demo and side tracks (ElevenLabs, Aiven) + submission
-**GitHub:** `{{github}}` · **Branch:** `integration-harry` · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:10 by saliha
+**GitHub:** `{{github}}` · **Branch:** `integration-harry` · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:30 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -17,7 +17,7 @@
 ---
 
 ## 1. Ownership
-You own **R5 (with Nate), R11, R12, R14, R17, F6, F7, F8, F9**, the scripted fallback and the submission. Criterion 1 (25 points) is your loop.
+You own **R5 (with Nate), R11, R12, R14, R17, F6, F7, F8, F9, F13, F15 and F16 (optional)**, co-own R18/F14 with Nate, the scripted fallback and the submission. Criterion 1 (25 points) is your loop.
 
 **Owns:**
 - `run.py`, `common/` (you own `common/interfaces.py`; freeze it at **01:00**), `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`
@@ -43,7 +43,8 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 
 ---
 
-## 3. ▶ Current tasks (2026-11-14 00:10)
+## 3. ▶ Current tasks (2026-11-14 00:30)
+🆕 **What changed (PRD v2.2):** Aiven's page scores **meaningful use (40%)**, so the database must change what the cell does, not only log (F15). Modal scores a **live deployed app (15%)**: an optional read-only dashboard (F16) covers that and Aiven's impact at once. Intel wants **cameras shared between policy and inspection** (F13). Cameras at the station: **top view + inspection + wrist**; objects are Duplo.
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
 ### BLOCK A: tonight 00:45–02:30 (own laptop, no hardware)
@@ -53,9 +54,10 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 |---|---|---|---|---|
 | A1 | 🟡 | GitHub repo (MIT), folders per PRD 10, `progress.md`, `Makefile` (`mock`, `run`, `rebaseline` → `python -m perception.rebaseline`), `common/interfaces.py` copied from PRD 7.3; tell the team "frozen" at 01:00. *(2026-11-14 00:10: repo and `progress.md` already exist; MIT licence, folders, `Makefile`, `interfaces.py` still to do.)* | 15 min | Others can pull |
 | A2 | ⬜ | `config/{cameras,rules,robot}.yaml` (camera paths as placeholders); `MockCamera` (folder of images), `MockInspector`, `MockMover` | 15 min | — |
+| A2b 🆕 | ⬜ | **F13 shared capture:** `common/capture.py` (or in `run.py`), one thread per camera keeps the latest frame; the policy and the inspector both read it, no second grab. Roles in `cameras.yaml`: `top`, `inspect`, `wrist` | 15 min | Mock run reads each camera once per tick |
 | A3 | ⬜ | `run.py` state machine `IDLE→LOCATE→PICK→VERIFY_GRASP→INSPECT→DECIDE→[REINSPECT]→PLACE→LOG→next`; every exception → `HOME` plus a spoken message; flags `--mock`, `--scripted pick,place`. Build it on the `physicalai` runtime pieces (`InferenceModel`, `RobotRuntime`) where they fit (R5). | 30 min | Mock run sorts 5 fake bricks |
 | A4 | ⬜ | `ui/mission_control.py`: one OpenCV window (feed, heatmap overlay, label and score, state, per-stage latency, bricks done); keys S/P/E/Q on the control thread | 20 min | Readable at 2 m |
-| A5 | ⬜ | **Aiven:** free-tier PostgreSQL; table `events` (PRD 7.3); `telemetry/writer.py`: `queue.Queue` → `runs/events.jsonl` → batch insert; offline = JSONL only, sync later; `telemetry/report.sql` (success rate, latency per stage and device) | 20 min | Rows in Aiven from a mock run |
+| A5 | ⬜ | **Aiven:** free-tier PostgreSQL ($50 credits on sign-up); table `events` (PRD 7.3) 🆕 plus `inspections`, `benchmarks`, `models` (PRD F15); `telemetry/writer.py`: `queue.Queue` → `runs/events.jsonl` → batch insert; offline = JSONL only, sync later; `telemetry/report.sql` (success rate, latency per stage and device) | 20 min | Rows in Aiven from a mock run |
 | A6 | ⬜ | **ElevenLabs:** API key; pick 2 voices (cheerful = perfect, gloomy = defective); `narrator/cache.py` pre-generates about 12 template phrases with `eleven_flash_v2_5` → WAV; `narrator/say.py` plays on a thread; brick IDs and scores come from short cached number clips or a live call with a 1.5 s timeout, falling back to the generic phrase | 20 min | Narration never blocks a state transition |
 | A7 | ⬜ | `fallback/scripted.py` skeleton: replays named joint waypoints from `config/waypoints.yaml` via Nate's `robot/io.py` (use his `MockRobot` once pushed around 02:00; until then a local stub with the same 4 methods) `[⏸ waits on @nate: MockRobot]` | 10 min | Works against the mock |
 | A8 | ⬜ | README skeleton and architecture diagram (from PRD 7.1) | 10 min | Committed |
@@ -68,14 +70,15 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 | 10:00–10:30 | ⬜ | Hold the inspection pose for Saliha's capture | — |
 | 10:30–14:00 | ⬜ | Resets for Nate's recordings; in between, **F9 localization**: colour blob in the pick zone (overhead webcam) plus RealSense depth → brick present and position; stop when empty | Position logged |
 | **15:30 gate (robot)** | ⬜ | With Saliha: **scripted full loop with real Anomalib, 5 bricks, no human** | Pass; film it as the backup video v1 |
-| 15:30–19:00 | ⬜ | Mission control on the real feed; live narration and telemetry; tune the spoken lines | Live |
+| 15:30–19:00 | ⬜ | Mission control on the real feed; live narration and telemetry; tune the spoken lines. 🆕 **F15 drift alarm:** run Saliha's drift query every few bricks on the telemetry thread → "lighting changed, rebaseline" on screen and spoken | Live |
 | 19:00–21:00 (robot) | ⬜ | Swap in Nate's policies behind `Mover`; keep `--scripted` working | Both modes |
-| 21:00–23:00 | ⬜ | Architecture slide, README (run steps, device rationale, benchmark placeholder for Saliha, credits), submission text draft | Drafts ready |
-| 23:00–01:00 | ⬜ | **Freeze**; 20 logged trials with Nate; film the best runs; sleep 01:00–06:00 | Trial table from `report.sql` |
-| 06:00–09:00 | ⬜ | Edit the 2-minute video; finish the README; Junction Platform submission (Intel, plus ElevenLabs and Aiven if allowed) **by 09:00** | Submitted |
+| 21:00–23:00 | ⬜ | 🆕 *(only if the 15:30 gate passed)* **F16:** `modal deploy` a read-only FastAPI page (public URL) with sorted count, accuracy, latency and energy from Aiven; never in the control path. Then architecture slide, README (run steps, device rationale, benchmark placeholder for Saliha, credits), submission text draft | Drafts ready |
+| 23:00–01:00 | ⬜ | **Freeze**; 20 logged trials with Nate; 🆕 F14 shifted and pile trials (F9 picks the most isolated brick first); film the best runs; sleep 01:00–06:00 | Trial table from `report.sql` |
+| 06:00–09:00 | ⬜ | Edit the 2-minute video; finish the README; Junction Platform submission (Intel, plus ElevenLabs, Aiven, Modal, and NVIDIA if we enter it; Nemotron needs a short text on model, role and how we improved its output) **by 09:00** | Submitted |
 | 09:00 → demo | ⬜ | Lead rehearsals: the script in PRD 11, the e-stop drill, the backup video on a second screen | — |
 
 **Seams** (the same note is in the other two briefs):
+- @saliha 🆕: F15 drift SQL comes from Saliha; F12 energy numbers go in the `benchmarks` table and the F16 page.
 - @saliha: `run.py` calls `Inspector.inspect(frame, view, brick_id)` → `DefectSignal`; `label` → instruction via `config/rules.yaml` (F1); mission control draws `heatmap_path`, `bbox`, `score`; `make rebaseline` → `python -m perception.rebaseline`.
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 

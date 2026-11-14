@@ -1,7 +1,7 @@
-> **Status, 2026-11-14 00:10.** Nothing built yet. Block A (stand-in pipeline) starts 00:45. Docs on `context`, board on `main`.
+> **Status, 2026-11-14 00:30.** PRD v2.2 (Junction page + side-track criteria) added 🆕 items below. Nothing built yet. Block A (stand-in pipeline) starts 00:45. Docs on `context`, board on `main`.
 
 # Saliha: perception, AI/ML and OpenVINO + doc owner
-**GitHub:** `saliha006` · **Branch:** `perception-saliha` · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 00:10 by saliha
+**GitHub:** `saliha006` · **Branch:** `perception-saliha` · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 00:30 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -17,7 +17,7 @@
 ---
 
 ## 1. Ownership
-You own **R2, R3, R7, R8 (devices), R9, R13 (uncertainty band), F1, F2, F3 and F4**: about 40 points (criteria 2 and 4), the two criteria we weight highest after the loop.
+You own **R2, R3, R7, R8 (devices), R9, R13 (uncertainty band), R19 (power and thermal), F1, F2, F3, F4 (decision logic) and F12**, and write the F15 drift query: about 40 points (criteria 2 and 4), the two criteria we weight highest after the loop.
 
 **Owns:**
 - `perception/`: capture, train, calibrate, export, inspector, rebaseline, re-inspection (F4)
@@ -44,11 +44,12 @@ Exception: the one import line in `run.py`, agreed in `progress.md` (Block B 13:
 
 ---
 
-## 3. ▶ Current tasks (2026-11-14 00:10)
+## 3. ▶ Current tasks (2026-11-14 00:30)
+🆕 **What changed (PRD v2.2):** objects are **Duplo bricks with marker-drawn defects**; the Junction page scores **power, thermal headroom and latency** (20%), so the benchmark gains energy and temperature (A10, F12); Intel asks for **re-grasp on the anomaly score** (F4 chain below); if the good bricks come in **several colours**, PaDiM is the wrong default (10:30 row).
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
 ### BLOCK A: tonight 00:45–02:30 (own laptop, no hardware)
-Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday you only swap in real brick photos. Stand-in data = your webcam plus about 40 identical small objects (coins, bottle caps, Lego if you have any). Make "defects" with a marker scribble, a sticker, or a chipped or turned item.
+Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday you only swap in real brick photos. Stand-in data = your webcam plus about 40 identical small objects (coins, bottle caps, Lego if you have any). Make "defects" with a marker scribble, a sticker, or a chipped or turned item. 🆕 Marker strokes match the real defects best (Intel: "markers to create your own defects"), so use mostly those, and use **two or three object colours** if you can, to test the multi-colour case tonight.
 
 | # | Status | Task | Est. | Done when |
 |---|---|---|---|---|
@@ -61,26 +62,28 @@ Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday 
 | A7 | ⬜ | `python -m perception.rebaseline` (Harry wires it to `make rebaseline`): capture 60 good → retrain PaDiM → recalibrate, in under 2 minutes | 10 min | Timed |
 | A8 | ⬜ | `bench/benchmark.py`: N=100 warm runs per (model × precision × device); p50/p95; model size; first vs cached compile; writes `bench/results.md` | 15 min | CPU rows filled |
 | A9 | ⬜ | Commit; post status in `progress.md` | 5 min | — |
+| A10 🆕 | ⬜ | `bench/power.py`: a context manager that reads Intel RAPL package energy (`/sys/class/powercap/intel-rapl:0/energy_uj`, which wraps around) and the max of `/sys/class/thermal/thermal_zone*/temp` before and after a run → joules, average watts, peak °C. Returns `None` off Linux (this laptop), so the benchmark still runs. `benchmark.py` adds mJ-per-inference columns | 15 min | Unit test with a fake sysfs folder passes |
 
 ### BLOCK B: Saturday 08:00 → Sunday 09:00 (Intel laptop and robot; follow the slot table in PRD 10)
 | Time | Status | Task | Done when |
 |---|---|---|---|
 | 08:00–09:30 | ⬜ | Install on the Intel laptop; `ov.Core().available_devices` → CPU, GPU, NPU; run the Block A pipeline on the stand-in data there | NPU compiles, or the reason it fails is logged |
 | 10:00–10:30 (robot slot) | ⬜ | Capture **real bricks at the inspection pose** (Harry's waypoint holds the brick): ~150 good, ~40 defective, ~30 held-out good; same lamp and crop | Data saved |
-| 10:30–12:00 | ⬜ | Train PaDiM, PatchCore, EfficientAd → choose by AUROC and latency; calibrate; export; NPU parity check `[🟠 your call: which model]` | Held-out AUROC ≥ 0.90 |
+| 10:30–12:00 | ⬜ | Train PaDiM, PatchCore, EfficientAd → choose by AUROC and latency; calibrate; export; NPU parity check `[🟠 your call: which model]`. 🆕 **If the good bricks come in several colours:** PaDiM fits one Gaussian per patch position, so mixed colours blur "normal" and marker strokes hide in the spread. Compare PatchCore (nearest-neighbour memory bank, copes with several normal looks; check the batch-2 export, #3883) against **one PaDiM per colour** picked by mean hue (keeps the small NPU model). One colour → PaDiM stays the default. 🆕 Crop to the brick (fixed inspection pose; RealSense depth mask if the gripper or background lights up the heatmap) | Held-out AUROC ≥ 0.90 |
 | 12:00–13:00 | ⬜ | **Intel workshop**. Ask: NPU and policy export, best Anomalib model on the NPU, what judges want in the optimization table | Notes in `progress.md` |
 | 13:00–14:00 | ⬜ | Wire `inspect()` into `run.py` (Harry's state machine calls it; you don't edit `run.py` except the import line agreed in `progress.md`) `[⚠ touches @harry: run.py import line]` | Live verdict on screen |
 | **15:30 gate** | ⬜ | With Harry: scripted full loop with real Anomalib, 5 bricks, no human | Pass |
-| 15:30–17:00 | ⬜ | Anomalib benchmark across all devices and precisions; uncertainty band live | Table rows |
-| 17:00–19:00 | ⬜ | **F4 re-inspection logic (no robot needed):** if uncertain → score the RealSense colour view → max score → still uncertain = defective. Add the wrist-roll call (Nate's `reinspect(±90)`) behind a flag. | Unit test on saved borderline images |
+| 15:30–17:00 | ⬜ | Anomalib benchmark across all devices and precisions; uncertainty band live. 🆕 **F12:** every row also gets mJ per inference and watts (A10); run a 5-minute sustained load per device for the thermal-headroom line. Cross-check one row with OpenVINO's `benchmark_app` | Table rows incl. energy |
+| 17:00–19:00 | ⬜ | **F4 re-inspection logic (no robot needed):** if uncertain → score the RealSense colour view → max score → still uncertain = defective. Add the wrist-roll call (Nate's `reinspect(±90)`) behind a flag. 🆕 **Chain (PRD v2.2):** second shared-camera view (no motion) → **re-grasp** via Nate's primitive and re-inspect (Intel's named idea: "anomaly score triggers a re-grasp") → wrist roll if enabled → defective. Each step logged with its score. 🆕 **F15:** write the drift-alarm SQL for Harry (mean score of the last N perfect bricks vs `t_low`) | Unit test on saved borderline images |
 | 19:00–21:00 | ⬜ | **20:30: live F4 test in the integration slot** (borderline brick works 3 times in a row). Before that, optimizations, each with a number: `AsyncInferQueue` so inference overlaps arm motion; resize and normalize moved into the graph with `PrePostProcessor`; compile `CACHE_DIR`; `PERFORMANCE_HINT` LATENCY vs THROUGHPUT | Cycle time drop measured |
 | 21:00–22:00 (GPU slot) | ⬜ | Benchmark Nate's ACT/SmolVLA IR on CPU and GPU (PyTorch vs OV FP16/INT8); end-to-end cycle before and after; bricks per minute `[⏸ waits on @nate: IR files]` | `bench/results.md` complete |
-| 23:00 | ⬜ | **Freeze.** Sleep 00:00–05:00 | — |
+| 23:00 | ⬜ | **Freeze.** 🆕 Leave the F12 sampler logging during Nate and Harry's 20 trials (peak °C, throttling yes/no). Sleep 00:00–05:00 | — |
 | 06:00–09:00 | ⬜ | `make rebaseline` on the **demo table**; final numbers and plots into the README; check the submission | Done by 09:00 |
 
 **Seams** (the same note is in the other two briefs):
 - @harry: `run.py` calls `Inspector.inspect(frame, view, brick_id)` and turns `DefectSignal.label` into the instruction via `config/rules.yaml` (F1); mission control draws `heatmap_path`, `bbox`, `score`; telemetry logs `label`, `score`, `device`, `latency_ms`; `make rebaseline` → `python -m perception.rebaseline`.
-- @nate: F4 wrist roll calls Nate's `Mover.reinspect(angle_deg)`; Nate's ACT/SmolVLA OpenVINO IR files come to `bench/` for the 21:00 GPU-slot benchmark.
+- @harry 🆕: F13 shared capture hands you the same frames the policy sees; F15 needs your drift SQL; the F16 dashboard shows your energy numbers.
+- @nate: F4 re-grasp and wrist roll call Nate's `Mover.reinspect(angle_deg)` (🆕 re-grasp = put down and pick again; exact signature agreed in `progress.md` before the 01:00 freeze); Nate's ACT/SmolVLA OpenVINO IR files come to `bench/` for the 21:00 GPU-slot benchmark.
 
 ## 4. Done log (newest first)
 - *(empty)*
@@ -93,6 +96,8 @@ Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday 
 - Stand-in objects and webcam path for Block A: {{objects}} · {{cam path}}
 - Which Anomalib model ships (Block B 10:30): {{model}}
 - Plan clock vs Espoo time for the Sunday 10:00 deadline: {{timezone}}
+- Good bricks: one colour or several? {{colours}} · Which station camera is the RealSense? {{camera}}
+- NVIDIA Nemotron side track (F17): in or out, and who owns it? {{nemotron}}
 
 ## 6a. Reference
 ### Minimal code (check names against the 2.7.0 docs)
