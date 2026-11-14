@@ -63,7 +63,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | All hardware-free tasks done (S1, S5, S6, bench, dance); next: 08:00 Intel laptop install (S2), 10:00 capture |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed; ACT smoke re-run on red-lego in flight (detached, ~12:45 after a dropped connection killed the first); next: ACT export test, then N3. Nothing recorded yet |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Voice clips committed; next: station (H5 setup + click tool, bowl check, 15:30 gate) |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | A5 Aiven PostgreSQL live (sync + report); Kafka waits on the free Kafka service; next: station (H5, bowl check, 15:30 gate) |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -90,6 +90,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 12:28 — merge — A5: event log → Aiven PostgreSQL, verified live; Kafka producer ready; trial report — @harry [conflicts: @saliha]
+- **Where:** `systems-voice-harry` @ `992a89b` · merged to `main`: yes
+- **Did:** `telemetry/sync.py`: a thread beside the control loop sends new `runs/events.jsonl` rows to an Aiven PostgreSQL `events` table (PRD 7.3 columns) every 2 s and, once `AIVEN_KAFKA_*` is set, to the `sortsense.events` topic. Offline, rows wait in the file; the offset is saved only after a batch lands and a unique key makes re-sends no-ops. `python -m telemetry.check_aiven` tests the connection, printing no secrets. `telemetry/report.sql`: runs, pauses by reason, p50/p95 per stage and device, second looks. Mock runs now log to `runs/mock-events.jsonl` with a `mock-` run id and only go to Aiven with `--aiven`, so stand-in data stays out of the report. New pins: `psycopg[binary]==3.3.9`, `confluent-kafka==2.16.1`; `certs/` is git-ignored and `.env.example` lists the Aiven settings. **Measured live (free plan, PostgreSQL 18.7):** connect ~0.4 s warm (5.3 s on a cold service); a mock run's 37 rows all landed; re-sending all 37 left 37. 101 tests pass with Nate's. Kafka not tested yet (no free Kafka service created).
+- **Touched:** `telemetry/`, `run.py`, `requirements.txt`, `.gitignore`, `.env.example`
+- **Brief task:** A5 → 🟡 (PostgreSQL done; Kafka stream + drift alarm left)
+- **⚠️ Conflicts:** @saliha: the drift alarm will read `events` (INSPECT rows with `label`, `score`); your drift rule plugs in there. Your 05:32 `opencv-python` row is still open
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 11:53 — decision — Record in degrees with all three cameras; end-of-run dance accepted — @nate [conflicts: @harry @saliha]
 - **Where:** `robotics-policies-nate` (this commit) · merged to `main`: yes
