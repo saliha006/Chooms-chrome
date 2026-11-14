@@ -1,6 +1,7 @@
 """SortSense cell: one brick at a time through the PRD 7.1 state machine.
 
     python run.py --mock                    # whole loop with stand-ins, no hardware
+    python run.py --mock --headless         # same, no window (tests, SSH without a display)
     python run.py --scripted pick,place     # real station, scripted motion (the 15:30 gate)
     python run.py --scripted place          # ACT picks, scripted placement
     python run.py                           # ACT picks, SmolVLA places
@@ -12,6 +13,7 @@ Any error → HOME plus a spoken message, then the run stops for a person to loo
 import argparse
 import logging
 import sys
+import threading
 import time
 import uuid
 from contextlib import contextmanager
@@ -21,6 +23,7 @@ import yaml
 
 import narrator
 import telemetry
+from common import estop
 from common.capture import SharedCapture
 from common.interfaces import DefectSignal, Inspector, Mover
 from common.locate import CountLocator
@@ -47,10 +50,15 @@ class Cell:
         self.run_id = run_id
         self.state = "IDLE"
         self.sorted = 0
+        self.mode = "mock"
+        self.last_signal: DefectSignal | None = None
+        self.stage_ms: dict[str, float] = {}
+        self.paused = threading.Event()  # P: hold at the next stage boundary
+        self.quit = threading.Event()  # Q: finish this brick, then home and stop
 
     def run(self) -> None:
         try:
-            while True:
+            while not self.quit.is_set():
                 with self._stage("LOCATE", self.sorted + 1) as row:
                     present = self.locator.next_brick()
                     row["outcome"] = "brick" if present else "empty"
@@ -58,16 +66,21 @@ class Cell:
                     break
                 self.sort_one(self.sorted + 1)
                 self.sorted += 1
-            narrator.say("empty", n=self.sorted)
+            narrator.say("quit" if self.quit.is_set() else "empty", n=self.sorted)
+            self.state = "HOME"
             self.picker.home()
+            self.state = "DONE"
+        except estop.EStopped:
+            self.state = "E-STOP"
+            narrator.say("estop")
+            raise
         except Exception as exc:
             _log.exception("run stopped")
             narrator.say("help", reason=type(exc).__name__)
             self.state = "HOME"
             self.picker.home()
+            self.state = "STOPPED"
             raise
-        finally:
-            self.state = "IDLE"
 
     def sort_one(self, brick_id: int) -> None:
         self._pick(brick_id)
@@ -107,6 +120,7 @@ class Cell:
         with self._stage("INSPECT", brick_id, note=role) as row:
             frame = self.capture.frame(role, newer_than=newer_than)
             signal = self.inspector.inspect(frame, self.views[role], brick_id)
+            self.last_signal = signal
             row.update(label=signal.label, score=signal.score, device=signal.device, outcome=signal.label)
         return signal
 
@@ -131,7 +145,8 @@ class Cell:
 
     @contextmanager
     def _stage(self, state: str, brick_id: int, signal: DefectSignal | None = None, **extra):
-        """Sets the visible state, times the stage and writes one `events` row (PRD 7.3)."""
+        """Acts on E and P, sets the visible state, times the stage and writes one `events` row (PRD 7.3)."""
+        self._checkpoint()
         self.state = state
         row = {"label": None, "score": None, "device": None, "outcome": None, "note": None}
         if signal is not None:
@@ -140,12 +155,26 @@ class Cell:
         start = time.perf_counter()
         try:
             yield row
+        except estop.EStopped:
+            row["outcome"] = "e-stop"
+            raise
         except Exception as exc:
             row["outcome"] = f"error: {exc}"
             raise
         finally:
+            self.stage_ms[state] = round((time.perf_counter() - start) * 1000, 2)
             telemetry.log(run_id=self.run_id, brick_id=brick_id, ts=time.time(), state=state, stage=state.lower(),
-                          latency_ms=round((time.perf_counter() - start) * 1000, 2), **row)
+                          latency_ms=self.stage_ms[state], **row)
+
+    def _checkpoint(self) -> None:
+        """Runs on the control thread, the only one that talks to the motors (decisions.md D21)."""
+        while True:
+            if estop.requested():
+                self.picker.estop()
+                raise estop.EStopped()
+            if not self.paused.is_set():
+                return
+            time.sleep(0.05)
 
 
 def parse_scripted(text: str) -> set[str]:
@@ -225,9 +254,25 @@ def build_real(scripted: set[str], bricks: int, run_id: str) -> Cell:
         learned_mover = LearnedMover(policy.get("pick"), policy.get("place"), poses,
                                      lambda: {role: capture.frame(role) for role in pol["cameras"]})
         movers |= {part: learned_mover for part in learned}
-    _log.info("pick: %s · place: %s", *("scripted" if p in scripted else needed[p] for p in ("pick", "place")))
-    return Cell(capture, inspector, movers["pick"], movers["place"], CountLocator(bricks), load_config("rules.yaml"),
+    cell = Cell(capture, inspector, movers["pick"], movers["place"], CountLocator(bricks), load_config("rules.yaml"),
                 views_of(cameras), run_id)
+    # Honesty guardrail: the screen and the log always say what moved the arm.
+    cell.mode = "pick: {} | place: {}".format(*("scripted" if p in scripted else needed[p] for p in ("pick", "place")))
+    _log.info(cell.mode)
+    return cell
+
+
+def headless(cell: Cell) -> BaseException | None:
+    try:
+        cell.run()
+    except KeyboardInterrupt:
+        # Ctrl+C is the terminal's stop button: treat it like E (torque off). This is the control thread.
+        cell.picker.estop()
+        _log.warning("Ctrl+C: e-stop, torque off")
+        return estop.EStopped()
+    except (Exception, estop.EStopped) as exc:
+        return exc
+    return None
 
 
 def main() -> None:
@@ -235,6 +280,7 @@ def main() -> None:
     ap.add_argument("--mock", action="store_true", help="stand-in cameras, inspector and arm")
     ap.add_argument("--scripted", type=parse_scripted, default=set(), help="pick, place or pick,place use waypoints")
     ap.add_argument("--bricks", type=int, default=5, help="bricks in the zone (until F9 localization)")
+    ap.add_argument("--headless", action="store_true", help="no window: start at once, Ctrl+C = e-stop")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
 
@@ -242,13 +288,14 @@ def main() -> None:
     cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id)
     telemetry.start(Path("runs/events.jsonl"))
     try:
-        cell.run()
-    except KeyboardInterrupt:
-        # Ctrl+C is the terminal's stop button: treat it like E (torque off) rather than a motion home.
-        cell.picker.estop()
-        _log.warning("Ctrl+C: e-stop, torque off")
-    except Exception:
-        sys.exit(1)  # already logged, spoken and homed by Cell.run
+        if args.headless:
+            error = headless(cell)
+        else:
+            from ui import mission_control
+
+            error = mission_control.run(cell)
+        if error is not None:
+            sys.exit(1)  # already logged, spoken and homed (or torqued off) by Cell.run
     finally:
         cell.capture.stop()
         telemetry.stop()

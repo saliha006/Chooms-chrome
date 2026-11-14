@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from common import estop
 from robot import io
 
 POSES = ("home", "pick_above", "pick", "pick_drop", "inspect", "bowl_red", "bowl_blue")
@@ -91,18 +92,26 @@ class ScriptedMover:
     def _move(self, target: np.ndarray) -> bool:
         """Step toward target until the arm joints arrive. The gripper is left out of the check: while
         carrying, it is commanded closed and the brick stops it short, which must not read as "stuck"."""
-        deadline = time.monotonic() + MOVE_SECONDS
-        while not self._near(target, ARRIVE_TOLERANCE_DEG):
+        return self._step_until(target, lambda: self._near(target, ARRIVE_TOLERANCE_DEG), MOVE_SECONDS)
+
+    def _set_gripper(self, value: float) -> None:
+        target = io.observe()
+        target[io.GRIPPER] = value
+        # Closing on a brick never reaches 0; the timeout is the settle time, so its result is ignored.
+        self._step_until(target, lambda: abs(io.observe()[io.GRIPPER] - value) <= ARRIVE_TOLERANCE_DEG, 1.0)
+
+    @staticmethod
+    def _step_until(target: np.ndarray, arrived, seconds: float) -> bool:
+        deadline = time.monotonic() + seconds
+        while not arrived():
+            if estop.requested():
+                io.torque_off()
+                raise estop.EStopped()
             if time.monotonic() > deadline:
                 return False
             io.act(target)
             time.sleep(1 / io.CONTROL_HZ)
         return True
-
-    def _set_gripper(self, value: float) -> None:
-        target = io.observe()
-        target[io.GRIPPER] = value
-        io.move_to(target, seconds=1.0)  # closing on a brick never reaches 0; the timeout is the settle time
 
     @staticmethod
     def _near(target: np.ndarray, tolerance_deg: float, ignore_wrist_roll: bool = False) -> bool:
