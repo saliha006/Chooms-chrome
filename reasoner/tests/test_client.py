@@ -19,6 +19,7 @@ def test_request_carries_numbers_image_and_persona():
     assert facts == {"view": "webcam", "label": "defective", "score": 0.64, "t_low": 0.2, "t_high": 0.63, "bbox": [1, 2, 3, 4]}
     assert body["messages"][1]["content"][1]["image_url"]["url"].startswith("data:image/png;base64,")
     assert "Persona: cowboy" in body["messages"][0]["content"]
+    assert body["chat_template_kwargs"] == {"enable_thinking": False}
 
 
 def test_parse_line_reads_json_even_inside_prose():

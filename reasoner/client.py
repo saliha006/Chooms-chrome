@@ -1,8 +1,7 @@
 """One Nemotron 3.5 Super VL call: brick crop + DefectSignal in, one short spoken line out.
 
 NVIDIA Build is OpenAI-compatible; stdlib HTTP keeps the dependency list unchanged.
-Needs NVIDIA_API_KEY and NEMOTRON_MODEL (the exact Super VL id from build.nvidia.com) in the
-environment. Never call this from the control loop (decisions.md D4, D11).
+Needs NVIDIA_API_KEY and NEMOTRON_MODEL (nvidia/nemotron-3.5-super-vl-120b-a12b) in the environment. Never call this from the control loop (decisions.md D4, D11).
 
     python -m reasoner.client data/defective/0000.png
 """
@@ -41,6 +40,7 @@ def request_body(crop_bgr: np.ndarray, signal: DefectSignal, persona: str, model
         "model": model,
         "max_tokens": 80,
         "temperature": 0.3,
+        "chat_template_kwargs": {"enable_thinking": False},  # Super VL reasons by default and spends max_tokens thinking
         "messages": [
             {"role": "system", "content": f"{SYSTEM} Persona: {persona}."},
             {"role": "user", "content": [
