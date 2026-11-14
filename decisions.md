@@ -147,12 +147,12 @@
 - **Evidence:** TBD (events streamed, alert fired in the trial run).
 - **Pitch line:** "Aiven carries the cell's live event stream and raises the alarm when lighting drifts."
 
-### D15 · Training · Modal for training and logs only, no frontend — Status: Built · Owner: @nate · Updated: 2026-11-14 05:11
+### D15 · Training · Modal for training and logs only, no frontend — Status: Built · Owner: @nate · Updated: 2026-11-14 06:12
 - **Decision:** ACT and SmolVLA train on Modal GPUs from a reproducible script, with GPU type, time and cost logged. No dashboard or web app (the planned live dashboard was dropped).
 - **Why:** Intel provides Modal GPUs for training; Modal's own page scores a deployed app (15%), but a frontend is out of scope for the team, so we accept losing those points rather than risk the main track.
 - **Alternatives rejected:** a Modal-hosted dashboard (dropped); training on the laptop.
-- **Trade-off / risk:** if Modal's prize needs a web app, we drop Modal.
-- **Evidence:** TBD (`train/runs.md`; script built, first run pending).
+- **Trade-off / risk:** if Modal's prize needs a web app, we drop Modal. Training containers keep Modal's default CPU: on it, SmolVLA's loader took 0.07 s per step against a 0.2 s update, so the GPU was not starved; revisit if a dataset lacks q01/q99 statistics (Studio then spends ~40 s per episode on a one-off pass).
+- **Evidence:** first Modal runs in `train/runs.md` (SmolVLA smoke: 200 steps, 1.8 min, ≈ $0.06).
 - **Pitch line:** "Training scales out in the cloud, inference stays on the device."
 
 ## F. Team and process
@@ -181,8 +181,8 @@
 - **Evidence:** 28 automated tests including a full train → export → calibrate → inspect run (`main` @ `dd1c4d7`).
 - **Pitch line:** "Our perception pipeline was tested end to end before we touched the robot."
 
-### D19 · Safety · Every arm command is clipped to joint limits and a speed cap — Status: Built · Owner: @nate · Updated: 2026-11-14 05:15
-- **Decision:** all motion, learned or scripted, goes through `robot/io.py`, which clips each command to the SO-101 driver's joint limits and moves no joint more than 5° per 30 Hz step; E turns torque off.
+### D19 · Safety · Every arm command is clipped to joint limits and a speed cap — Status: Built · Owner: @nate · Updated: 2026-11-14 06:12
+- **Decision:** all motion, learned or scripted, goes through `robot/io.py`, which clips each command to the SO-101 driver's joint limits and moves no joint more than 5° per 30 Hz step; E turns torque off. The gripper and inspection-pose thresholds live there too, so the learned and scripted movers judge "holding" and "at the pose" by the same numbers.
 - **Why:** a policy can output any number; the printed safety rules and judges' reliability criterion need motion that is bounded no matter what the model does. Smooth motion is also part of the task-success score.
 - **Alternatives rejected:** trusting the policy's output; limits inside each policy (easy to forget one).
 - **Trade-off / risk:** the cap slows big moves; tuned on the station with the arm watched.
