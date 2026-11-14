@@ -49,6 +49,7 @@ Read the real log first (Studio: the terminal it runs in, or `~/work/studio-back
 - **"Permission denied: /dev/ttyACM*"**: a group added with `usermod` only reaches new logins. Fixed for good by `/etc/udev/rules.d/99-so101-arms.rules` (`SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d3", MODE="0666"`). Check a process's groups with `grep Groups /proc/<pid>/status`.
 - **Studio camera "no publisher responded within timeout"**: stop Studio, `rm -rf /tmp/iceoryx2 /dev/shm/iox2_*`, start it again; also check the camera still exists (`ls /dev/v4l/by-id/`), because a re-plugged camera gets a new `/dev/videoN`.
 - **Arm "Sync read failed with comm result -6"** or cameras dropping out in `dmesg`: USB power or a tugged cable (powered hub; RealSense and wrist camera straight on the laptop), not code.
+- **"Servo ID 1 did not respond" / all six motors silent while the USB board still shows up:** the arm's power plug or the board → base-motor cable is out (2026-11-14: the leader's plug). Ping read-only before blaming software.
 - **One owner per port:** Studio (an open robot page or session) and our scripts can't hold an arm at the same time; leave the Studio page before `fallback.teach` or `run.py`.
 - **Agent traps:** `printf pw | sudo -S tee file` writes an empty file (use `sudo -S sh -c 'echo ... > file'`); `pkill -f <pattern>` kills the agent's own shell when the pattern is in its command line. Don't start Studio's backend from an agent session unless asked; never store a sudo password.
 
