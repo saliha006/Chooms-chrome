@@ -57,12 +57,12 @@
 
 ## B. Perception ML (Anomalib)
 
-### D5 · Detector · Anomaly detection trained on good bricks, not a defect classifier — Status: Planned · Owner: @saliha · Updated: 2026-11-14 01:30
+### D5 · Detector · Anomaly detection trained on good bricks, not a defect classifier — Status: Built · Owner: @saliha · Updated: 2026-11-14 03:55
 - **Decision:** Anomalib learns what a good brick looks like and flags deviations. We use our marker-drawn defective bricks to set thresholds and measure quality, not as the main training signal.
 - **Why:** in inspection, defects are rare and varied; the task says we draw our own defects with markers, so a supervised classifier would only learn our marker style. Anomaly detection generalises to new marks.
 - **Alternatives rejected:** a supervised good/defective classifier (needs many labelled defects, overfits to our pen).
 - **Trade-off / risk:** colour variation in the good bricks can blur "normal" (D6). Mitigation: real-brick data in the same lamp and crop, held-out good set.
-- **Evidence:** TBD (held-out AUROC, confusion matrix, targets ≥ 0.95, minimum 0.90).
+- **Evidence:** pipeline built and tested end to end on synthetic stand-in bricks (`perception/train.py`, `calibrate.py`, `inspector.py`); held-out AUROC on real bricks TBD (Saturday 10:30, targets ≥ 0.95, minimum 0.90). Stand-in scores are not evidence.
 - **Pitch line:** "It learned what good looks like, so any new kind of defect stands out."
 
 ### D6 · Detector · Model choice decided by measurement (PaDiM default) — Status: Planned · Owner: @saliha · Updated: 2026-11-14 01:30
@@ -73,7 +73,7 @@
 - **Evidence:** TBD (comparison table in `bench/results.md`).
 - **Pitch line:** "We chose the model by measuring three on our own bricks, not by guessing."
 
-### D7 · Reliability · Two-threshold uncertainty band and re-grasp — Status: Planned · Owner: @saliha @nate · Updated: 2026-11-14 01:35
+### D7 · Reliability · Two-threshold uncertainty band and re-grasp — Status: Built (band) / Planned (re-grasp chain) · Owner: @saliha @nate · Updated: 2026-11-14 01:35
 - **Decision:** `t_low` = 99th percentile of good-brick scores, `t_high` = 5th percentile of defective scores; below `t_low` perfect, above `t_high` defective, between uncertain. Uncertain → second camera view → re-grasp (Intel's own suggested idea: use the anomaly score to trigger a re-grasp) → wrist roll if time → defective, said aloud. Re-grasp and wrist roll share one motion call, `Mover.reinspect(angle_deg)`: `0` puts the brick down in the pick zone and picks it again, `±90` rolls the wrist in place, and it returns `True` only when the brick is back at the inspection pose (agreed by @nate and @saliha 2026-11-14 01:35; @harry asked on the board).
 - **Why:** anomaly scores are distances, not probabilities, so thresholds must come from data; the rubric scores recovery from uncertain detections. One call keeps the `Mover` signature that froze at 01:00 Saturday, so the learned policies and the scripted fallback implement the same thing.
 - **Alternatives rejected:** a single threshold (every borderline brick is a coin flip); a separate `regrasp()` method (reopens the frozen contract); re-grasping before every wrist roll (each roll would cost a full re-grasp).
@@ -83,15 +83,16 @@
 
 ## C. Edge optimization (OpenVINO)
 
-### D8 · Deployment · Deliberate NPU / GPU / CPU placement with INT8 — Status: Planned · Owner: @saliha · Updated: 2026-11-14 01:30
+### D8 · Deployment · Deliberate NPU / GPU / CPU placement with INT8 — Status: Built · Owner: @saliha · Updated: 2026-11-14 03:55
 - **Decision:** Anomalib (small convolutional net, static 1×3×256×256) on the NPU with INT8 post-training quantisation; ACT and SmolVLA on the GPU; capture, state machine and serial on the CPU. Fallback chain NPU → GPU → CPU. Every optimisation claim gets a number: p50/p95 latency, model size, first vs cached compile time, bricks per minute.
 - **Why:** the NPU is low power but needs static shapes (OpenVINO docs); the transformers are heavy and called often, so they get the GPU; control stays on the CPU for predictability. The rubric asks for appropriate use of all three.
 - **Alternatives rejected:** everything on the GPU (wastes the NPU, no efficiency story).
 - **Trade-off / risk:** operator support on the NPU is untested for our model; the GPU fallback is ready.
-- **Evidence:** TBD (benchmark table, PRD 7.4).
+- **Built:** the export bakes a static 1×3×256×256 input into the IR (Anomalib leaves the batch dynamic by default, which the NPU cannot compile) and INT8 post-training quantisation calibrates at batch 1. The inspector compiles the IR itself on the first working device in NPU → GPU → CPU order with a compile cache, and records why each skipped device failed (Anomalib's `OpenVINOInferencer` has no fallback chain).
+- **Evidence:** PaDiM IR size INT8 47 MB vs FP16 88 MB (file sizes). On Saliha's own laptop (not the Intel laptop, stand-in model): the compile cache cut GPU compile from ~10 s to ~1.5 s. Intel-laptop latency, NPU and energy table: TBD (Saturday 21:00 GPU slot, `bench/results.md`).
 - **Pitch line:** "Each model runs on the chip it suits, and we have the numbers for every choice."
 
-### D9 · Efficiency · Energy, thermal and demo-count measurements — Status: Planned · Owner: @saliha @nate · Updated: 2026-11-14 01:30
+### D9 · Efficiency · Energy, thermal and demo-count measurements — Status: Built (energy/thermal harness, `bench/power.py`) / Planned (demo-count sweep) · Owner: @saliha @nate · Updated: 2026-11-14 01:30
 - **Decision:** measure energy per inference and watts with Intel RAPL counters, peak temperature during the 20 trials, and success vs number of demonstrations (ACT trained on 18 / 36 / 54 episodes in parallel on Modal).
 - **Why:** the Junction page scores inference latency, thermal headroom and power (20%), and Intel's challenge text asks "how few demonstrations are enough".
 - **Alternatives rejected:** latency-only benchmarking.
@@ -109,7 +110,7 @@
 
 ## D. Reasoning, voice and personality
 
-### D11 · Reasoning · Nemotron 3.5 Super VL writes grounded live explanations — Status: Planned · Owner: @saliha · Updated: 2026-11-14 01:30
+### D11 · Reasoning · Nemotron 3.5 Super VL writes grounded live explanations — Status: Built (client) / Planned (grounding check, eval) · Owner: @saliha · Updated: 2026-11-14 03:55
 - **Decision:** per brick, Nemotron (a vision-language model) gets the crop, the heatmap and the `DefectSignal` numbers and returns one short line in the current persona. We pass the numbers in so it cannot invent them, require JSON out, and reject a line that contradicts the label. It also answers "is the cowboy hat in view?" and, once, turns the kickoff rules text into a checked `rules.yaml`.
 - **Why:** the NVIDIA track needs the model to do real work in the product, visibly; a vision-language model can describe where the defect is. Grounding in measured numbers keeps the explanation true.
 - **Alternatives rejected:** fixed template sentences only (kept as the fallback); a text-only model (cannot see the brick).
@@ -168,6 +169,14 @@
 - **Pitch line:** "The sorting works first; the character is the cherry on top."
 
 ---
+
+### D18 · Process · Perception pipeline built end to end before the hardware existed — Status: Built · Owner: @saliha · Updated: 2026-11-14 03:55
+- **Decision:** on Friday night, with no Intel laptop and no robot, build the whole perception path (capture → train → export → calibrate → inspect → benchmark → rebaseline) against synthetic stand-in bricks (`perception/synth.py`: coloured bricks with marker strokes), with an automated end-to-end test. On Saturday only the photos change.
+- **Why:** the robot slots are scarce (one user at a time); every hour of setup moved off the hardware is an hour for real data and trials.
+- **Alternatives rejected:** waiting for the station; a public dataset (different objects, no marker defects).
+- **Trade-off / risk:** nothing measured on synthetic bricks is reported; real-brick numbers replace them.
+- **Evidence:** 28 automated tests including a full train → export → calibrate → inspect run (`main` @ `dd1c4d7`).
+- **Pitch line:** "Our perception pipeline was tested end to end before we touched the robot."
 
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
