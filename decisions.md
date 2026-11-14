@@ -191,7 +191,7 @@
 - **Why:** a policy can output any number; the printed safety rules and judges' reliability criterion need motion that is bounded no matter what the model does. Smooth motion is also part of the task-success score.
 - **Alternatives rejected:** trusting the policy's output; limits inside each policy (easy to forget one).
 - **Trade-off / risk:** the cap slows big moves; tuned on the station with the arm watched.
-- **Evidence:** unit tests (`robot/tests/test_io.py`); on-arm value TBD.
+- **Evidence:** unit tests (`robot/tests/test_io.py`). Since 2026-11-14 19:52 the arm runs in normalized units: limits are each joint's calibrated range (±100, gripper 0-100) and `io.units()` converts the 5° step per joint from the calibration (follower: 0.83-1.01 units per degree on the arm joints, 0.56 on the wrist roll). Since 22:30 `io.observe()` retries a failed read four times 50 ms apart, so a knock's supply dip no longer ends a run.
 - **Pitch line:** "Whatever the AI says, the arm stays inside safe limits."
 
 ### D20 · Training · Studio's trainer for ACT, LeRobot for SmolVLA — Status: Built · Owner: @nate · Updated: 2026-11-14 19:30
@@ -216,7 +216,7 @@
 - **Why:** "correct bowl" can't be counted automatically otherwise, and fixed 12 s episodes made 24 s per brick a floor against a 25 s target. A gripper watchdog paper (arXiv 2604.07395) detected 43/50 empty grasps with 5/50 false alarms; a 2026 SO-101 benchmark (arXiv 2606.08881) measured learned recovery at 3–6%, so recovery belongs in the state machine.
 - **Alternatives rejected:** servo-current grasp detection (no source for the STS3215; saved); a behaviour tree (more machinery for a short controlled task).
 - **Trade-off / risk:** thresholds are TUNE on the arm; bowl-region check needs a lit, fixed top camera.
-- **Evidence:** `run.py` (@harry): seven reason codes in every `events` outcome, deadlines on PICK/REINSPECT/PLACE/HOME that stop the scripted motion loop, PAUSE_HUMAN with P/Q, a hold flag; tested on mocks (stuck pick → timeout in < 2 s, no retry; bug → paused, not crashed). TBD (20-trial log with per-stage reasons). **Place check (16:10, @harry):** after a place the arm goes home and `run.py` compares the named bowl region with a top frame from before the pick (`VERIFY_PLACE`); the arm would otherwise hide the bowl. Costs one home move per brick (TUNE, measured on the arm: TBD). Bowl → region via the same colour lookup as the scripted mover.
+- **Evidence:** `run.py` (@harry): seven reason codes in every `events` outcome, deadlines on PICK/REINSPECT/PLACE/HOME that stop the scripted motion loop, PAUSE_HUMAN with P/Q, a hold flag; tested on mocks (stuck pick → timeout in < 2 s, no retry; bug → paused, not crashed). TBD (20-trial log with per-stage reasons). **Place check (16:10, @harry):** after a place the arm goes home and `run.py` compares the named bowl region with a top frame from before the pick (`VERIFY_PLACE`); the arm would otherwise hide the bowl. Costs one home move per brick (TUNE, measured on the arm: TBD). Bowl → region via the same colour lookup as the scripted mover. **Grasp band measured (N8, 2026-11-14 23:10, three runs on the follower):** shut on nothing 1.5, a Duplo brick 17.4 (15.2-19.8), half open 29.4, wide 96.3, so holding = 10-23 in `robot/io.py`.
 - **Pitch line:** "Every step proves it worked before the next one starts."
 
 ### D23 · VLA · Two fixed instructions that carry the verdict, a language-swap test, and a colour hedge — Status: Planned · Owner: @nate · Updated: 2026-11-14 17:12

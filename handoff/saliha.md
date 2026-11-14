@@ -11,3 +11,7 @@
 - **Done:** 5-minute thermal run (`bench/sustained.py`), ACT-on-NPU probe (`bench/act_npu_probe.py`, passes), mains device table, all in `bench/results.md`; `--system` on `reasoner.evaluate` and `cases.csv` from `perception.evaluate`; merged teammates' main (270 tests) and context. RealSense = `top`, webcam = `inspect` filled in `config/cameras.yaml` locally only (Harry's file). Studio in tmux `studio`.
 - **Not pushed:** the laptop's `main` and a prepared `context` commit wait on `gh auth login`.
 - **Next:** confirm which arm is on `ttyACM0`; wrist camera USB; calibration in Studio; teach the inspection pose; S3 capture.
+
+## 2026-11-15 00:05 · station session, part 3
+- **Done:** both arms recalibrated, teleop working; knock-tolerant reads (our `robot.io` + Studio's driver patch); `robot.readings` / `robot.goto`; grip band 10-23 from three runs; normalized units merged; `.env` complete (the earlier "no .env / no GitHub login / on battery" gotchas are solved); leader power plug was the "servo ID 1 did not respond" cause.
+- **Next:** dock (Harry), click regions, teach waypoints, then S3 photos with `robot.goto inspect --gripper 0` + `perception.capture`.
