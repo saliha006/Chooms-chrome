@@ -15,6 +15,12 @@ cd ~/Documents/Chooms-chrome
 .venv/bin/python -c "import openvino as ov; print(ov.Core().available_devices)"   # want CPU, GPU, NPU (reboot if NPU is missing)
 
 git pull origin main
+
+# After ANY package install: anomalib pulls in opencv-python-headless, which can replace the cv2 module and
+# leave mission control without a window ("The function is not implemented"). Put the window build back:
+~/.local/bin/uv pip uninstall --python .venv opencv-python-headless
+~/.local/bin/uv pip install --python .venv --reinstall opencv-python
+.venv/bin/python -c "import cv2; print([l.strip() for l in cv2.getBuildInformation().splitlines() if 'GUI:' in l])"   # want QT or GTK, not NONE
 .venv/bin/python -m pytest -q -m "not slow" common fallback narrator telemetry policies robot perception bench reasoner
 .venv/bin/python run.py --mock --headless     # "5 bricks sorted"
 ```
