@@ -13,16 +13,33 @@ BATCH_SIZE = 8
 SAVE_FREQ = 2500  # a checkpoint every 2,500 steps: LeRobot's default of 20,000 would leave a 10k run with only its last one to back up
 
 
-def job_name(policy: str, episodes: int, steps: int, stamp: str) -> str:
+def job_name(policy: str, episodes: int, steps: int, stamp: str, tag: str = "") -> str:
     # The stamp keeps re-runs apart: LeRobot refuses to write into an existing output directory.
-    return f"{policy}-{episodes or 'all'}ep-{steps}st-{stamp}"
+    return f"{policy}{'-' + tag if tag else ''}-{episodes or 'all'}ep-{steps}st-{stamp}"
+
+
+def _episode_list(ids) -> str:
+    return f"[{','.join(str(i) for i in ids)}]"
+
+
+def parse_episode_ids(text: str, policy: str, sweep: bool) -> tuple[int, ...]:
+    if policy != "act" or sweep:
+        raise SystemExit("--episode-ids is for one ACT run (the colour hedge), not SmolVLA or a sweep")
+    try:
+        ids = tuple(int(i) for i in text.split(","))
+    except ValueError:
+        raise SystemExit(f"--episode-ids must be numbers separated by commas, got {text!r}") from None
+    if len(set(ids)) != len(ids) or min(ids) < 0:
+        raise SystemExit("--episode-ids has a repeated or negative episode")
+    return ids
 
 
 def _first_episodes(episodes: int) -> str:
-    return f"[{','.join(str(i) for i in range(episodes))}]"
+    return _episode_list(range(episodes))
 
 
-def act(dataset: str, steps: int, output_dir: str, lr: float | None = None, episodes: int = 0) -> list[str]:
+def act(dataset: str, steps: int, output_dir: str, lr: float | None = None, episodes: int = 0,
+        episode_ids: tuple[int, ...] = ()) -> list[str]:
     cmd = [
         "physicalai", "fit",
         "--model", "physicalai.policies.ACT",
@@ -38,7 +55,9 @@ def act(dataset: str, steps: int, output_dir: str, lr: float | None = None, epis
         "--trainer.devices", "1",
         "--trainer.default_root_dir", output_dir,
     ]
-    if episodes:
+    if episode_ids:  # the colour hedge trains on the episodes of one task string only
+        cmd += ["--data.episodes", _episode_list(episode_ids)]
+    elif episodes:
         cmd += ["--data.episodes", _first_episodes(episodes)]
     return cmd
 
