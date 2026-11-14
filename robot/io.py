@@ -40,6 +40,8 @@ GRIPPER_HOLD_MAX = 45.0  # above this the gripper is open, not holding: a droppe
 GRIPPER_SETTLE_S = 0.3  # a held brick stops swinging after this long; read the band only then (decisions.md D22)
 GRIPPER_OPEN = 60.0  # opening used to release a brick
 CONTROL_HZ = 30
+OBSERVE_RETRIES = 4  # extra reads after a failed one, OBSERVE_RETRY_S apart (~0.2 s in all)
+OBSERVE_RETRY_S = 0.05
 
 
 @dataclass
@@ -117,6 +119,13 @@ def robot():
 
 
 def observe() -> np.ndarray:
+    # A knock on the arm dips the servo supply for tens of ms and the driver's own quick retries all land inside
+    # the dip (Studio logged `comm result -6` this way); waiting a little rides through it, a dead bus still raises.
+    for _ in range(OBSERVE_RETRIES):
+        try:
+            return np.asarray(robot().get_observation().joint_positions, float)
+        except ConnectionError:
+            time.sleep(OBSERVE_RETRY_S)
     return np.asarray(robot().get_observation().joint_positions, float)
 
 

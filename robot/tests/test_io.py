@@ -74,3 +74,28 @@ def test_speed_cap_is_five_degrees_on_every_joint(monkeypatch):
     monkeypatch.setattr(io, "_per_degree", np.array([2.0, 1.0, 1.0, 1.0, 0.5, 1.0]))
     step = io.clamp_step(np.zeros(6), np.full(6, 50.0))
     assert step.tolist() == [10.0, 5.0, 5.0, 5.0, 2.5, 5.0]
+
+
+class Flaky(io.MockRobot):
+    def __init__(self, failures):
+        super().__init__()
+        self.failures = failures
+
+    def get_observation(self):
+        if self.failures:
+            self.failures -= 1
+            raise ConnectionError("Sync read failed with comm result -6")
+        return super().get_observation()
+
+
+def test_observe_rides_through_a_brief_bus_dropout(monkeypatch):
+    monkeypatch.setattr(io.time, "sleep", lambda s: None)
+    monkeypatch.setattr(io, "_robot", Flaky(failures=io.OBSERVE_RETRIES))
+    assert io.observe().shape == (6,)
+
+
+def test_observe_still_raises_on_a_dead_bus(monkeypatch):
+    monkeypatch.setattr(io.time, "sleep", lambda s: None)
+    monkeypatch.setattr(io, "_robot", Flaky(failures=io.OBSERVE_RETRIES + 1))
+    with pytest.raises(ConnectionError):
+        io.observe()
