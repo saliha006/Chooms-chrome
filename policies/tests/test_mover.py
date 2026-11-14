@@ -156,3 +156,15 @@ def test_bowl_check_decides_a_place_when_given(mover, landed):
     mover.bowl_check = lambda instruction, before, after: seen.append((instruction, before.shape, after.shape)) or landed
     assert mover.place("place the brick in the red bowl") is landed
     assert seen == [("place the brick in the red bowl", (4, 4, 3), (4, 4, 3))]
+
+
+def test_bowl_check_without_a_top_frame_fails_loudly_not_with_none(mover):
+    mover.bowl_check = lambda *args: True
+    with pytest.raises(KeyError):
+        mover.place("place the brick in the red bowl")
+
+
+def test_a_place_that_never_opens_the_gripper_fails(mover):
+    mover.placer.target = np.array([40.0, 10, 10, 0, 0, 20.0])  # holds the brick the whole time
+    assert not mover.place("place the brick in the red bowl")
+    assert mover.placer.calls == mover.place_steps
