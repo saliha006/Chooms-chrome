@@ -105,6 +105,14 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 17:15 — test — SmolVLA export matches LeRobot's own policy (parity) — @nate [conflicts: none]
+- **Where:** `robotics-policies-nate` · merged to `main`: yes
+- **Did:** `train/parity.py` runs identical inputs (random images and state, the real task's tokens, zero starting noise) through LeRobot's `SmolVLAPolicy` and the OpenVINO IR: max difference 2.6e-6 on actions up to 2.36; the exported tokenizer gives LeRobot's exact token ids. The export is deterministic (Studio traces it with zero starting noise; LeRobot samples random noise by default).
+- **Touched:** `train/parity.py`, `train/runs.md`
+- **Brief task:** A3 (SmolVLA half complete; ACT next)
+- **⚠️ Conflicts:** none
+- **Status:** n/a
+
 ### 2026-11-14 16:56 — fix — A3: SmolVLA export passes through `InferenceModel` with the real task string; the policy runner now sends the export's keys and RGB frames — @nate [conflicts: @harry @saliha]
 - **Where:** `robotics-policies-nate` @ `f22367c` · merged to `main`: yes
 - **Did:** `train/export.py` checks an export the way the laptop calls it: `InferenceModel(dir, device="CPU")` on a zero observation plus the exact `perfect` string from `config/rules.yaml`. SmolVLA smoke export: finite 50×6 action chunk, 1.9 s first call on Modal's 4-core CPU (not an Intel number). The check caught a bug in `policies/episode.py`: it sent LeRobot's dataset keys and OpenCV's BGR frames without a batch axis, while the exported runtime reads `state`, `images.<camera>` and `task`, RGB, batched. SmolVLA would have failed on the laptop, and after a key-only fix it would have seen purple and orange swapped. Fixed and tested; Studio's own resize step turns three camera frames into the 3×1×3×512×512 input the IR wants. 128 tests pass in `robot policies train common fallback`.
