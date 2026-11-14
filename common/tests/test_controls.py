@@ -140,3 +140,5 @@ def test_render_shows_help_and_hold(make_cell):
     assert mission_control.render(cell, control, None).shape[0] == mission_control.HEIGHT
     cell.state = "HOLD"
     assert mission_control.render(cell, control, None).shape[0] == mission_control.HEIGHT
+    cell.drift_alert = True
+    assert mission_control.render(cell, control, None).shape[0] == mission_control.HEIGHT

@@ -111,6 +111,8 @@ def render(cell, control: Control, feed: np.ndarray | None) -> np.ndarray:
     (w, _), _ = cv2.getTextSize(banner, FONT, 1.6, 3)
     _text(img, banner, (20, 60), min(1.6, 1.6 * (PANEL_X - 40) / w), colour, 3)  # long banners shrink to fit
     _text(img, cell.mode, (PANEL_X, 60), 0.8, DIM)
+    if cell.drift_alert:
+        _text(img, "LIGHTING DRIFT: make rebaseline", (PANEL_X, 84), 0.7, (0, 140, 255))
 
     x, y, w, h = FEED
     if feed is not None:

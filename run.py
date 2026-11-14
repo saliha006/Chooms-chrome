@@ -69,6 +69,7 @@ class Cell:
         # (instruction, top_before, top_after) -> brick landed in that bowl; None = trust the mover (no bowls clicked)
         self.bowl_check: Callable[[str, object, object], bool] | None = None
         self.obstacle_seen = False
+        self.drift_alert = False  # set by the Aiven sync thread (F15): lighting changed, rebaseline
         self.stage_ms: dict[str, float] = {}
         self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
         self.quit = threading.Event()  # Q: finish this brick, then home and stop
@@ -419,6 +420,18 @@ def bowl_checker(scene: dict) -> Callable[[str, object, object], bool] | None:
     return check
 
 
+def drift_alarm(cell: Cell, run_id: str) -> telemetry_sync.DriftWatch | None:
+    """Spoken and on screen only: the database never stops the arm (Harry, 2026-11-14)."""
+    if run_id.startswith("mock-"):
+        return None  # stand-in scores say nothing about the lighting
+
+    def alert(_drift) -> None:
+        cell.drift_alert = True
+        narrator.say("drift")
+
+    return telemetry_sync.drift_watch(run_id, Path(load_config("models.yaml")["inspector"]["thresholds"]), alert)
+
+
 def headless(cell: Cell) -> BaseException | None:
     try:
         cell.run()
@@ -450,7 +463,7 @@ def main() -> None:
     telemetry.start(events)
     sync_stop = threading.Event()
     # None when Aiven isn't configured: the JSONL file alone
-    sync = telemetry_sync.start(sync_stop, events) if args.aiven or not args.mock else None
+    sync = telemetry_sync.start(sync_stop, events, drift_alarm(cell, run_id)) if args.aiven or not args.mock else None
     try:
         if args.headless:
             error = headless(cell)

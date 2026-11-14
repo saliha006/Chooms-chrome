@@ -249,3 +249,8 @@ def test_cowboy_returns_to_calm_once_the_obstacle_has_gone_and_a_brick_is_done(m
     cell.run()
     assert said == [("cowboy", "obstacle"), ("calm", "halfway")]
     assert persona.current == "calm"
+
+
+def test_mock_runs_never_raise_the_drift_alarm(make_cell):
+    cell, _ = make_cell(("perfect",))
+    assert run.drift_alarm(cell, "mock-20261114") is None

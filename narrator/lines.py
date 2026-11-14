@@ -25,6 +25,7 @@ LINES: dict[str, dict[str, str]] = {
         "help.camera": "I can't see through my camera. Could someone check it?",
         "help.inspect_failed": "My inspection just failed. I need someone to take a look.",
         "help.unexpected": "Something unexpected went wrong, so I've gone home. I need a hand.",
+        "drift": "My perfect bricks are scoring closer to the line. The light may have changed, so please rebaseline me.",
         "cooldown": "Ahem. Where was I? Back to work.",
         "halfway": "Right, partner... I mean, right.",  # the cowboy drifting back, so in the calm voice
     },
@@ -45,6 +46,7 @@ LINES: dict[str, dict[str, str]] = {
         "help.camera": "Can't see a thing out here. Somebody check my camera.",
         "help.inspect_failed": "My lookin' glass just went dark. Need somebody to check it.",
         "help.unexpected": "Somethin' went sideways, so I headed home. Need a hand.",
+        "drift": "Light's shiftin' out here, partner. My scores are driftin', best rebaseline me.",
         "obstacle": "Holy smokes!",
         "yeehaw": "Yeehaw!",
         "well_ill_be": "Well I'll be!",
@@ -52,7 +54,7 @@ LINES: dict[str, dict[str, str]] = {
 }
 
 # Every event run.py says out loud; tests check each has a line in both personas.
-EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance",
+EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance", "drift",
           *(f"help.{reason.value}" for reason in Reason))
 
 
