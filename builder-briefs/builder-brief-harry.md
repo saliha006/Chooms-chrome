@@ -122,6 +122,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 20:20 · box-room docs (demo script, station sheet, README), measured device numbers in submission + README, trial report rehearsed (`bench.trials` on a 20-brick log); `main` `f1d9279`
 - 2026-11-14 19:50 · stage narration + parallel live lines + credit floor + follower port/calibration · 220 tests; `main` `13a5239`
 - 2026-11-14 19:05 · hat by voice · ElevenLabs speech-to-text listener + phrase check, hat on until taken off, H toggle; blocked on the API key's speech_to_text permission; 217 tests; `main` `789142a`
 - 2026-11-14 18:10 · object naming (voice side) + wrist MJPG · `narrator/naming.py`, `Cell.namer` seam for Saliha's model; wrist camera asks for MJPG; 198 tests pass; `main` `7821e3e`
