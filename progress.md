@@ -73,7 +73,7 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Hardware-free work done (S1, S5, S6, bench, dance, drift rule, in-graph preprocessing, operator support); next: Intel laptop install (S2), 10:00 capture, S4 evaluate, S7 runs |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Agent: A3 SmolVLA ✅ (`InferenceModel` + task string), runner keys and colours fixed; ACT smoke export next (~17:20); gates moved (ACT ~21:30, SmolVLA ~22:15). Manual next: Intel laptop drivers, dock and clamp, rehearsal, test episode, record |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Agent: smoke tests done (A1–A3, N1 ✅): both policies train on Modal, export and run through `InferenceModel`; ready for real data; gates moved (ACT ~21:30, SmolVLA ~22:15). Manual next: Intel laptop drivers, dock and clamp, rehearsal, test episode, record |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | A6 playback done, A5 PostgreSQL live; next: station (H5, bowl check, 15:30 gate); Kafka waits on the service |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
@@ -97,13 +97,30 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **perception/bench (2026-11-14 12:40):** `main` @ `4c96ef0`: 175 pass (`pytest common perception bench reasoner robot policies train fallback narrator ui telemetry -m "not slow"`, 1 skipped); in-graph preprocessing FP16 CPU p50 44.5 → 38.5 ms (this laptop, stand-in bricks). Not yet run on the Intel laptop or real bricks.
 - **Plan (2026-11-14 05:47):** PRD v2.5, `context` @ `5da0552`.
 - **robot/policies/train (2026-11-14 16:56):** `main` @ `f22367c`: 128 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped).
-- **Modal (2026-11-14 16:56):** SmolVLA smoke passed (red-lego, 1.8 min) and its OpenVINO export runs through `InferenceModel` on CPU with the real task string (finite 50×6 chunk, 1.9 s first call, Modal CPU). ACT smoke still in Studio's quantile pass at 16:53 (36 of 50 episodes, ~70 s each; this public set has no q01/q99), done about 17:20. Training launches: `python -m train.launch` (`train/launch.py`).
+- **Modal (2026-11-14 17:13):** red-lego smoke passed for both policies: SmolVLA (1.8 min) and ACT (60.1 min, mostly the quantile pass); both OpenVINO exports run through `InferenceModel` on CPU (SmolVLA 50×6 in 1.9 s, ACT 100×6 in 97 ms, Modal CPU), SmolVLA matches LeRobot to 2.6e-6. Training app redeployed 17:13. Training launches: `python -m train.launch` (`train/launch.py`).
 - **perception (2026-11-14 04:30):** `main` @ `99f1d09`: 28 tests pass (4 slow); live Nemotron line 1.7–2.7 s. Not yet run on the Intel laptop or real bricks.
 - **`main` (2026-11-14 16:15):** @ `9da720e`, code in every area. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 17:13 — test — Red-lego smoke done: ACT trains, exports and runs; training app redeployed — @nate [conflicts: @saliha]
+- **Where:** `robotics-policies-nate` · merged to `main`: yes
+- **Did:** ACT smoke (Studio, 300 steps) finished in 60.1 min on an A100, almost all of it the quantile pass on a public set without q01/q99. Its OpenVINO export (137 MB) runs through `InferenceModel` on CPU: 100×6 chunk in 97 ms, inputs `state` + `images.<camera>`, the same keys `policies/episode.py` now sends. The deployed training app was redeployed, so Saliha's N4 SmolVLA recipe and N5 hedge argument are live for real launches.
+- **Touched:** `train/runs.md`; Modal app `sortsense-train` redeployed
+- **Brief task:** A1, A2, A3, N1 → ✅
+- **⚠️ Conflicts:** @saliha: the export check is the ACT/SmolVLA half of the Intel bench; the IRs are on the Volume (`modal volume get sortsense-runs <job>/openvino`)
+- **📨 Needs:** none
+- **Status:** open
+
+### 2026-11-14 17:20 — feat — Nemotron line check for the NVIDIA table: `reasoner/evaluate.py` — @saliha [conflicts: none]
+- **Where:** `aiml-perception-saliha` → `main` · merged to `main`: yes
+- **Did:** `python -m reasoner.evaluate cases.csv --persona calm|cowboy` sends each real inspection (image, label, score, thresholds, box) through the robot's own call and checker and prints lines consistent with the verdict with a 95% interval, failures, time to a line and every contradicting line. A failed request never counts as consistent. 6 tests with a fake model; not yet run on real bricks.
+- **Touched:** `reasoner/evaluate.py`, `reasoner/tests/test_evaluate.py`
+- **Brief task:** NVIDIA 20-frame eval (D11) → 🟡 harness done, needs real inspections
+- **⚠️ Conflicts:** none
+- **📨 Needs:** none
 
 ### 2026-11-14 17:15 — test — SmolVLA export matches LeRobot's own policy (parity) — @nate [conflicts: none]
 - **Where:** `robotics-policies-nate` · merged to `main`: yes
