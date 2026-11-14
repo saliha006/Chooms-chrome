@@ -12,9 +12,10 @@ for recording and runtime.
 - **Cameras:** the `/dev/v4l/by-id` paths in `config/cameras.yaml` (roles `top`, `inspect`, `wrist`). Never replug between recording and runtime.
   Record all three, with exactly these keys, in both datasets. SmolVLA maps them onto its pretrained slots in this order:
   `--cameras top,wrist,inspect` → `camera1`, `camera2`, `camera3` (Nate, 2026-11-14).
-- **Joint unit: degrees**, the same as `robot/io.py`. On the first test episode, compare its `observation.state` with
-  `robot.io.observe()` at the same pose: they must agree within a couple of degrees. If Studio can only record
-  normalized (−100 to 100), stop and tell the team: the fallback is switching `robot/io.py` to normalized (decisions.md D29).
+- **Joint unit: normalized** (−100 to 100 per arm joint, gripper 0 to 100), Studio's default and the same as `robot/io.py`
+  (decisions.md D29, changed from degrees 2026-11-14 before anything was recorded). Set **Joint units = normalized** for
+  both arms in Studio. On the first test episode, compare its `observation.state` with `robot.io.observe()` at the same
+  pose: they must agree within a couple of units. Both read the same calibration file (`config/so101_follower.json`).
 - **Leader arm** for teleoperation only; it is never driven by code.
 
 ## Before episode 1 (N6, decisions.md D32: clean demos beat more demos)

@@ -41,7 +41,7 @@ def test_a_clean_place_dataset_gets_a_card_with_its_own_facts(tmp_path, log):
     assert text.startswith("---\nlicense: apache-2.0")
     assert "| Episodes | 6 kept; 2 rejected on the spot and re-taken |" in text
     assert "| Frames | 30 Hz |" in text  # the fixture has no total_frames: no number is invented
-    assert all(f"`{t}`" in text for t in TASKS) and "in degrees" in text and "`inspect`: webcam" in text
+    assert all(f"`{t}`" in text for t in TASKS) and "normalized to -100..100" in text and "`inspect`: webcam" in text
     assert "`python -m train.audit` passed" in text
 
 

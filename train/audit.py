@@ -19,6 +19,8 @@ import pandas as pd
 from robot import io
 
 LENGTH_SPREAD = 0.4  # TUNE: episode length more than this far from the median counts as odd
+# Joint thresholds are in recorded normalized units, which on SO-101 arm joints are close to degrees (200 units
+# span a ~180-260 degree calibrated range), so the degree-sized numbers carry over.
 STILL_DEG = 0.5  # TUNE: a joint moving less than this per frame counts as standing still
 HESITATION_S = 2.0  # TUNE: standing still this long in the middle of an episode is a hesitation
 EDGE_S = 1.5  # the start and the end of an episode may stand still (the ~1 s hold at the inspection pose)
@@ -86,11 +88,11 @@ def check_episode(index: int, frames: pd.DataFrame, fps: int, kind: str, report:
     if len(gaps) and np.mean(gaps > GAP_FACTOR / fps) > GAP_SHARE:
         report.fails.append(f"{name}: {np.mean(gaps > GAP_FACTOR / fps):.0%} of frames arrived late (cadence)")
     if len(state) > 1 and np.abs(np.diff(state, axis=0)).max() > GLITCH_DEG:
-        report.fails.append(f"{name}: a joint jumped more than {GLITCH_DEG:.0f} degrees in one frame (teleop dropout)")
+        report.fails.append(f"{name}: a joint jumped more than {GLITCH_DEG:.0f} units (about degrees) in one frame (teleop dropout)")
     if len(action) > 1:
         over = np.mean(np.abs(np.diff(action, axis=0)).max(axis=1) > io.MAX_STEP_DEG)
         if over > OVER_CAP_SHARE:
-            report.warnings.append(f"{name}: {over:.0%} of frames ask for more than the {io.MAX_STEP_DEG:.0f} degree runtime speed cap, so replay would be slowed (move slower)")
+            report.warnings.append(f"{name}: {over:.0%} of frames ask for more than the runtime speed cap (about {io.MAX_STEP_DEG:.0f} units, i.e. degrees), so replay would be slowed (move slower)")
     hesitation = still_runs(state, fps)
     if hesitation >= HESITATION_S:
         report.warnings.append(f"{name}: stood still for {hesitation:.1f} s in the middle (hesitation)")
@@ -106,8 +108,8 @@ def audit(root: Path, kind: str = "any", cameras: list[str] | None = None, tasks
     fps = check_metadata(root, report, cameras or [], tasks)
     data = pd.concat([pd.read_parquet(p) for p in sorted((root / "data").rglob("*.parquet"))], ignore_index=True)
     arm = stack(data["observation.state"])[:, : io.GRIPPER]
-    if np.abs(arm).max() <= 100.0:
-        report.warnings.append("every arm joint stays within -100..100: this looks like the normalized unit, but D29 expects degrees (compare with robot.io.observe())")
+    if np.abs(arm).max() > 100.0:
+        report.warnings.append("an arm joint goes beyond -100..100: this looks like degrees, but D29 expects the normalized unit (compare with robot.io.observe())")
     lengths, seen = {}, {}
     for index, frames in data.groupby("episode_index"):
         frames = frames.sort_values("frame_index")

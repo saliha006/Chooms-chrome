@@ -22,9 +22,9 @@ def poses(home: np.ndarray, cycles: int = 3, sway_deg: float = 25, nod_deg: floa
     for _ in range(cycles):
         for side in (1, -1):
             pose = home.copy()
-            pose[PAN] += side * sway_deg
-            pose[FLEX] += nod_deg
-            pose[ROLL] += side * tilt_deg
+            pose[PAN] += side * io.units(sway_deg)[PAN]
+            pose[FLEX] += io.units(nod_deg)[FLEX]
+            pose[ROLL] += side * io.units(tilt_deg)[ROLL]
             sequence.append(np.clip(pose, io.JOINT_MIN, io.JOINT_MAX))
     return [*sequence, home]
 

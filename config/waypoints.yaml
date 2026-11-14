@@ -1,4 +1,4 @@
-# Joint poses for the scripted fallback and LearnedMover, in degrees:
+# Joint poses for the scripted fallback and LearnedMover, in normalized units (robot/io.py):
 # [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper 0-100]
 # Taught by hand-guiding on Saturday 09:30: python -m fallback.teach <name>
 home: null

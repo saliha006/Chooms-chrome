@@ -68,7 +68,7 @@ class ScriptedMover:
             self._set_gripper(io.GRIPPER_OPEN)
             return self.pick_and_present()
         target = io.observe()
-        target[io.WRIST_ROLL] += angle_deg
+        target[io.WRIST_ROLL] += io.units(angle_deg)[io.WRIST_ROLL]
         target[io.GRIPPER] = GRIPPER_CLOSED
         self._move(target)
         return self._near(self.poses["inspect"], io.POSE_TOLERANCE_DEG, ignore_wrist_roll=True) and self._settled_holding()
@@ -119,8 +119,8 @@ class ScriptedMover:
 
     @staticmethod
     def _near(target: np.ndarray, tolerance_deg: float, ignore_wrist_roll: bool = False) -> bool:
-        diff = np.abs(io.observe() - np.clip(target, io.JOINT_MIN, io.JOINT_MAX))
-        diff[io.GRIPPER] = 0.0
+        near = io.within(target, tolerance_deg)
+        near[io.GRIPPER] = True
         if ignore_wrist_roll:
-            diff[io.WRIST_ROLL] = 0.0
-        return bool(diff.max() <= tolerance_deg)
+            near[io.WRIST_ROLL] = True
+        return bool(near.all())

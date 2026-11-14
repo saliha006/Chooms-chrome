@@ -65,7 +65,7 @@ def card(root: Path, kind: str, licence: str = "apache-2.0", rejected_log: Path 
         f"| Episodes | {report.episodes} kept; {rejected_count(root.name, rejected_log)} rejected on the spot and re-taken |",
         f"| Frames | {frames} |",
         "| Cameras | " + "; ".join(f"`{name}`: {what}" for name, what in CAMERAS.items()) + " |",
-        f"| State and action | joint positions{joints}: arm joints in degrees, gripper on LeRobot's 0-100 scale |",
+        f"| State and action | joint positions{joints}: arm joints normalized to -100..100 over each calibrated range, gripper on LeRobot's 0-100 scale |",
         "| Task strings | " + "; ".join(f"`{t}`" for t in found) + " |",
         f"| Audit | `python -m train.audit` passed on {date.today()}, {len(report.warnings)} warnings |", "",
         "Rejected on the spot: a dropped brick, a collision, a long hesitation, a wrong bowl, the brick out of the "

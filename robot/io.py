@@ -2,13 +2,16 @@
 
     from robot import io
     io.connect(port="/dev/ttyACM0", calibration="config/so101_follower.json")   # or io.connect(mock=True)
-    joints = io.observe()            # (6,) degrees, last = gripper (0-100)
+    joints = io.observe()            # (6,) normalized: arm joints -100..100 over each calibrated range, gripper 0-100
     io.act(target)                   # one step toward target, clipped to joint limits and the speed cap
     io.move_to(home, seconds=2.0)    # interpolated, blocking
     io.torque_off()                  # E key: arm goes limp
 
 Uses the physicalai SO-101 driver (OpenVINO Physical AI runtime, R5). Only the follower is ever
 connected here; the leader is teleop only and never driven (PRD §0).
+Joints run in Studio's normalized unit, the convention most SO-101 datasets use (decisions.md D29, changed
+2026-11-14). Safety numbers stay in degrees and are converted per joint with `units()`, so "5 degrees per step"
+means the same angle on every joint whatever its calibrated range.
 Once the E key has requested a stop (`common.estop`, D21), `act()` turns the torque off and raises
 `EStopped`, so no motion path, learned or scripted, runs past it.
 """
@@ -24,10 +27,11 @@ JOINTS = ("shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_ro
 WRIST_ROLL = JOINTS.index("wrist_roll")
 GRIPPER = JOINTS.index("gripper")
 
-# Joint limits from physicalai_so101_plugin 0.3.0 (degrees; gripper 0-100). Safety, PRD §9.
-JOINT_MIN = np.array([-110.0, -100.0, -97.0, -95.0, -157.0, 0.0])
-JOINT_MAX = np.array([110.0, 100.0, 97.0, 95.0, 163.0, 100.0])
+# Normalized limits = the calibrated range of each joint (gripper 0-100). Safety, PRD §9.
+JOINT_MIN = np.array([-100.0, -100.0, -100.0, -100.0, -100.0, 0.0])
+JOINT_MAX = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 100.0])
 MAX_STEP_DEG = 5.0  # speed cap: largest change per joint per act() call (150 deg/s at 30 Hz). TUNE with the arm watched
+TICKS_PER_DEGREE = 4095 / 360  # the driver's own degree convention
 
 # Shared by the learned and scripted movers, so a tune on the arm changes one place. TUNE (PRD v2.5 N8).
 POSE_TOLERANCE_DEG = 8.0  # how close counts as "at the inspection pose"
@@ -75,16 +79,34 @@ class MockRobot:
 
 
 _robot = None
+_per_degree = np.ones(len(JOINTS))  # normalized units per degree, from the calibration; the mock runs 1:1
+
+
+def units(degrees: float) -> np.ndarray:
+    """A size in degrees as normalized units for each joint (the gripper is a 0-100 percentage either way)."""
+    return degrees * _per_degree
+
+
+def per_degree(calibration_path: str) -> np.ndarray:
+    """Normalized units per degree for each joint: 200 units span the calibrated range of an arm joint."""
+    from physicalai.robot.so101 import SO101Calibration
+
+    cal = SO101Calibration.from_path(calibration_path).joints
+    spans = np.array([cal[name].range_max - cal[name].range_min for name in JOINTS[:GRIPPER]], float)
+    return np.append(200.0 * TICKS_PER_DEGREE / spans, 1.0)
 
 
 def connect(port: str | None = None, calibration: str | None = None, mock: bool = False) -> None:
-    global _robot
+    global _robot, _per_degree
     if mock:
-        _robot = MockRobot()
+        _robot, _per_degree = MockRobot(), np.ones(len(JOINTS))
     else:
         from physicalai.robot.so101 import SO101  # hardware import stays out of mock runs and tests
 
-        _robot = SO101(port, calibration=calibration, role="follower", unit="degrees")
+        if calibration is None:
+            raise ValueError("the follower needs its calibration file: normalized units and the speed cap come from it")
+        _per_degree = per_degree(calibration)
+        _robot = SO101(port, calibration=calibration, role="follower", unit="normalized")
     _robot.connect()
 
 
@@ -106,7 +128,8 @@ def holding() -> bool:
 def clamp_step(current: np.ndarray, target: np.ndarray) -> np.ndarray:
     """The next command toward target: inside joint limits, no joint moving more than MAX_STEP_DEG."""
     target = np.clip(np.asarray(target, float), JOINT_MIN, JOINT_MAX)
-    return current + np.clip(target - current, -MAX_STEP_DEG, MAX_STEP_DEG)
+    step = units(MAX_STEP_DEG)
+    return current + np.clip(target - current, -step, step)
 
 
 def act(target: np.ndarray) -> np.ndarray:
@@ -119,15 +142,20 @@ def act(target: np.ndarray) -> np.ndarray:
     return command
 
 
+def within(target: np.ndarray, tolerance_deg: float) -> np.ndarray:
+    """Per joint: is the arm within tolerance_deg of target (the target clipped to the joint limits)?"""
+    return np.abs(observe() - np.clip(target, JOINT_MIN, JOINT_MAX)) <= units(tolerance_deg)
+
+
 def move_to(target: np.ndarray, seconds: float = 2.0, tolerance_deg: float = 2.0) -> bool:
     """Step toward target at CONTROL_HZ until within tolerance or the time runs out. True if reached."""
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
-        if np.abs(observe() - np.clip(target, JOINT_MIN, JOINT_MAX)).max() <= tolerance_deg:
+        if within(target, tolerance_deg).all():
             return True
         act(target)
         time.sleep(1 / CONTROL_HZ)
-    return bool(np.abs(observe() - np.clip(target, JOINT_MIN, JOINT_MAX)).max() <= tolerance_deg)
+    return bool(within(target, tolerance_deg).all())
 
 
 def torque_off() -> None:

@@ -14,10 +14,10 @@ TASKS = ["the brick is perfect, place it in the purple bowl", "the brick is defe
 
 
 def episode(index, seconds=10.0, end_gripper=30.0, task=0, pause=False, jump=False):
-    """A steady sweep in degrees (wrist roll beyond +-100 so it does not look normalized), ending at a given gripper value."""
+    """A steady sweep in normalized units (every arm joint inside -100..100), ending at a given gripper value."""
     n = int(seconds * FPS)
     t = np.linspace(0, 1, n)
-    state = np.stack([120 * t - 60, 90 * np.sin(3 * t), 40 * t, 30 * t, 300 * t - 150, np.full(n, 40.0)], axis=1)
+    state = np.stack([120 * t - 60, 90 * np.sin(3 * t), 40 * t, 30 * t, 180 * t - 90, np.full(n, 40.0)], axis=1)
     state[:, :5] += np.random.default_rng(index).normal(0, 0.05, (n, 5))  # no two real episodes are identical
     if pause:  # stand still for 3 s, then carry on from the same pose
         state = np.concatenate([state[: n // 3], np.repeat(state[n // 3: n // 3 + 1], 3 * FPS, axis=0), state[n // 3:]])
@@ -86,13 +86,13 @@ def test_dropped_frames_fail_and_missing_quantiles_warn(tmp_path):
     assert any("q01/q99" in w for w in report.warnings)
 
 
-def test_normalized_looking_units_and_copied_episodes_warn(tmp_path):
-    calm = episode(0)
-    calm["observation.state"] = [s / 4 for s in calm["observation.state"]]
-    calm["action"] = calm["observation.state"]
-    twin = calm.assign(episode_index=1)
-    report = audit(write(tmp_path, [calm, twin]), "any")
-    assert any("normalized unit" in w for w in report.warnings)
+def test_degree_looking_units_and_copied_episodes_warn(tmp_path):
+    wide = episode(0)
+    wide["observation.state"] = [np.append(s[:5] * 1.5, s[5]) for s in wide["observation.state"]]
+    wide["action"] = wide["observation.state"]
+    twin = wide.assign(episode_index=1)
+    report = audit(write(tmp_path, [wide, twin]), "any")
+    assert any("looks like degrees" in w for w in report.warnings)
     assert any("identical to episode 0" in w for w in report.warnings)
 
 

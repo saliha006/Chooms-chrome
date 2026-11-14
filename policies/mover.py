@@ -29,11 +29,11 @@ class LearnedMover:
         self.pick_steps, self.place_steps = pick_steps, place_steps
 
     def _at_inspect(self, ignore_wrist_roll: bool = False) -> bool:
-        diff = np.abs(io.observe() - self.poses["inspect"])
-        diff[io.GRIPPER] = 0.0
+        near = io.within(self.poses["inspect"], io.POSE_TOLERANCE_DEG)
+        near[io.GRIPPER] = True
         if ignore_wrist_roll:
-            diff[io.WRIST_ROLL] = 0.0
-        return bool(diff.max() <= io.POSE_TOLERANCE_DEG)
+            near[io.WRIST_ROLL] = True
+        return bool(near.all())
 
     # A fired stage deadline (run.py arms it) returns False, which run.py reports as a TIMEOUT.
     def pick_and_present(self) -> bool:
@@ -53,7 +53,7 @@ class LearnedMover:
     def _roll_back_to_inspect(self) -> bool:
         """SmolVLA's place demos all start at the inspection pose, so undo a wrist roll from reinspect first."""
         roll = self.poses["inspect"][io.WRIST_ROLL]
-        if abs(io.observe()[io.WRIST_ROLL] - roll) <= io.POSE_TOLERANCE_DEG:
+        if abs(io.observe()[io.WRIST_ROLL] - roll) <= io.units(io.POSE_TOLERANCE_DEG)[io.WRIST_ROLL]:
             return True
         target = io.observe()
         target[io.WRIST_ROLL] = roll
@@ -67,7 +67,7 @@ class LearnedMover:
             io.move_to(release, seconds=1.0)
             return self.pick_and_present()
         target = io.observe()
-        target[io.WRIST_ROLL] += angle_deg
+        target[io.WRIST_ROLL] += io.units(angle_deg)[io.WRIST_ROLL]
         io.move_to(target, seconds=1.5)
         return self._at_inspect(ignore_wrist_roll=True) and io.holding()
 
