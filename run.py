@@ -60,6 +60,7 @@ class Cell:
         self.pause_on_help = True  # False without a window (--headless): nobody can press P, so stop instead
         self.help_reason: Reason | None = None
         self.last_signal: DefectSignal | None = None
+        self.trace: list[str] = []  # this brick's reasoning, one line per step (H7 panel)
         self.stage_ms: dict[str, float] = {}
         self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
         self.quit = threading.Event()  # Q: finish this brick, then home and stop
@@ -75,6 +76,7 @@ class Cell:
                 if not present:
                     break
                 self.next_brick += 1
+                self.trace = []  # a new list, not clear(): the window may be drawing the old one
                 try:
                     self.sort_one(brick_id)
                     self.sorted += 1
@@ -90,7 +92,7 @@ class Cell:
 
     def sort_one(self, brick_id: int) -> None:
         self._pick(brick_id)
-        signal = self._inspect(brick_id, "inspect", newer_than=self._settle())
+        signal = self._inspect(brick_id, "inspect", "first look", newer_than=self._settle())
         narrator.say(signal.label, score=signal.score, bbox=signal.bbox)
 
         with self._stage("DECIDE", brick_id, signal) as row:
@@ -100,6 +102,7 @@ class Cell:
             label = self._resolve_uncertain(brick_id)
 
         instruction = self.rules[label]
+        self.trace.append(f"decision: {instruction}")
         with self._stage("PLACE", brick_id, note=instruction) as row:
             placed = self.placer.place(instruction)
             timed_out = deadline.expired()
@@ -126,7 +129,7 @@ class Cell:
                 narrator.say("grasp_fail")
         raise HelpNeeded(Reason.GRASP_FAILED, f"{GRASP_ATTEMPTS} attempts")
 
-    def _inspect(self, brick_id: int, role: str, newer_than: float = 0.0) -> DefectSignal:
+    def _inspect(self, brick_id: int, role: str, step: str, newer_than: float = 0.0) -> DefectSignal:
         with self._stage("INSPECT", brick_id, note=role) as row:
             try:
                 frame = self.capture.frame(role, newer_than=newer_than)
@@ -137,6 +140,7 @@ class Cell:
             except Exception as exc:
                 raise HelpNeeded(Reason.INSPECT_FAILED, str(exc)) from exc
             self.last_signal = signal
+            self.trace.append(f"{step}: {signal.score:.2f} vs {signal.t_low:.2f} / {signal.t_high:.2f} -> {signal.label}")
             row.update(label=signal.label, score=signal.score, device=signal.device, outcome=signal.label)
         return signal
 
@@ -146,7 +150,7 @@ class Cell:
         Every score uses a frame grabbed after the arm settled: re-scoring the frame we already judged
         uncertain would just repeat the verdict."""
         chain = self.rules["uncertain"]
-        signal = self._inspect(brick_id, chain["second_view"], newer_than=self._settle())
+        signal = self._inspect(brick_id, chain["second_view"], "look again", newer_than=self._settle())
         if signal.label != "uncertain":
             narrator.say(signal.label, score=signal.score, bbox=signal.bbox, after="looked again")
             return signal.label
@@ -157,11 +161,13 @@ class Cell:
                 row["outcome"] = "back at inspection pose" if back else "failed"
             if not back:
                 raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.BRICK_LOST, f"reinspect {angle}")
-            signal = self._inspect(brick_id, "inspect", newer_than=self._settle())
+            step = f"after wrist roll {angle}" if angle else "after re-grasp"
+            signal = self._inspect(brick_id, "inspect", step, newer_than=self._settle())
             if signal.label != "uncertain":
                 narrator.say(signal.label, score=signal.score, bbox=signal.bbox, after=f"reinspect {angle}")
                 return signal.label
         narrator.say("still_uncertain", label=chain["then"])
+        self.trace.append(f"still unsure: {chain['then']}, flagged")
         return chain["then"]
 
     def _ask_for_help(self, brick_id: int, exc: Exception) -> None:
@@ -170,6 +176,7 @@ class Cell:
         if reason is Reason.UNEXPECTED:
             _log.exception("brick %d: unexpected error", brick_id)
         self.help_reason = reason
+        self.trace.append(f"needs help: {reason.value.replace('_', ' ')}")
         self._event("PAUSE_HUMAN", brick_id, outcome=reason.value, note=str(exc))
         narrator.say("help", reason=reason.value)
         self._home()
@@ -269,13 +276,13 @@ def build_mock(bricks: int, run_id: str) -> Cell:
 
 
 def load_policy(export_dir: str, devices: list[str]):
-    """PRD 7.2: first device that loads the export wins (GPU, then CPU)."""
+    """PRD 7.2: first device that loads the export wins (GPU, then CPU). Returns (policy, device)."""
     from policies.episode import load
 
     errors = []
     for device in devices:
         try:
-            return load(export_dir, device)
+            return load(export_dir, device), device
         except Exception as exc:  # the runtime raises several types; any of them means "try the next device"
             errors.append(f"{device}: {exc}")
     raise RuntimeError(f"no device could load {export_dir}: {errors}")
@@ -316,14 +323,16 @@ def build_real(scripted: set[str], bricks: int, run_id: str) -> Cell:
         from policies.mover import LearnedMover
 
         pol = models["policies"]
-        policy = {part: load_policy(pol[needed[part]], pol["devices"]) for part in learned}
+        loaded = {part: load_policy(pol[needed[part]], pol["devices"]) for part in learned}
+        policy = {part: model for part, (model, _) in loaded.items()}
         learned_mover = LearnedMover(policy.get("pick"), policy.get("place"), poses,
                                      lambda: {role: capture.frame(role) for role in pol["cameras"]})
         movers |= {part: learned_mover for part in learned}
     cell = Cell(capture, inspector, movers["pick"], movers["place"], CountLocator(bricks), load_config("rules.yaml"),
                 views_of(cameras), run_id)
     # Honesty guardrail: the screen and the log always say what moved the arm.
-    cell.mode = "pick: {} | place: {}".format(*("scripted" if p in scripted else needed[p] for p in ("pick", "place")))
+    cell.mode = "pick: {} | place: {}".format(
+        *("scripted" if p in scripted else f"{needed[p]} on {loaded[p][1]}" for p in ("pick", "place")))
     _log.info(cell.mode)
     return cell
 

@@ -28,6 +28,11 @@ GRIPPER = JOINTS.index("gripper")
 JOINT_MIN = np.array([-110.0, -100.0, -97.0, -95.0, -157.0, 0.0])
 JOINT_MAX = np.array([110.0, 100.0, 97.0, 95.0, 163.0, 100.0])
 MAX_STEP_DEG = 5.0  # speed cap: largest change per joint per act() call (150 deg/s at 30 Hz). TUNE with the arm watched
+
+# Shared by the learned and scripted movers, so a tune on the arm changes one place. TUNE (PRD v2.5 N8).
+POSE_TOLERANCE_DEG = 8.0  # how close counts as "at the inspection pose"
+GRIPPER_EMPTY_BELOW = 5.0  # F5: a fully closed gripper (0-100) means nothing is in it
+GRIPPER_OPEN = 60.0  # opening used to release a brick
 CONTROL_HZ = 30
 
 

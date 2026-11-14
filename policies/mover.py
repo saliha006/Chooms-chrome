@@ -13,10 +13,6 @@ from common import deadline
 from policies.episode import run_episode
 from robot import io
 
-POSE_TOLERANCE_DEG = 8.0  # TUNE: how close counts as "at the inspection pose"
-GRIPPER_EMPTY_BELOW = 5.0  # TUNE (F5): a fully closed gripper (0-100) means nothing is in it
-GRIPPER_OPEN = 60.0  # TUNE: opening used to release a brick
-
 
 class LearnedMover:
     def __init__(self, picker, placer, poses: dict[str, np.ndarray], frames: Callable[[], dict[str, np.ndarray]],
@@ -32,7 +28,7 @@ class LearnedMover:
         diff[io.GRIPPER] = 0.0
         if ignore_wrist_roll:
             diff[io.WRIST_ROLL] = 0.0
-        return bool(diff.max() <= POSE_TOLERANCE_DEG)
+        return bool(diff.max() <= io.POSE_TOLERANCE_DEG)
 
     # A fired stage deadline (run.py arms it) returns False, which run.py reports as a TIMEOUT.
     def pick_and_present(self) -> bool:
@@ -41,13 +37,13 @@ class LearnedMover:
 
     def place(self, instruction: str) -> bool:
         joints = run_episode(self.placer, self.frames, self.place_steps, task=instruction, abort_event=deadline.abort)
-        return not deadline.expired() and bool(joints[io.GRIPPER] >= GRIPPER_OPEN)
+        return not deadline.expired() and bool(joints[io.GRIPPER] >= io.GRIPPER_OPEN)
 
     def reinspect(self, angle_deg: int) -> bool:
         if angle_deg == 0:
             io.move_to(self.poses["pick_drop"])
             release = io.observe()
-            release[io.GRIPPER] = GRIPPER_OPEN
+            release[io.GRIPPER] = io.GRIPPER_OPEN
             io.move_to(release, seconds=1.0)
             return self.pick_and_present()
         target = io.observe()
@@ -56,7 +52,7 @@ class LearnedMover:
         return self._at_inspect(ignore_wrist_roll=True) and not self.gripper_empty()
 
     def gripper_empty(self) -> bool:
-        return bool(io.observe()[io.GRIPPER] < GRIPPER_EMPTY_BELOW)
+        return bool(io.observe()[io.GRIPPER] < io.GRIPPER_EMPTY_BELOW)
 
     def home(self) -> None:
         io.move_to(self.poses["home"])

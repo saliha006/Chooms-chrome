@@ -15,7 +15,9 @@ from common import estop
 
 WINDOW = "SortSense mission control"
 WIDTH, HEIGHT = 1280, 720
-FEED = (20, 90, 840, 580)  # x, y, w, h: leaves the bottom line for the key hints
+FEED = (20, 90, 840, 400)  # x, y, w, h: leaves room below for the reasoning panel
+TRACE_Y = 518  # reasoning panel: this brick's steps, newest last (H7)
+TRACE_LINES = 6  # a full chain: first look, look again, roll, re-grasp, verdict, decision
 PANEL_X = 890
 BG, TEXT, DIM = (24, 24, 24), (235, 235, 235), (150, 150, 150)
 LABEL_COLOURS = {"perfect": (255, 150, 30), "defective": (40, 40, 230), "uncertain": (0, 200, 255)}  # BGR
@@ -116,6 +118,10 @@ def render(cell, control: Control, feed: np.ndarray | None) -> np.ndarray:
         img[y:y + view.shape[0], x:x + view.shape[1]] = view
     else:
         _text(img, "no camera frame", (x + 20, y + 40), 1.0, DIM)
+
+    _text(img, "Reasoning", (x, TRACE_Y), 0.8, DIM)
+    for i, line in enumerate(cell.trace[-TRACE_LINES:]):
+        _text(img, line, (x, TRACE_Y + 28 + i * 26), 0.7)
 
     signal = cell.last_signal
     heat = _heatmap(signal.heatmap_path) if signal else None

@@ -6,7 +6,7 @@ import pytest
 from common import deadline
 from common.interfaces import Mover
 from policies import episode
-from policies.mover import GRIPPER_OPEN, LearnedMover
+from policies.mover import LearnedMover
 from robot import io
 
 HOME = np.zeros(6)
@@ -34,7 +34,7 @@ def mover(monkeypatch):
     monkeypatch.setattr(io.time, "sleep", lambda s: None)
     monkeypatch.setattr(episode.time, "sleep", lambda s: None)
     io.connect(mock=True)
-    place_target = np.array([40.0, 10, 10, 0, 0, GRIPPER_OPEN + 10])
+    place_target = np.array([40.0, 10, 10, 0, 0, io.GRIPPER_OPEN + 10])
     yield LearnedMover(FakePolicy(INSPECT), FakePolicy(place_target), {"home": HOME, "inspect": INSPECT, "pick_drop": DROP},
                        frames=lambda: {"wrist": np.zeros((4, 4, 3), np.uint8)}, pick_steps=40, place_steps=40)
     io.disconnect()

@@ -128,3 +128,24 @@ def test_parse_scripted_rejects_unknown_parts():
     assert run.parse_scripted("pick,place") == {"pick", "place"}
     with pytest.raises(Exception):
         run.parse_scripted("pick,dance")
+
+
+def test_trace_records_the_whole_chain_for_the_panel(make_cell):
+    cell, _ = make_cell(("uncertain",))
+    cell.run()
+    steps = [line.split(":")[0] for line in cell.trace]
+    assert steps == ["first look", "look again", "after wrist roll 90", "after re-grasp", "still unsure", "decision"]
+    assert cell.trace[-1] == f"decision: {RULES['defective']}"
+
+
+def test_trace_starts_fresh_for_each_brick(make_cell):
+    cell, _ = make_cell(("perfect",), bricks=2)
+    cell.run()
+    assert cell.trace == ["first look: 0.20 vs 0.40 / 0.70 -> perfect", f"decision: {RULES['perfect']}"]
+
+
+def test_trace_says_why_help_was_needed(make_cell):
+    cell, _ = make_cell(("perfect",), mover=MockMover(pick_failures=2))
+    with pytest.raises(run.HelpNeeded):
+        cell.run()
+    assert cell.trace == ["needs help: grasp failed"]
