@@ -55,6 +55,9 @@
   - **ElevenLabs page found (MLH):** "natural, emotionally expressive voices", fully autonomous audio. No scored rubric; prize = earbuds.
   - Items more than ~10 hours of work live in a local-only `extension-if-more-time.md` (never pushed). Items within ~1–2 hours of slack are the stretch list in §8a.
 
+- **Third rubric, from Intel's own Studio guide (2026-11-14 18:35, `open-edge-platform/physical-ai-studio` branch `junction2026`, `JUNCTION2026.md`):** Task success rate 25 (accuracy, cycle time, robustness to shifted objects and clutter) · Intel tech integration 25 (NPU/iGPU offload, OpenVINO **and the Robotics AI Suite**) · Dataset and pipeline quality 20 (clean teleop data, effective fine-tuning **in Physical AI Studio**) · System efficiency 20 (latency per inference step, thermal headroom, power) · Creativity 10. Same guide: Studio itself trains ACT, SmolVLA and Pi0.5 on **Modal** (Settings → Training Targets → Modal Provider; `modal setup` as the backend's user), anomaly models should train on the laptop (not Modal), Hugging Face token in Studio Settings → General. Intel's slides (§2) remain the other rubric; we plan to both.
+- **Answer to the open SmolVLA question:** Studio can fine-tune SmolVLA itself on Modal, so "SmolVLA trained with LeRobot" (D20) is no longer forced. Whether to move SmolVLA training into Studio is Nate's call (pending).
+
 **Pending (confirm with mentors, §13)**
 - Is 11:50 Sunday our demo slot?
 - Challenge-Day task and kickoff sorting rules.
