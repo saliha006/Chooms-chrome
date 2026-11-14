@@ -4,7 +4,7 @@ import yaml
 
 from common.interfaces import Mover
 from fallback import scripted
-from fallback.scripted import GRIPPER_EMPTY_BELOW, ScriptedMover, load_waypoints
+from fallback.scripted import ScriptedMover, load_waypoints
 from fallback.teach import save_pose
 from robot import io
 
@@ -78,7 +78,7 @@ def test_place_goes_to_the_bowl_the_instruction_names(arm, mover):
     mover.pick_and_present()
     assert mover.place("place the brick in the red bowl")
     assert at("bowl_red", robot)
-    assert robot.joints[io.GRIPPER] >= scripted.GRIPPER_OPEN - scripted.POSE_TOLERANCE_DEG
+    assert robot.joints[io.GRIPPER] >= io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG
 
 
 def test_place_rejects_an_instruction_without_a_bowl(arm, mover):

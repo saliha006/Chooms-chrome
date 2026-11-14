@@ -16,12 +16,8 @@ from robot import io
 
 POSES = ("home", "pick_above", "pick", "pick_drop", "inspect", "bowl_red", "bowl_blue")
 
-# Same physical facts as policies/mover.py, kept separate on purpose: the fallback must not
-# break when the learned stack's imports or tuning change. TUNE both together.
-POSE_TOLERANCE_DEG = 8.0  # "at the inspection pose" after a wrist roll
-GRIPPER_EMPTY_BELOW = 5.0
-GRIPPER_OPEN = 60.0
-
+# Gripper thresholds and the inspection-pose tolerance live in robot/io.py, shared with LearnedMover,
+# so a tune on the arm (Nate's N8) changes one place.
 GRIPPER_CLOSED = 0.0
 ARRIVE_TOLERANCE_DEG = 2.0  # a scripted move is done; matches robot.io.move_to
 MOVE_SECONDS = 3.0  # TUNE: longest single move before it counts as blocked
@@ -44,7 +40,7 @@ class ScriptedMover:
         self.poses = poses
 
     def pick_and_present(self) -> bool:
-        if not (self._go("pick_above", GRIPPER_OPEN) and self._go("pick", GRIPPER_OPEN)):
+        if not (self._go("pick_above", io.GRIPPER_OPEN) and self._go("pick", io.GRIPPER_OPEN)):
             return False
         self._set_gripper(GRIPPER_CLOSED)
         return (self._go("pick_above", GRIPPER_CLOSED) and self._go("inspect", GRIPPER_CLOSED)
@@ -53,23 +49,23 @@ class ScriptedMover:
     def place(self, instruction: str) -> bool:
         if not self._go(self._bowl_for(instruction), GRIPPER_CLOSED):
             return False
-        self._set_gripper(GRIPPER_OPEN)
-        return bool(io.observe()[io.GRIPPER] >= GRIPPER_OPEN - POSE_TOLERANCE_DEG)
+        self._set_gripper(io.GRIPPER_OPEN)
+        return bool(io.observe()[io.GRIPPER] >= io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG)
 
     def reinspect(self, angle_deg: int) -> bool:
         if angle_deg == 0:
             if not self._go("pick_drop", GRIPPER_CLOSED):
                 return False
-            self._set_gripper(GRIPPER_OPEN)
+            self._set_gripper(io.GRIPPER_OPEN)
             return self.pick_and_present()
         target = io.observe()
         target[io.WRIST_ROLL] += angle_deg
         target[io.GRIPPER] = GRIPPER_CLOSED
         self._move(target)
-        return self._near(self.poses["inspect"], POSE_TOLERANCE_DEG, ignore_wrist_roll=True) and not self.gripper_empty()
+        return self._near(self.poses["inspect"], io.POSE_TOLERANCE_DEG, ignore_wrist_roll=True) and not self.gripper_empty()
 
     def gripper_empty(self) -> bool:
-        return bool(io.observe()[io.GRIPPER] < GRIPPER_EMPTY_BELOW)
+        return bool(io.observe()[io.GRIPPER] < io.GRIPPER_EMPTY_BELOW)
 
     def home(self) -> None:
         self._go("home", io.observe()[io.GRIPPER])
