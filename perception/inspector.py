@@ -13,6 +13,7 @@ import numpy as np
 import openvino as ov
 
 from perception import thresholds
+from perception.capture import square_crop
 from common.interfaces import DefectSignal
 
 DEVICE_CHAIN = ("NPU", "GPU", "CPU")
@@ -72,8 +73,10 @@ class Scorer:
 
 
 class Inspector:
-    def __init__(self, xml: Path, thresholds_path: Path, model_name: str, heatmap_dir: Path = Path("runs/heatmaps"), **scorer_kwargs):
+    def __init__(self, xml: Path, thresholds_path: Path, model_name: str, heatmap_dir: Path = Path("runs/heatmaps"),
+                 crop: tuple[int, int, int] | None = None, **scorer_kwargs):
         self.scorer = Scorer(xml, **scorer_kwargs)
+        self.crop = crop  # must be the crop the training photos were taken with (perception.capture --crop; None = centred square)
         self.t_low, self.t_high = thresholds.load(thresholds_path)
         self.pixel_threshold = thresholds.load_all(thresholds_path).get("pixel_threshold", NORMALISED_PIXEL_THRESHOLD)
         self.model_name = model_name
@@ -81,6 +84,7 @@ class Inspector:
         heatmap_dir.mkdir(parents=True, exist_ok=True)
 
     def inspect(self, frame: np.ndarray, view: str, brick_id: int) -> DefectSignal:
+        frame = square_crop(frame, self.crop)  # score exactly the picture the model and thresholds were fitted on
         score, anomaly_map, latency_ms = self.scorer.score(frame)
         label = thresholds.classify(score, self.t_low, self.t_high)
         heatmap = self.heatmap_dir / f"brick{brick_id:04d}_{view}.png"

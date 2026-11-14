@@ -26,3 +26,26 @@ def test_largest_blob_uses_raw_scale_threshold():
     amap = np.full((256, 256), 40.0, np.float32)
     amap[0:10, 0:10] = 250.0
     assert largest_blob(amap, 120.0) == (0, 0, 10, 10)
+
+
+def test_inspect_scores_the_same_crop_capture_saves(tmp_path):
+    from perception.capture import square_crop
+    from perception.inspector import Inspector
+
+    seen = []
+
+    class FakeScorer:
+        device = "CPU"
+
+        def score(self, frame):
+            seen.append(frame)
+            return 0.1, np.zeros((256, 256), np.float32), 1.0
+
+    inspector = Inspector.__new__(Inspector)
+    inspector.scorer, inspector.crop = FakeScorer(), None
+    inspector.t_low, inspector.t_high, inspector.pixel_threshold = 0.2, 0.6, 0.5
+    inspector.model_name, inspector.heatmap_dir = "padim", tmp_path
+    frame = np.random.default_rng(0).integers(0, 255, (480, 640, 3), dtype=np.uint8)
+    signal = inspector.inspect(frame, "webcam", 1)
+    assert signal.label == "perfect"
+    assert np.array_equal(seen[0], square_crop(frame))  # centred 480x480 square, resized to 256: what capture saves
