@@ -229,7 +229,7 @@
 - **Pitch line:** "Each model is on the chip that suits it, and we measured joules per brick."
 
 ### D25 · Reasoning · Nemotron is advisory, never gating — Status: Planned · Owner: @saliha · Updated: 2026-11-14 07:10
-- **Decision:** the decision is always the thresholds + rules; Nemotron only explains (and, on uncertain bricks, adds a second opinion that is logged, not obeyed), with a 4 s timeout and a template fallback. Camera-based hat detection is saved for later; the H key triggers the cowboy persona.
+- **Decision:** the decision is always the thresholds + rules; Nemotron only explains, never judges a brick (the "second opinion on uncertain bricks" was dropped 2026-11-14 13:10 on mentor guidance, D31: Anomalib is the only anomaly detector), with a 4 s timeout and a template fallback. Camera-based hat detection is saved for later; the H key triggers the cowboy persona.
 - **Why:** control must never wait on the network (D4); the live line is the personality layer, not the sorter.
 - **Pitch line:** "The robot decides with measured thresholds and explains itself out loud."
 
@@ -269,6 +269,13 @@
 - **Trade-off / risk:** a second IR per model to keep in step; all thresholds TUNE on real bricks; NPU and GPU operator rows need the Intel laptop.
 - **Evidence (this laptop's CPU, stand-in bricks, not Intel numbers):** FP16 detector end-to-end p50 44.5 ms → 38.5 ms and p95 63.7 → 43.3 ms with preprocessing in the graph; INT8 unchanged (71.6 vs 72.2 ms, and slower than FP16 here); scores identical to 4 decimals in both; the PaDiM IR runs all 223 operators on CPU. A unit test on a toy model fails if the colour flip or the scaling is dropped. TBD (GPU and NPU rows on the Intel laptop).
 - **Pitch line:** "The model takes the raw camera frame; the Intel toolchain does the maths."
+
+### D31 · Architecture · Mentor guidance: Anomalib is the only detector, the VLA does the integration, rehearse a move with the leader first — Status: In force (guidance); two proposals pending Saliha's yes · Owner: @saliha · Updated: 2026-11-14 13:10
+- **Decision:** an Intel organiser-mentor told Saliha (relayed 2026-11-14 13:10) that (1) Anomalib alone finds anomalies and the VLA must never do anomaly detection; (2) the VLA layer, built in Intel Physical AI Studio, does the integration across perception, reasoning, planning and manipulation: it translates perception results and the task instruction into robot actions (slide "VLA Reasoning & Task Planning", criterion "VLA & Physical AI Studio Integration", 20 pts); (3) a move can be tested first by teleoperating with the leader arm, then fine-tuned from the recorded demonstrations.
+- **What the plan already does:** Anomalib is the only detector (D5); SmolVLA only places, ACT only picks (D2, End Goal slide); recording is leader-follower teleop followed by fine-tuning (D20, N6, N7). Changed now: Nemotron's logged "second opinion" on uncertain bricks is dropped (D25), because a vision-language model giving a defect opinion blurs rule (1). The PRD judging table now names which part of the system is perception, reasoning, planning and manipulation.
+- **Proposed, not applied (needs Saliha's yes, then Nate's):** (a) put the verdict in the VLA's two fixed strings (for example "the brick is defective, place it in the red bowl"), chosen before the first SmolVLA recording, so the VLA literally translates a perception result; (b) a 15-minute leader-teleop rehearsal of every stage before the first recorded episode.
+- **Open question for the mentors (PRD §0 Pending):** SmolVLA is fine-tuned with LeRobot because Studio's SmolVLA loader is marked incomplete (D20); is that acceptable for "VLA & Physical AI Studio Integration", or is there a Studio route in the installed version?
+- **Evidence:** the six judging-slide screenshots (Overview, Required Technology Stack, Technical Implementation Expectations, Judging Criteria, HW/SW, End Goal) read on 2026-11-14 13:10; no measured result yet.
 
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
