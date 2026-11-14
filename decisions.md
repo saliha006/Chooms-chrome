@@ -220,7 +220,7 @@
 - **Why:** SmolVLA's tokenizer is capped at 48 tokens and we have 25 episodes per string, so scores or regions in the string would be unseen text. A 2026 SO-101 benchmark (arXiv 2606.08881, 20 trials per cell) got ACT 0% and SmolVLA 5% on a colour-sorting task, so the language-chosen bowl is the riskiest step.
 - **Why the verdict is in the string (D31):** Intel's expectation 2 and the 20-point criterion say the VLA translates perception results and the task instruction into actions; both words are perfectly correlated, so it costs no data and no extra learning, and `fallback/scripted.py` still finds "red bowl" / "blue bowl" in the text. Uncertain bricks go through the recovery chain and end as defective, so they use the defective string.
 - **Alternatives rejected:** region- or score-conditioned instructions; co-training with public SO-101 data (saved for later).
-- **Evidence:** TBD (swap test, 19:00 gate).
+- **Evidence:** both strings live in `config/rules.yaml` on `main` (`5e99561`, 14:40); swap test TBD (19:00 gate).
 - **Pitch line:** "We prove the robot listens: swap the words, the brick goes to the other bowl."
 
 ### D24 · Deployment · Device placement measured, no overlap claims — Status: Built (harness) / Planned (Intel laptop runs) · Owner: @saliha · Updated: 2026-11-14 07:10
