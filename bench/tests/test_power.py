@@ -46,3 +46,18 @@ def test_missing_sysfs_gives_none(tmp_path):
         pass
     assert r.joules is None and r.watts is None and r.max_c is None
     assert max_temp_c(tmp_path) is None
+
+
+def test_peak_temperature_is_sampled_during_the_block(tmp_path):
+    import time
+    root = fake_sysfs(tmp_path, 1_000_000, [40000])
+    with measure(root, sample_s=0.05) as r:
+        (root / "thermal/thermal_zone0/temp").write_text("88000")  # spike mid-block
+        time.sleep(0.2)
+        (root / "thermal/thermal_zone0/temp").write_text("41000")  # gone by the end
+    assert r.max_c == 88.0
+
+
+def test_idle_watts_none_without_rapl(tmp_path):
+    from bench.power import idle_watts
+    assert idle_watts(0.01, tmp_path) is None
