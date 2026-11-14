@@ -3,6 +3,7 @@
     modal run train/modal_train.py --policy act --dataset lerobot/svla_so100_pickplace --steps 200
     modal run train/modal_train.py --policy smolvla --dataset <hf_id> --steps 10000
     modal run train/modal_train.py --dataset <hf_id> --steps 20000 --sweep      # F11: 18 / 36 / 54 episodes in parallel
+    modal run train/modal_train.py --dataset lerobot/svla_so100_pickplace --steps 100 --sweep --sweep-sizes 2,4   # A8 smoke
     modal volume get sortsense-runs <job> ./checkpoints/                         # fetch, then back up before export
 
 ACT trains with Physical AI Studio's trainer and SmolVLA with LeRobot (decisions.md D20), so each has its own image.
@@ -63,11 +64,12 @@ def log_run(job: str, policy: str, dataset: str, episodes: int, steps: int, seco
 
 
 @app.local_entrypoint()
-def main(dataset: str, policy: str = "act", steps: int = 200, lr: float | None = None, episodes: int = 0, sweep: bool = False):
+def main(dataset: str, policy: str = "act", steps: int = 200, lr: float | None = None, episodes: int = 0, sweep: bool = False,
+         sweep_sizes: str = ",".join(map(str, commands.SWEEP_EPISODES))):  # smaller sizes fit a public set with fewer episodes
     if policy not in TRAINERS:
         raise SystemExit(f"--policy must be one of: {', '.join(TRAINERS)}")
     if sweep:
-        policy, sizes = "act", commands.SWEEP_EPISODES
+        policy, sizes = "act", tuple(int(n) for n in sweep_sizes.split(","))
     else:
         sizes = (episodes,)
     stamp = datetime.now().strftime("%m%d-%H%M%S")
