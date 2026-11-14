@@ -54,7 +54,7 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 | H4 | ✅ | JSONL telemetry writer (Aiven later, after the gate) | 1 | Rows per stage |
 | H5 | ⬜ | 08:00–10:00 cameras by-id, decide which is the RealSense, click the zone corners (homography), waypoints | — | All streams open by path |
 | H6 | ✅ | Read Intel's `physicalai/examples/tutorials/collect_train_deploy.ipynb` cells 5–9 (0.5 h) to confirm import paths and camera API; adopt `RobotRuntime` only if it accepts our abort and early-exit callbacks (add-on, 1 h max). Keep `Cell`, the `robot/io.py` clip + speed cap and shared capture | 0.5 | Notes |
-| H7 | ⬜ | Intel-stack items wired where we really call them (time-boxed 2 h); `ReasonTrace` panel (0.5 h) | 2.5 | On screen |
+| H7 | 🟡 | Intel-stack items wired where we really call them (time-boxed 2 h); `ReasonTrace` panel (0.5 h) | 2.5 | On screen |
 | H8 | ⬜ | 21:00–23:00 demo script built around a real borderline-brick recovery, a disturbance pause, and an n = 20 slide with intervals; backup video by 22:00 | 2 | Rehearsed |
 **If you're behind at 12:00:** Saliha's agent takes the telemetry writer and the cached-WAV table.
 **Add-ons (after the 15:30 gate, in order):** persona obstacle trigger + cowboy voice on the hold flag, H key for the hat (1 h) · one live ElevenLabs line from the Nemotron text (1 h, with Saliha) · Aiven producer thread + drift alarm, JSONL stays the default (2 h; Kafka free plan unconfirmed, fallback LISTEN/NOTIFY) · IK scripted pick only if ACT misses 17:00 (2 h).
@@ -102,6 +102,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 06:09 · H7 (part) · reasoning panel under the feed (`Cell.trace`: each look vs both thresholds, recovery moves, decision or help reason) + each learned policy's real OpenVINO device in the mover line; merged to `main` (`ffdf8e4`), 82 tests pass. Left: station Intel-stack items
 - 2026-11-14 06:04 · H6 · read the `physicalai` tutorial + runtime source: imports valid; keep `Cell`/`io.py`/`SharedCapture`, no `RobotRuntime` before 15:30 (it bypasses `io.act`'s clip and e-stop); joint-unit risk flagged to @nate (`SO101` defaults to normalized, `io.py` uses degrees); optional `create_camera` adapter for UVC + RealSense
 - 2026-11-14 05:58 · H3 · `narrator/lines.py` (every event and `Reason`, calm + cowboy) + `narrator/cache.py` (35 WAV clips, 1,520 characters; not generated yet); merged to `main` (`6e597fe`), 76 tests pass
 - 2026-11-14 05:52 · H1 · `Reason` codes in every `events` outcome, stage deadlines (`common/deadline.py`), PAUSE_HUMAN (P go on, Q stop), hold flag; merged to `main` (`18ae0d7`), 68 tests pass. Waiting: @nate `abort_event=deadline.abort` in `LearnedMover`
