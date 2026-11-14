@@ -39,12 +39,12 @@
 - **Evidence:** TBD (gate results).
 - **Pitch line:** "The inspection result literally becomes the instruction the robot follows."
 
-### D3 · Reliability · Scripted fallback behind the same interface — Status: Planned · Owner: @harry · Updated: 2026-11-14 01:30
+### D3 · Reliability · Scripted fallback behind the same interface — Status: Built · Owner: @harry · Updated: 2026-11-14 04:38
 - **Decision:** a scripted waypoint mover sits behind the same `Mover` interface as the learned policies, and a full scripted loop must pass by Saturday 15:30 before the learned policies are swapped in.
 - **Why:** an earlier team on this challenge (ohong/intel-robotics) never moved its arm; the end-to-end criterion is 25 points. The loop must work even if a model fails.
 - **Alternatives rejected:** learned policies only (a single export bug would sink the demo).
 - **Trade-off / risk:** the demo must always say which mode ran; a scripted placement is never presented as SmolVLA.
-- **Evidence:** TBD (15:30 gate).
+- **Evidence:** built in `fallback/scripted.py` behind the same `Mover` interface; tested against a mock arm that closes on a brick (pick, place by instruction colour, re-grasp, wrist roll, e-stop). Poses are taught by hand with `fallback/teach.py`. TBD (15:30 gate on the real arm).
 - **Pitch line:** "Every learned part has a safe fallback, and we tell you which one is running."
 
 ### D4 · Safety and latency · Control never waits on the network — Status: Planned · Owner: @harry · Updated: 2026-11-14 01:30
