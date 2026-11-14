@@ -419,6 +419,7 @@ def main() -> None:
     finally:
         cell.capture.stop()
         telemetry.stop()
+        narrator.wait_idle()  # let the last line ("all done") finish before the program exits
         sync_stop.set()
         if sync is not None:
             sync.join(timeout=30)  # its last pass sends the run's final rows
