@@ -62,7 +62,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed (red-lego, cameras mapped); N2 done; ACT smoke still training on Modal; next: ACT export test (N1), then N3 |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4, H6 done (H3 clips not generated yet); next H7 ReasonTrace panel |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4, H6, H7 panel done (H3 clips not generated yet); next 08:00 H5 cameras + waypoints |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -89,6 +89,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 06:09 — merge — H7: reasoning panel on mission control; each policy's real device on screen — @harry [conflicts: @saliha]
+- **Where:** `systems-voice-harry` @ `ffdf8e4` · merged to `main`: yes
+- **Did:** The cell keeps one line per step for the current brick (`Cell.trace`): every look with its score against both thresholds and the label, each recovery move, "still unsure: defective, flagged", the decision, or "needs help: <reason>". Mission control draws it under the feed (up to 6 lines, a full chain fits). The mover line now names the OpenVINO device each learned policy really loaded on ("pick: act on GPU | place: scripted"). 82 tests pass with Nate's. Closed my `abort_event` row: @nate's `LearnedMover` passes `deadline.abort` (N2). Left for the station: the rest of H7's Intel-stack items (benchmark numbers, device table).
+- **Touched:** `run.py`, `ui/mission_control.py`, `common/tests/`
+- **Brief task:** H7 → 🟡 panel + device naming done; station items left
+- **⚠️ Conflicts:** @saliha: the panel shows the cell's own chain; your `ReasonTrace` (S6) can add the defect region and margin as extra lines
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 06:04 — docs — H6: read Intel's `physicalai` tutorial and runtime source against our code — @harry [conflicts: @nate]
 - **Where:** notes only (local research doc, Pass H6) · merged to `main`: n/a
