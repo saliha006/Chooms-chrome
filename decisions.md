@@ -118,10 +118,10 @@
 - **Evidence:** TBD (20-frame eval: label agreement, region correct, hat accuracy, latency; one measured prompt revision. This table is the NVIDIA "how we improved its outputs" text).
 - **Pitch line:** "The model explains what it sees using our measured scores, so it can't make things up."
 
-### D12 · Voice · Live reasoning through ElevenLabs, calm voice by default — Status: Planned · Owner: @harry · Updated: 2026-11-14 04:11
+### D12 · Voice · Live reasoning through ElevenLabs, calm voice by default — Status: Planned · Owner: @harry · Updated: 2026-11-14 04:14
 - **Decision:** explanations are spoken through the laptop speakers while the arm works. The robot talks through its thought process in a conversational way, like a person thinking aloud (what it sees, what the score means, what it will do and why), so the judges hear the reasoning behind each move. Default (calm) voice: a standard conversational ElevenLabs voice (`etWmxTqEKhIYyGKMpDcb`, chosen by @harry 2026-11-14 04:11, open to change); the cowboy persona uses David (D13). Live lines use a low-latency ElevenLabs model (`eleven_flash_v2_5`) with streaming and a 1.5 s timeout; exclamations and fallback phrases are pre-generated with the more expressive model and cached as audio. Stale lines are dropped so speech never lags the arm.
 - **Why:** the ElevenLabs track rewards natural, emotionally expressive, fully autonomous audio; spoken reasoning makes the system's decisions legible to judges in real time.
-- **Alternatives rejected:** a pre-recorded script (not live, not grounded); local text-to-speech only (kept as a stretch offline fallback).
+- **Alternatives rejected:** a pre-recorded script (not live, not grounded); local text-to-speech only (kept as a stretch offline fallback). Calling the ElevenLabs REST API by hand with `requests` (we would write the audio streaming ourselves); we use the official `elevenlabs` Python SDK pinned to 2.78.0 instead (@harry, 2026-11-14 04:14).
 - **Trade-off / risk:** network latency and quota; the cached clips cover it.
 - **Evidence:** TBD (time from verdict to first audio).
 - **Pitch line:** "You can hear it think, with the real numbers."
