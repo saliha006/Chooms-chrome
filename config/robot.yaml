@@ -1,0 +1,4 @@
+# Follower arm only; the leader is teleop and is never driven (CLAUDE.md §6).
+# Speed caps and joint limits are safety calls: set them at the station from the printed safety guidelines.
+port: null
+max_joint_speed: null

@@ -1,0 +1,12 @@
+# One entry per role; the policy and the inspector share each stream (F13).
+# path: /dev/v4l/by-id/... on the Intel laptop (`ls /dev/v4l/by-id/`), or an index for local tests.
+# view: the DefectSignal.view name for frames from this camera.
+top:
+  path: null       # set at the station, Sat 08:00
+  view: webcam
+inspect:
+  path: null       # which of top/inspect is the RealSense D415: confirm at the station
+  view: realsense
+wrist:
+  path: null
+  view: wrist
