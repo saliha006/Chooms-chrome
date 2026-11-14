@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from common import deadline as stage_deadline
 from common import estop
 from robot import io
 
@@ -107,7 +108,7 @@ class ScriptedMover:
             if estop.requested():
                 io.torque_off()
                 raise estop.EStopped()
-            if time.monotonic() > deadline:
+            if time.monotonic() > deadline or stage_deadline.expired():
                 return False
             io.act(target)
             time.sleep(1 / io.CONTROL_HZ)

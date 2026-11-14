@@ -7,7 +7,7 @@
     python run.py                           # ACT picks, SmolVLA places
 
 IDLE → LOCATE → PICK → VERIFY_GRASP → INSPECT → DECIDE → [REINSPECT] → PLACE → LOG → next.
-Any error → HOME plus a spoken message, then the run stops for a person to look.
+Any failure → HOME, the reason said aloud, then PAUSE_HUMAN: P carries on, Q stops (--headless: stops).
 """
 
 import argparse
@@ -26,7 +26,9 @@ import telemetry
 from common import estop
 from common.capture import SharedCapture
 from common.interfaces import DefectSignal, Inspector, Mover
+from common import deadline
 from common.locate import CountLocator
+from common.reasons import HelpNeeded, Reason
 
 CONFIG = Path(__file__).parent / "config"
 GRASP_ATTEMPTS = 2  # PRD §6: retry once, then ask for help
@@ -34,11 +36,13 @@ SETTLE_S = 0.3  # TUNE: let the held brick stop swinging before a frame is score
 _log = logging.getLogger("run")
 
 
-class HelpNeeded(Exception):
-    """The cell can't carry on without a person."""
+# TUNE on the arm. Motion stages only: the deadline stops the motion loop, so a stuck move ends as TIMEOUT.
+DEADLINE_S = {"PICK": 20.0, "REINSPECT": 25.0, "PLACE": 15.0, "HOME": 15.0}
 
 
 class Cell:
+    """One brick at a time. Failures end in PAUSE_HUMAN (D22): home, say why, wait for P (carry on) or Q (stop)."""
+
     def __init__(self, capture: SharedCapture, inspector: Inspector, picker: Mover, placer: Mover,
                  locator, rules: dict, views: dict[str, str], run_id: str):
         self.capture = capture
@@ -51,36 +55,37 @@ class Cell:
         self.run_id = run_id
         self.state = "IDLE"
         self.sorted = 0
+        self.next_brick = 1
         self.mode = "mock"
+        self.pause_on_help = True  # False without a window (--headless): nobody can press P, so stop instead
+        self.help_reason: Reason | None = None
         self.last_signal: DefectSignal | None = None
         self.stage_ms: dict[str, float] = {}
-        self.paused = threading.Event()  # P: hold at the next stage boundary
+        self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
         self.quit = threading.Event()  # Q: finish this brick, then home and stop
+        self.hold = threading.Event()  # something tall in the zone (depth / scene check): wait until it clears
 
     def run(self) -> None:
         try:
             while not self.quit.is_set():
-                with self._stage("LOCATE", self.sorted + 1) as row:
+                brick_id = self.next_brick
+                with self._stage("LOCATE", brick_id) as row:
                     present = self.locator.next_brick()
                     row["outcome"] = "brick" if present else "empty"
                 if not present:
                     break
-                self.sort_one(self.sorted + 1)
-                self.sorted += 1
+                self.next_brick += 1
+                try:
+                    self.sort_one(brick_id)
+                    self.sorted += 1
+                except Exception as exc:
+                    self._ask_for_help(brick_id, exc)
             narrator.say("quit" if self.quit.is_set() else "empty", n=self.sorted)
-            self.state = "HOME"
-            self.picker.home()
+            self._home()
             self.state = "DONE"
         except estop.EStopped:
             self.state = "E-STOP"
             narrator.say("estop")
-            raise
-        except Exception as exc:
-            _log.exception("run stopped")
-            narrator.say("help", reason=str(exc) if isinstance(exc, HelpNeeded) else "something unexpected went wrong")
-            self.state = "HOME"
-            self.picker.home()
-            self.state = "STOPPED"
             raise
 
     def sort_one(self, brick_id: int) -> None:
@@ -96,9 +101,11 @@ class Cell:
 
         instruction = self.rules[label]
         with self._stage("PLACE", brick_id, note=instruction) as row:
-            if not self.placer.place(instruction):
-                raise HelpNeeded("place failed")
-            row["outcome"] = "placed"
+            placed = self.placer.place(instruction)
+            timed_out = deadline.expired()
+            row["outcome"] = "placed" if placed else "failed"
+        if not placed:
+            raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.PLACE_FAILED, instruction)
         with self._stage("LOG", brick_id, signal, label=label) as row:
             row["outcome"] = "sorted"
 
@@ -106,7 +113,10 @@ class Cell:
         for attempt in range(1, GRASP_ATTEMPTS + 1):
             with self._stage("PICK", brick_id, note=f"attempt {attempt}") as row:
                 presented = self.picker.pick_and_present()
+                timed_out = deadline.expired()
                 row["outcome"] = "presented" if presented else "failed"
+            if timed_out:
+                raise HelpNeeded(Reason.TIMEOUT, f"pick attempt {attempt}")  # stuck, not a miss: don't retry
             with self._stage("VERIFY_GRASP", brick_id) as row:
                 held = presented and not self.picker.gripper_empty()
                 row["outcome"] = "held" if held else "empty"
@@ -114,12 +124,18 @@ class Cell:
                 return
             if attempt < GRASP_ATTEMPTS:
                 narrator.say("grasp_fail")
-        raise HelpNeeded("grasp failed twice")
+        raise HelpNeeded(Reason.GRASP_FAILED, f"{GRASP_ATTEMPTS} attempts")
 
     def _inspect(self, brick_id: int, role: str, newer_than: float = 0.0) -> DefectSignal:
         with self._stage("INSPECT", brick_id, note=role) as row:
-            frame = self.capture.frame(role, newer_than=newer_than)
-            signal = self.inspector.inspect(frame, self.views[role], brick_id)
+            try:
+                frame = self.capture.frame(role, newer_than=newer_than)
+            except TimeoutError as exc:
+                raise HelpNeeded(Reason.CAMERA, role) from exc
+            try:
+                signal = self.inspector.inspect(frame, self.views[role], brick_id)
+            except Exception as exc:
+                raise HelpNeeded(Reason.INSPECT_FAILED, str(exc)) from exc
             self.last_signal = signal
             row.update(label=signal.label, score=signal.score, device=signal.device, outcome=signal.label)
         return signal
@@ -136,15 +152,39 @@ class Cell:
             return signal.label
         for angle in chain["reinspect_angles"]:
             with self._stage("REINSPECT", brick_id, note=f"angle {angle}") as row:
-                if not self.picker.reinspect(angle):
-                    raise HelpNeeded(f"reinspect {angle} lost the brick")
-                row["outcome"] = "back at inspection pose"
+                back = self.picker.reinspect(angle)
+                timed_out = deadline.expired()
+                row["outcome"] = "back at inspection pose" if back else "failed"
+            if not back:
+                raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.BRICK_LOST, f"reinspect {angle}")
             signal = self._inspect(brick_id, "inspect", newer_than=self._settle())
             if signal.label != "uncertain":
                 narrator.say(signal.label, score=signal.score, bbox=signal.bbox, after=f"reinspect {angle}")
                 return signal.label
         narrator.say("still_uncertain", label=chain["then"])
         return chain["then"]
+
+    def _ask_for_help(self, brick_id: int, exc: Exception) -> None:
+        """Home, say why, then wait for a person. Called inside the `except`, so a bare raise re-raises exc."""
+        reason = exc.reason if isinstance(exc, HelpNeeded) else Reason.UNEXPECTED
+        if reason is Reason.UNEXPECTED:
+            _log.exception("brick %d: unexpected error", brick_id)
+        self.help_reason = reason
+        self._event("PAUSE_HUMAN", brick_id, outcome=reason.value, note=str(exc))
+        narrator.say("help", reason=reason.value)
+        self._home()
+        if not self.pause_on_help:
+            self.state = "STOPPED"
+            raise
+        self.state = "PAUSE_HUMAN"
+        self.paused.set()
+        self._checkpoint()  # returns on P (carry on with the next brick) or Q
+        self.help_reason = None
+
+    def _home(self) -> None:
+        self.state = "HOME"
+        with deadline.armed(DEADLINE_S["HOME"]):
+            self.picker.home()
 
     @staticmethod
     def _settle() -> float:
@@ -153,34 +193,52 @@ class Cell:
 
     @contextmanager
     def _stage(self, state: str, brick_id: int, signal: DefectSignal | None = None, **extra):
-        """Acts on E and P, sets the visible state, times the stage and writes one `events` row (PRD 7.3)."""
+        """Acts on E, P and hold, sets the visible state, arms the stage deadline, times the stage and
+        writes one `events` row (PRD 7.3; a failure's reason code goes in `outcome`)."""
         self._checkpoint()
         self.state = state
-        row = {"label": None, "score": None, "device": None, "outcome": None, "note": None}
+        row = {}
         if signal is not None:
             row.update(label=signal.label, score=signal.score, device=signal.device)
         row.update(extra)
         start = time.perf_counter()
         try:
-            yield row
+            with deadline.armed(DEADLINE_S.get(state)):
+                yield row
         except estop.EStopped:
             row["outcome"] = "e-stop"
+            raise
+        except HelpNeeded as exc:
+            row["outcome"] = exc.reason.value
             raise
         except Exception as exc:
             row["outcome"] = f"error: {exc}"
             raise
         finally:
             self.stage_ms[state] = round((time.perf_counter() - start) * 1000, 2)
-            telemetry.log(run_id=self.run_id, brick_id=brick_id, ts=time.time(), state=state, stage=state.lower(),
-                          latency_ms=self.stage_ms[state], **row)
+            self._event(state, brick_id, latency_ms=self.stage_ms[state], **row)
+
+    def _event(self, state: str, brick_id: int, latency_ms: float | None = None, **row) -> None:
+        row = {"label": None, "score": None, "device": None, "outcome": None, "note": None} | row
+        _log.info("brick %d %-12s %s", brick_id, state, row["outcome"])
+        telemetry.log(run_id=self.run_id, brick_id=brick_id, ts=time.time(), state=state, stage=state.lower(),
+                      latency_ms=latency_ms, **row)
 
     def _checkpoint(self) -> None:
-        """Runs on the control thread, the only one that talks to the motors (decisions.md D21)."""
+        """Runs on the control thread, the only one that talks to the motors (decisions.md D21).
+        E always wins; a hold outlasts Q (never move into an obstacle); Q ends a pause."""
+        announced_hold = False
         while True:
             if estop.requested():
                 self.picker.estop()
                 raise estop.EStopped()
-            if not self.paused.is_set():
+            if self.hold.is_set():
+                if not announced_hold:
+                    self.state = "HOLD"
+                    narrator.trigger("obstacle")
+                    announced_hold = True
+            elif self.quit.is_set() or not self.paused.is_set():
+                self.paused.clear()
                 return
             time.sleep(0.05)
 
@@ -294,6 +352,7 @@ def main() -> None:
 
     run_id = time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id)
+    cell.pause_on_help = not args.headless
     telemetry.start(Path("runs/events.jsonl"))
     try:
         if args.headless:

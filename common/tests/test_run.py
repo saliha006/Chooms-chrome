@@ -30,7 +30,9 @@ def make_cell():
         cap = SharedCapture({r: MockCamera(size=(8, 8), fps=200) for r in VIEWS}).start()
         captures.append(cap)
         mover = mover or MockMover()
-        return run.Cell(cap, MockInspector(labels), mover, mover, CountLocator(bricks), RULES, VIEWS, "test"), mover
+        cell = run.Cell(cap, MockInspector(labels), mover, mover, CountLocator(bricks), RULES, VIEWS, "test")
+        cell.pause_on_help = False  # these tests check the failure itself; test_help.py covers PAUSE_HUMAN
+        return cell, mover
 
     yield make
     for cap in captures:
@@ -86,7 +88,7 @@ def test_help_line_says_why(make_cell, monkeypatch):
     cell, _ = make_cell(("perfect",), mover=MockMover(pick_failures=2))
     with pytest.raises(run.HelpNeeded):
         cell.run()
-    assert ("help", {"reason": "grasp failed twice"}) in said
+    assert ("help", {"reason": "grasp_failed"}) in said
 
 
 def test_grasp_retried_once(make_cell):

@@ -127,3 +127,16 @@ def test_render_draws_every_state(make_cell):
     control.thread.join(timeout=5)
     img = mission_control.render(cell, control, None)  # after a brick: label, score, latencies
     assert img.shape == (mission_control.HEIGHT, mission_control.WIDTH, 3)
+
+
+def test_render_shows_help_and_hold(make_cell):
+    from common.reasons import Reason
+
+    cell, _ = make_cell()
+    control = mission_control.Control(cell)
+    control.start()
+    control.thread.join(timeout=5)
+    cell.state, cell.help_reason = "PAUSE_HUMAN", Reason.GRASP_FAILED
+    assert mission_control.render(cell, control, None).shape[0] == mission_control.HEIGHT
+    cell.state = "HOLD"
+    assert mission_control.render(cell, control, None).shape[0] == mission_control.HEIGHT

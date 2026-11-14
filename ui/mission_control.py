@@ -98,11 +98,16 @@ def render(cell, control: Control, feed: np.ndarray | None) -> np.ndarray:
         banner, colour = "Press S to start", (80, 200, 80)
     elif estop.requested():
         banner, colour = "E-STOP: torque off", (0, 0, 255)
+    elif cell.state == "PAUSE_HUMAN" and cell.help_reason is not None:
+        banner, colour = f"NEED HELP: {cell.help_reason.value.replace('_', ' ')} (P go on, Q stop)", (0, 140, 255)
+    elif cell.state == "HOLD":
+        banner, colour = "HOLD: something in the zone", (0, 200, 255)
     elif cell.paused.is_set():
         banner, colour = "PAUSED (P to resume)", (0, 200, 255)
     else:
         banner, colour = cell.state, STATE_COLOURS.get(cell.state, TEXT)
-    _text(img, banner, (20, 60), 1.6, colour, 3)
+    (w, _), _ = cv2.getTextSize(banner, FONT, 1.6, 3)
+    _text(img, banner, (20, 60), min(1.6, 1.6 * (PANEL_X - 40) / w), colour, 3)  # long banners shrink to fit
     _text(img, cell.mode, (PANEL_X, 60), 0.8, DIM)
 
     x, y, w, h = FEED
