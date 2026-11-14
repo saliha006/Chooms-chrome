@@ -13,9 +13,9 @@ for recording and runtime.
 - **Leader arm** for teleoperation only; it is never driven by code.
 
 ## ACT (pick and present): 54 episodes
-- 9 start positions × 6 episodes each = 54. `[🟠 Nate's call]` The brief also says to hold back 2 of the 9 grid
-  positions for F14. Either record all 9 and test F14 only on off-grid spots (keeps 6 per position), or hold back 2
-  and record ~8 per position on the other 7 (a harder, more honest F14 test).
+- All 9 start positions × 6 episodes = 54, **recorded in rounds**: one episode per position per round, the same
+  position order every round, 6 rounds. The F11 sweep trains on the first 18 / 36 / 54 episodes, which is then
+  exactly 2 / 4 / 6 per position. F14 tests only the off-grid spots, which are never recorded (Nate, 2026-11-14).
 - Start: arm at home, one brick at the start dot. End: brick held still at the inspection pose for ~1 s.
 - About **12 s** per episode, **10 s** reset. Smooth, unhurried motion: the policy copies the speed.
 - Mix good and defective bricks so the grasp doesn't depend on the marking.
@@ -28,9 +28,9 @@ for recording and runtime.
 - Alternate red and blue so neither bowl dominates; same bowl positions every time.
 
 ## Rejecting episodes
-Re-record and log in `train/rejected.md` any episode with: a dropped brick, a collision, a long hesitation,
+Reject on the spot, and log in `train/rejected.md`, any episode with: a dropped brick, a collision, a long hesitation,
 a wrong bowl, the brick out of the inspection camera's view, or the operator's hand in a camera frame.
-Delete it from the dataset before pushing.
+Re-take it at the same position before moving on, so the round order (and the sweep's first-N subsets) holds.
 
 ## Hugging Face datasets
 - ACT: `{{hf_user}}/sortsense-pick` · SmolVLA: `{{hf_user}}/sortsense-place`
