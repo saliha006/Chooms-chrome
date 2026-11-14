@@ -186,3 +186,42 @@ def test_dance_only_after_an_empty_zone(make_cell):
     cell.quit.set()
     cell.run()
     assert danced == [True]  # Q: no dance
+
+
+def test_place_is_checked_from_home_against_a_frame_from_before_the_pick(make_cell):
+    cell, mover = make_cell(("defective",))
+    seen = []
+
+    def check(instruction, before, after):
+        seen.append((instruction, mover.calls[-1]))
+        return True
+
+    cell.bowl_check = check
+    cell.run()
+    assert cell.sorted == 1
+    assert seen == [(RULES["defective"], ("home",))]  # the arm was home when the bowl was looked at
+
+
+def test_brick_missing_from_the_bowl_is_place_failed(make_cell):
+    cell, mover = make_cell(("perfect",))
+    cell.bowl_check = lambda instruction, before, after: False
+    with pytest.raises(run.HelpNeeded) as err:
+        cell.run()
+    assert err.value.reason is run.Reason.PLACE_FAILED
+    assert cell.sorted == 0
+
+
+def test_no_clicked_bowls_means_no_place_check():
+    assert run.bowl_checker({"zone": None, "bowl_red": None, "bowl_blue": None}) is None
+
+
+def test_bowl_checker_looks_only_at_the_named_bowl():
+    import numpy as np
+
+    square = lambda x: [[x, 0], [x + 10, 0], [x + 10, 10], [x, 10]]
+    check = run.bowl_checker({"bowl_red": square(0), "bowl_blue": square(20)})
+    before = np.zeros((10, 40, 3), np.uint8)
+    after = before.copy()
+    after[:, 0:10] = 255  # a brick appears in the red-role bowl only
+    assert check(RULES["defective"], before, after)  # orange bowl = bowl_red
+    assert not check(RULES["perfect"], before, after)  # purple bowl = bowl_blue, unchanged

@@ -66,6 +66,8 @@ class Cell:
         self.trace: list[str] = []  # this brick's reasoning, one line per step (H7 panel)
         self.steps: list[tuple[str, float]] = []  # recovery steps and the score after each (ReasonTrace)
         self.finale: Callable[[], object] | None = None  # the end-of-run dance on the real arm (D28)
+        # (instruction, top_before, top_after) -> brick landed in that bowl; None = trust the mover (no bowls clicked)
+        self.bowl_check: Callable[[str, object, object], bool] | None = None
         self.obstacle_seen = False
         self.stage_ms: dict[str, float] = {}
         self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
@@ -103,6 +105,8 @@ class Cell:
             raise
 
     def sort_one(self, brick_id: int) -> None:
+        # The arm is home here (start, or after the last place), so the bowls are in clear view.
+        bowls_before = self._top_frame() if self.bowl_check else None
         self._pick(brick_id)
         signal = self._inspect(brick_id, "inspect", "first look", newer_than=self._settle())
         narrator.say(signal.label, score=signal.score, bbox=signal.bbox)
@@ -121,10 +125,27 @@ class Cell:
             row["outcome"] = "placed" if placed else "failed"
         if not placed:
             raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.PLACE_FAILED, instruction)
+        if self.bowl_check:
+            self._verify_place(brick_id, instruction, bowls_before)
         final = self.last_signal  # the look that settled it, after any recovery
         with self._stage("LOG", brick_id, final, label=label) as row:
             row["outcome"] = "sorted"
             row["note"] = ReasonTrace.from_signal(final, label, self.steps).note()
+
+    def _verify_place(self, brick_id: int, instruction: str, before) -> None:
+        """Home first: right after a place the arm hides the bowl from the top camera (Harry, 2026-11-14)."""
+        self._home()
+        with self._stage("VERIFY_PLACE", brick_id, note=instruction) as row:
+            landed = self.bowl_check(instruction, before, self._top_frame())
+            row["outcome"] = "in bowl" if landed else "not in bowl"
+        if not landed:
+            raise HelpNeeded(Reason.PLACE_FAILED, f"bowl unchanged: {instruction}")
+
+    def _top_frame(self):
+        try:
+            return self.capture.frame("top", newer_than=self._settle())
+        except TimeoutError as exc:
+            raise HelpNeeded(Reason.CAMERA, "top") from exc
 
     def _pick(self, brick_id: int) -> None:
         for attempt in range(1, GRASP_ATTEMPTS + 1):
@@ -368,11 +389,31 @@ def build_real(scripted: set[str], bricks: int, run_id: str) -> Cell:
     from robot.dance import dance
 
     cell.finale = lambda: dance(poses["home"])
+    cell.bowl_check = bowl_checker(scene)
     # Honesty guardrail: the screen and the log always say what moved the arm.
     cell.mode = "pick: {} | place: {}".format(
         *("scripted" if p in scripted else f"{needed[p]} on {loaded[p][1]}" for p in ("pick", "place")))
     _log.info(cell.mode)
     return cell
+
+
+def bowl_checker(scene: dict) -> Callable[[str, object, object], bool] | None:
+    """Place verification from the clicked bowl regions (perception.scene.brick_in_bowl, decisions.md D22)."""
+    missing = [name for name in ("bowl_red", "bowl_blue") if scene.get(name) is None]
+    if missing:
+        _log.warning("config/scene.yaml has no %s (python -m ui.click_regions): places are not verified", ", ".join(missing))
+        return None
+    import numpy as np
+
+    from fallback.scripted import bowl_for
+    from perception.scene import Zone, brick_in_bowl
+
+    bowls = {name: Zone(np.asarray(scene[name], float)) for name in ("bowl_red", "bowl_blue")}
+
+    def check(instruction: str, before, after) -> bool:
+        return brick_in_bowl(before, after, bowls[bowl_for(instruction)].mask(after.shape))
+
+    return check
 
 
 def headless(cell: Cell) -> BaseException | None:

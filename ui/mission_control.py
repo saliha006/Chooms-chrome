@@ -23,7 +23,7 @@ BG, TEXT, DIM = (24, 24, 24), (235, 235, 235), (150, 150, 150)
 LABEL_COLOURS = {"perfect": (255, 150, 30), "defective": (40, 40, 230), "uncertain": (0, 200, 255)}  # BGR
 STATE_COLOURS = {"E-STOP": (0, 0, 255), "STOPPED": (0, 0, 255), "DONE": (80, 200, 80)}
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-STAGES = ("LOCATE", "PICK", "VERIFY_GRASP", "INSPECT", "DECIDE", "PLACE")
+STAGES = ("LOCATE", "PICK", "VERIFY_GRASP", "INSPECT", "DECIDE", "PLACE", "VERIFY_PLACE")
 
 
 class Control:

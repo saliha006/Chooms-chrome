@@ -35,6 +35,16 @@ def load_waypoints(path: Path) -> dict[str, np.ndarray]:
     return poses
 
 
+def bowl_for(instruction: str) -> str:
+    """The bowl pose (and scene.yaml region) an instruction names. The instruction is the same language SmolVLA
+    gets (config/rules.yaml); names are roles (bowl_blue = perfect, bowl_red = defective), the real bowls are
+    purple and orange."""
+    for colour, pose in (("orange", "bowl_red"), ("purple", "bowl_blue"), ("red", "bowl_red"), ("blue", "bowl_blue")):
+        if f"{colour} bowl" in instruction:
+            return pose
+    raise ValueError(f"no bowl named in instruction: {instruction!r}")
+
+
 class ScriptedMover:
     def __init__(self, poses: dict[str, np.ndarray]):
         self.poses = poses
@@ -43,11 +53,10 @@ class ScriptedMover:
         if not (self._go("pick_above", io.GRIPPER_OPEN) and self._go("pick", io.GRIPPER_OPEN)):
             return False
         self._set_gripper(GRIPPER_CLOSED)
-        return (self._go("pick_above", GRIPPER_CLOSED) and self._go("inspect", GRIPPER_CLOSED)
-                and not self.gripper_empty())
+        return self._go("pick_above", GRIPPER_CLOSED) and self._go("inspect", GRIPPER_CLOSED) and self._settled_holding()
 
     def place(self, instruction: str) -> bool:
-        if not self._go(self._bowl_for(instruction), GRIPPER_CLOSED):
+        if not self._go(bowl_for(instruction), GRIPPER_CLOSED):
             return False
         self._set_gripper(io.GRIPPER_OPEN)
         return bool(io.observe()[io.GRIPPER] >= io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG)
@@ -62,10 +71,10 @@ class ScriptedMover:
         target[io.WRIST_ROLL] += angle_deg
         target[io.GRIPPER] = GRIPPER_CLOSED
         self._move(target)
-        return self._near(self.poses["inspect"], io.POSE_TOLERANCE_DEG, ignore_wrist_roll=True) and not self.gripper_empty()
+        return self._near(self.poses["inspect"], io.POSE_TOLERANCE_DEG, ignore_wrist_roll=True) and self._settled_holding()
 
     def gripper_empty(self) -> bool:
-        return bool(io.observe()[io.GRIPPER] < io.GRIPPER_EMPTY_BELOW)
+        return not io.holding()
 
     def home(self) -> None:
         self._go("home", io.observe()[io.GRIPPER])
@@ -74,13 +83,10 @@ class ScriptedMover:
         io.torque_off()
 
     @staticmethod
-    def _bowl_for(instruction: str) -> str:
-        # The instruction is the same language SmolVLA gets (config/rules.yaml), so read the colour from it.
-        # Pose names are roles (bowl_blue = perfect, bowl_red = defective); the real bowls are purple and orange.
-        for colour, pose in (("orange", "bowl_red"), ("purple", "bowl_blue"), ("red", "bowl_red"), ("blue", "bowl_blue")):
-            if f"{colour} bowl" in instruction:
-                return pose
-        raise ValueError(f"no bowl named in instruction: {instruction!r}")
+    def _settled_holding() -> bool:
+        # Same grasp test as LearnedMover (io.holding band after the settle, decisions.md D22).
+        time.sleep(io.GRIPPER_SETTLE_S)
+        return io.holding()
 
     def _go(self, name: str, gripper: float) -> bool:
         target = self.poses[name].copy()
