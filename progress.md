@@ -113,6 +113,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **⚠️ Conflicts:** none
 - **Status:** n/a
 
+### 2026-11-14 17:15 — feat — Nemotron's line spoken after each verdict; test-name clash fixed — @harry [conflicts: @saliha]
+- **Where:** `systems-voice-harry` → `main` @ `d6fbc81` · merged to `main`: yes
+- **Did:** `run.py` hands every inspection frame and signal to Saliha's `reasoner.live.LiveLine`; a grounded line comes back through `narrator.say(text=...)` and is spoken live after the template line (real runs only, and only with `NVIDIA_API_KEY` + `NEMOTRON_MODEL` set; `--no-live` turns both off). Renamed `narrator/tests/test_live.py` → `test_live_voice.py`: it clashed with `reasoner/tests/test_live.py` (pytest collection error on `main` for a few minutes, now fixed). 171 tests pass. Not yet heard end to end: Nemotron + voice on a real brick.
+- **Touched:** `run.py`, `narrator/__init__.py` (`current_persona`), tests
+- **Brief task:** add-on "one live ElevenLabs line from the Nemotron text (with Saliha)"
+- **⚠️ Conflicts:** @saliha: your `LiveLine` is now called from `Cell._inspect` on every look (first look and each recovery look)
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 16:56 — fix — A3: SmolVLA export passes through `InferenceModel` with the real task string; the policy runner now sends the export's keys and RGB frames — @nate [conflicts: @harry @saliha]
 - **Where:** `robotics-policies-nate` @ `f22367c` · merged to `main`: yes
 - **Did:** `train/export.py` checks an export the way the laptop calls it: `InferenceModel(dir, device="CPU")` on a zero observation plus the exact `perfect` string from `config/rules.yaml`. SmolVLA smoke export: finite 50×6 action chunk, 1.9 s first call on Modal's 4-core CPU (not an Intel number). The check caught a bug in `policies/episode.py`: it sent LeRobot's dataset keys and OpenCV's BGR frames without a batch axis, while the exported runtime reads `state`, `images.<camera>` and `task`, RGB, batched. SmolVLA would have failed on the laptop, and after a key-only fix it would have seen purple and orange swapped. Fixed and tested; Studio's own resize step turns three camera frames into the 3×1×3×512×512 input the IR wants. 128 tests pass in `robot policies train common fallback`.

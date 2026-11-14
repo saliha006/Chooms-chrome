@@ -38,6 +38,10 @@ def say(event: str, text: str | None = None, persona: str | None = None, **kw) -
 _persona = Persona(say)
 
 
+def current_persona() -> str:
+    return _persona.current
+
+
 def trigger(kind: str) -> None:
     """kind "obstacle" | "hat" (PRD 7.3): the cowboy, at once."""
     _log.info("trigger: %s", kind)
