@@ -47,7 +47,16 @@ def test_is_a_mover(mover):
 def test_pick_reaches_inspect_pose_holding_a_brick(mover):
     assert mover.pick_and_present()
     assert mover.picker.resets == 1
-    assert set(mover.picker.last_obs) == {"observation.state", "observation.images.wrist"}
+    assert set(mover.picker.last_obs) == {episode.STATE_KEY, episode.IMAGE_KEY.format("wrist")}
+
+
+def test_the_observation_uses_the_export_keys_rgb_and_a_batch_axis(mover):
+    bgr = np.zeros((4, 6, 3), np.uint8)
+    bgr[..., 0] = 255  # blue, in OpenCV's channel order
+    obs = episode.observation({"top": bgr, "wrist": bgr, "inspect": bgr}, "a task")
+    assert list(obs) == ["state", "images.top", "images.wrist", "images.inspect", "task"]
+    assert obs["state"].shape == (1, 6) and obs["state"].dtype == np.float32
+    assert obs["images.top"].shape == (1, 4, 6, 3) and obs["images.top"][0, 0, 0].tolist() == [0, 0, 255]
 
 
 def test_place_passes_the_instruction_and_opens(mover):
@@ -139,7 +148,7 @@ def test_place_rolls_the_wrist_back_before_the_policy_starts(mover):
 
     class Recording(FakePolicy):
         def select_action(self, obs):
-            first_state.append(obs["observation.state"][0].copy())
+            first_state.append(obs[episode.STATE_KEY][0].copy())
             return super().select_action(obs)
 
     mover.placer = Recording(mover.placer.target)

@@ -70,6 +70,7 @@ class Cell:
         self.bowl_check: Callable[[str, object, object], bool] | None = None
         self.obstacle_seen = False
         self.drift_alert = False  # set by the Aiven sync thread (F15): lighting changed, rebaseline
+        self.reasoner = None  # reasoner.live.LiveLine: Nemotron's explanation, spoken after the template line
         self.stage_ms: dict[str, float] = {}
         self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
         self.quit = threading.Event()  # Q: finish this brick, then home and stop
@@ -111,7 +112,7 @@ class Cell:
         bowls_before = self._top_frame() if self.bowl_check else None
         self._pick(brick_id)
         signal = self._inspect(brick_id, "inspect", "first look", newer_than=self._settle())
-        narrator.say(signal.label, score=signal.score, bbox=signal.bbox)
+        narrator.say(signal.label, **spoken_numbers(signal))
 
         with self._stage("DECIDE", brick_id, signal) as row:
             label = signal.label
@@ -177,6 +178,8 @@ class Cell:
             except Exception as exc:
                 raise HelpNeeded(Reason.INSPECT_FAILED, str(exc)) from exc
             self.last_signal = signal
+            if self.reasoner is not None:
+                self.reasoner.submit(frame, signal, persona=narrator.current_persona())
             where = region(signal.bbox)
             self.trace.append(f"{step}: {signal.score:.1f} vs {signal.t_low:.1f} / {signal.t_high:.1f} -> {signal.label}"
                               + (f" at {where}" if where else ""))
@@ -193,7 +196,7 @@ class Cell:
         chain = self.rules["uncertain"]
         signal = self._inspect(brick_id, chain["second_view"], "look again", newer_than=self._settle())
         if signal.label != "uncertain":
-            narrator.say(signal.label, score=signal.score, bbox=signal.bbox, after="looked again")
+            narrator.say(signal.label, **spoken_numbers(signal), after="looked again")
             return signal.label
         for angle in chain["reinspect_angles"]:
             with self._stage("REINSPECT", brick_id, note=f"angle {angle}") as row:
@@ -205,7 +208,7 @@ class Cell:
             step = f"after wrist roll {angle}" if angle else "after re-grasp"
             signal = self._inspect(brick_id, "inspect", step, newer_than=self._settle())
             if signal.label != "uncertain":
-                narrator.say(signal.label, score=signal.score, bbox=signal.bbox, after=f"reinspect {angle}")
+                narrator.say(signal.label, **spoken_numbers(signal), after=f"reinspect {angle}")
                 return signal.label
         narrator.say("still_uncertain", label=chain["then"])
         self.trace.append(f"still unsure: {chain['then']}, flagged")
@@ -300,6 +303,11 @@ class Cell:
                 self.paused.clear()
                 return
             time.sleep(0.05)
+
+
+def spoken_numbers(signal: DefectSignal) -> dict:
+    """What the live voice needs to explain a verdict (narrator/live.py)."""
+    return {"score": signal.score, "t_low": signal.t_low, "t_high": signal.t_high, "where": region(signal.bbox)}
 
 
 def parse_scripted(text: str) -> set[str]:
@@ -420,6 +428,21 @@ def bowl_checker(scene: dict) -> Callable[[str, object, object], bool] | None:
     return check
 
 
+def nemotron_line():
+    """Real runs only: a stand-in frame gives Nemotron nothing true to say. None without the NVIDIA settings."""
+    import os
+
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    if not (os.environ.get("NVIDIA_API_KEY") and os.environ.get("NEMOTRON_MODEL")):
+        _log.info("NVIDIA_API_KEY / NEMOTRON_MODEL not set: template lines only")
+        return None
+    from reasoner.live import LiveLine
+
+    return LiveLine(narrator.say)
+
+
 def drift_alarm(cell: Cell, run_id: str) -> telemetry_sync.DriftWatch | None:
     """Spoken and on screen only: the database never stops the arm (Harry, 2026-11-14)."""
     if run_id.startswith("mock-"):
@@ -452,6 +475,7 @@ def main() -> None:
     ap.add_argument("--bricks", type=int, default=5, help="bricks in the zone when no zone is clicked (mock, or no scene.yaml)")
     ap.add_argument("--headless", action="store_true", help="no window: start at once, Ctrl+C = e-stop")
     ap.add_argument("--aiven", action="store_true", help="also send a mock run to Aiven (real runs always do)")
+    ap.add_argument("--no-live", action="store_true", help="cached voice lines only: no ElevenLabs calls during the run")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
 
@@ -459,6 +483,9 @@ def main() -> None:
     run_id = ("mock-" if args.mock else "") + time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id)
     cell.pause_on_help = not args.headless
+    if not args.no_live:
+        narrator.enable_live(load_config("voices.yaml"))
+        cell.reasoner = None if args.mock else nemotron_line()
     events = Path("runs/mock-events.jsonl" if args.mock else "runs/events.jsonl")
     telemetry.start(events)
     sync_stop = threading.Event()

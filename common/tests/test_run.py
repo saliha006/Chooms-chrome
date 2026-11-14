@@ -254,3 +254,17 @@ def test_cowboy_returns_to_calm_once_the_obstacle_has_gone_and_a_brick_is_done(m
 def test_mock_runs_never_raise_the_drift_alarm(make_cell):
     cell, _ = make_cell(("perfect",))
     assert run.drift_alarm(cell, "mock-20261114") is None
+
+
+def test_every_inspection_goes_to_the_reasoner_with_its_frame(make_cell):
+    seen = []
+
+    class Reasoner:
+        def submit(self, crop, signal, persona="calm"):
+            seen.append((crop.shape, signal.label, persona))
+
+    cell, _ = make_cell(("uncertain", "perfect"))
+    cell.reasoner = Reasoner()
+    cell.run()
+    assert [label for _, label, _ in seen] == ["uncertain", "perfect"]
+    assert all(shape == (8, 8, 3) and persona == "calm" for shape, _, persona in seen)
