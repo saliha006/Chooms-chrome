@@ -184,3 +184,19 @@ def test_drive_lines_say_the_distance_and_time():
     assert compose("cowboy", "arrived", cm=41.0, seconds=6.2) == "Whoa there. 41 centimetres in 6 seconds. In position, let's get sortin'."
     assert compose("calm", "drive", cm=None) is None  # the cached line, without a number
     assert compose("calm", "arrived", cm=41.0) is None
+
+
+def test_past_the_run_budget_the_cached_clip_plays(tmp_path):
+    clip = tmp_path / "perfect.wav"
+    clip.write_bytes(b"RIFF-cached")
+    synthesised, spy = [], Spy()
+
+    def synth(text, persona):
+        synthesised.append(text)
+        return b"RIFF-live"
+
+    live = Live(synth, spy, budget_chars=12)
+    live._say("ten chars.", "calm", clip, False, time.monotonic())  # 10 of 12
+    live._say("five!", "calm", clip, False, time.monotonic())  # would make 15: over budget
+    assert synthesised == ["ten chars."]
+    assert spy.played[-1] == (clip, b"RIFF-cached")

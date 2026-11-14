@@ -13,7 +13,7 @@ import time
 
 from narrator.cache import clip_path
 from narrator.lines import key_for, line_for
-from narrator.live import LIVE_EVENTS, Live, compose, elevenlabs_synth
+from narrator.live import ACCOUNT_FLOOR_CHARS, LIVE_EVENTS, Live, compose, credits_left, elevenlabs_synth
 from narrator.persona import EXCLAIM, Persona
 from narrator.player import Player, system_player
 
@@ -89,6 +89,10 @@ def enable_live(voices: dict) -> bool:
     key = os.environ.get("ELEVENLABS_API_KEY")
     if not key:
         _log.info("ELEVENLABS_API_KEY not set: cached lines only")
+        return False
+    left = credits_left(key)
+    if left is not None and left < ACCOUNT_FLOOR_CHARS:
+        _log.warning("only %d ElevenLabs credits left: cached lines only, keep them for the demo", left)
         return False
     _live = Live(elevenlabs_synth(voices, key), _player.submit)
     _live.warm_up()

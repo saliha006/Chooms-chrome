@@ -20,6 +20,10 @@ _log = logging.getLogger("narrator.live")
 # Flash took 625-1563 ms per full line on the venue Wi-Fi (4 calls, 2026-11-14); 3 s keeps nearly every live line
 # while the voice lags the arm by about a second at most (Harry, 2026-11-14). The arm never waits either way.
 TIMEOUT_S = 3.0
+# Credits: a 20-brick run costs about 5.5-11k characters (Nate's estimate, 17:55). Past the run budget the cached
+# clips take over; below the account floor the run starts on cached lines only. Both TUNE.
+RUN_BUDGET_CHARS = 12_000
+ACCOUNT_FLOOR_CHARS = 10_000
 LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit", "drive", "arrived", "obstacle_named"}
 
 # Conversational on purpose: the robot thinks aloud. {where} is empty or " at the top left".
@@ -110,8 +114,9 @@ class Live:
     """One worker thread: takes the newest request, synthesises it, hands the WAV (or the fallback) to `submit`."""
 
     def __init__(self, synth: Callable[[str, str], bytes], submit: Callable[[Path, bool], None],
-                 timeout_s: float = TIMEOUT_S):
+                 timeout_s: float = TIMEOUT_S, budget_chars: int = RUN_BUDGET_CHARS):
         self._synth, self._submit, self.timeout_s = synth, submit, timeout_s
+        self.budget_chars, self.spent_chars = budget_chars, 0
         self._requests: queue.Queue = queue.Queue()
         self._dir = Path(tempfile.mkdtemp(prefix="sortsense-live-"))
         self._count = 0
@@ -149,6 +154,14 @@ class Live:
                 self._idle.set()
 
     def _say(self, text: str, persona: str, fallback: Path | None, priority: bool, asked: float) -> None:
+        if self.spent_chars + len(text) > self.budget_chars:
+            if self.spent_chars <= self.budget_chars:
+                _log.warning("live voice budget of %d characters spent: cached lines from here", self.budget_chars)
+                self.spent_chars = self.budget_chars + 1
+            if fallback is not None and fallback.exists():
+                self._submit(fallback, priority)
+            return
+        self.spent_chars += len(text)
         try:
             audio = self._synth(text, persona)
             took = time.monotonic() - asked
@@ -166,6 +179,18 @@ class Live:
         path.write_bytes(audio)
         _log.info("live line ready in %.0f ms", took * 1000)
         self._submit(path, priority)
+
+
+def credits_left(api_key: str) -> int | None:
+    """Characters left on the account, or None when the key may not read it (needs the user_read permission)."""
+    from elevenlabs.client import ElevenLabs
+
+    try:
+        sub = ElevenLabs(api_key=api_key).user.subscription.get(request_options={"timeout_in_seconds": 5, "max_retries": 0})
+        return sub.character_limit - sub.character_count
+    except Exception as exc:
+        _log.info("can't read the credit balance (%s); the run budget still applies", type(exc).__name__)
+        return None
 
 
 def elevenlabs_synth(voices: dict, api_key: str, timeout_s: float = TIMEOUT_S) -> Callable[[str, str], bytes]:
