@@ -1,0 +1,10 @@
+# Joint poses for the scripted fallback and LearnedMover, in degrees:
+# [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper 0-100]
+# Taught by hand-guiding on Saturday 09:30: python -m fallback.teach <name>
+home: null
+pick_above: null   # over the taped pick zone, gripper open
+pick: null         # down at the brick, gripper open
+pick_drop: null    # where a re-grasp puts the brick down (usually the pick pose)
+inspect: null      # brick held in front of the inspection camera
+bowl_red: null     # over the red bowl
+bowl_blue: null    # over the blue bowl
