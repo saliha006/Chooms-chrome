@@ -44,7 +44,7 @@ def station(tmp_path, monkeypatch):
     edit("robot.yaml", lambda d: d.update(port="/dev/fake-arm"))
     edit("waypoints.yaml", lambda d: d.update(POSES))
 
-    monkeypatch.setattr(capture, "OpenCVCamera", lambda path: MockCamera(size=(8, 8), fps=200))
+    monkeypatch.setattr(capture, "OpenCVCamera", lambda path, fourcc=None: MockCamera(size=(8, 8), fps=200))
     fake_perception = types.ModuleType("perception.inspector")
     fake_perception.Inspector = lambda xml, thresholds, model: MockInspector(("defective",))
     monkeypatch.setitem(sys.modules, "perception.inspector", fake_perception)

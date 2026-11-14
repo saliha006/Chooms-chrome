@@ -399,7 +399,7 @@ def build_real(scripted: set[str], bricks: int, run_id: str) -> Cell:
     insp = models["inspector"]
     inspector = AnomalibInspector(Path(insp["xml"]), Path(insp["thresholds"]), insp["model"])
     io.connect(port=robot["port"], calibration=robot["calibration"])
-    capture = SharedCapture({role: OpenCVCamera(cam["path"]) for role, cam in cameras.items()}).start()
+    capture = SharedCapture({role: OpenCVCamera(cam["path"], cam.get("fourcc")) for role, cam in cameras.items()}).start()
 
     movers = {}
     if scripted:

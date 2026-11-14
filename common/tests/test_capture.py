@@ -51,3 +51,26 @@ def test_frame_times_out_when_camera_is_silent():
             cap.frame("top", newer_than=time.monotonic(), timeout_s=0.05)
     finally:
         cap.stop()
+
+
+def test_opencv_camera_asks_for_the_configured_pixel_format(monkeypatch):
+    import cv2
+
+    from common import capture
+
+    calls = []
+
+    class FakeCapture:
+        def __init__(self, path):
+            self.path = path
+
+        def isOpened(self):
+            return True
+
+        def set(self, prop, value):
+            calls.append((prop, value))
+
+    monkeypatch.setattr(capture.cv2, "VideoCapture", FakeCapture)
+    capture.OpenCVCamera("/dev/v4l/by-id/wrist", fourcc="MJPG")
+    capture.OpenCVCamera("/dev/v4l/by-id/top")
+    assert calls == [(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))]

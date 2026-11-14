@@ -16,10 +16,13 @@ class Camera(Protocol):
 
 
 class OpenCVCamera:
-    def __init__(self, path: str | int):
+    def __init__(self, path: str | int, fourcc: str | None = None):
         self._cap = cv2.VideoCapture(path)
         if not self._cap.isOpened():
             raise RuntimeError(f"cannot open camera {path}")
+        if fourcc:
+            # Some cameras (the Sonix wrist cam) send nothing in their default YUYV and only stream in MJPG.
+            self._cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fourcc))
 
     def read(self) -> np.ndarray | None:
         ok, frame = self._cap.read()
