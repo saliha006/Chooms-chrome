@@ -10,14 +10,18 @@ from narrator.listen import RATE, Listener, intent, utterances
 
 
 @pytest.mark.parametrize("text, meant", [
-    ("Hey robot, I'm putting a cowboy hat on you.", "hat_on"),
-    ("Here's a cowboy hat for you", "hat_on"),
-    ("I'm giving you a hat", "hat_on"),
-    ("Okay, I'm taking the cowboy hat off now.", "hat_off"),
-    ("Let me take your hat off", "hat_off"),
-    ("Remove the hat", "hat_off"),
-    ("Look at that hat", None),
-    ("Put the brick on the plate", None),
+    ("Hey Pix, I'm putting a cowboy hat on you.", "hat_on"),
+    ("Hey picks, here's a cowboy hat for you", "hat_on"),  # a sound-alike of the name still counts
+    ("Okay Pix, I'm taking the cowboy hat off now.", "hat_off"),
+    ("Hey Pix, what do you see now?", "see"),
+    ("Pix, what are you looking at?", "see"),
+    ("Hey Pix, how many have you sorted?", "tally"),
+    ("Hey Pix, why that bowl?", "why"),
+    ("Pix, what are you doing?", "doing"),
+    ("Hey Pix, who are you?", "who"),
+    ("Hey Pix, sing me a song", "unknown"),
+    ("I'm putting a cowboy hat on you.", None),  # not addressed to Pix: ignored
+    ("What do you see now?", None),
     ("", None),
     (None, None),
 ])
@@ -56,7 +60,7 @@ def test_listener_acts_on_what_it_hears():
         acted.append(meant)
         done.set()
 
-    Listener(io.BytesIO(pcm((1, True), (1, False))), lambda wav: "I'm putting a cowboy hat on you", act)
+    Listener(io.BytesIO(pcm((1, True), (1, False))), lambda wav: "Hey Pix, I'm putting a cowboy hat on you", act)
     assert done.wait(3)
     assert acted == ["hat_on"]
 

@@ -10,6 +10,7 @@ bring it back.
 import logging
 import os
 import time
+from collections.abc import Callable
 
 from narrator.cache import clip_path
 from narrator.lines import key_for, line_for
@@ -99,8 +100,9 @@ def enable_live(voices: dict) -> bool:
     return True
 
 
-def start_listening(voices: dict):
-    """Called once by run.py: hat on / hat off by voice (narrator/listen.py). None when it can't run."""
+def start_listening(voices: dict, answer: Callable[[str], str] | None = None):
+    """Called once by run.py: "Hey Pix, …" by voice (narrator/listen.py). `answer(meaning)` returns what Pix says
+    to a question; run.py builds it from the cell. None when listening can't run."""
     from dotenv import load_dotenv
 
     from narrator.listen import Listener, elevenlabs_transcriber, microphone
@@ -112,9 +114,16 @@ def start_listening(voices: dict):
     if not key or mic is None:
         _log.info("not listening (%s): the H key toggles the hat", "no key" if not key else "no arecord")
         return None
-    actions = {"hat_on": lambda: trigger("hat"), "hat_off": take_off_hat}
-    return Listener(mic, elevenlabs_transcriber(key, voices.get("stt_model", "scribe_v1")),
-                    lambda meant: actions[meant](), listen.get("threshold", 600))
+    def act(meant: str) -> None:
+        if meant == "hat_on":
+            trigger("hat")
+        elif meant == "hat_off":
+            take_off_hat()
+        elif answer is not None:
+            say("answer", text=answer(meant))
+
+    return Listener(mic, elevenlabs_transcriber(key, voices.get("stt_model", "scribe_v1")), act,
+                    listen.get("threshold", 600))
 
 
 def wait_idle(timeout_s: float = 10.0) -> bool:

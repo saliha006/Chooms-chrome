@@ -1,4 +1,7 @@
-"""Hear the operator: "I'm putting a cowboy hat on you" / "I'm taking the hat off" (Harry, 2026-11-14 18:45).
+"""Hear the operator: "Hey Pix, I'm putting a cowboy hat on you", "Hey Pix, what do you see now?" (Harry, 2026-11-14).
+
+The robot is called Pix and acts only on sentences that name it (Harry: "hey pix for everything"), so the crowd
+and the team talking nearby never trigger it.
 
 The microphone is read continuously (`arecord`, raw 16 kHz mono), but only stretches loud enough to be speech
 are sent to ElevenLabs speech-to-text, one at a time; anything said while one is being transcribed is dropped.
@@ -27,20 +30,35 @@ SILENCE_S = 0.8  # this long below the threshold ends an utterance
 MIN_S = 0.4  # shorter is a clack, not a sentence
 MAX_S = 6.0
 
+# Speech-to-text sometimes writes the name as a sound-alike; "Pix" is also passed to it as a key term.
+NAMES = {"pix", "picks", "pics", "pixs", "pyx", "pixie"}
 HAT_OFF = {"off", "take", "taking", "took", "remove", "removing"}
 HAT_ON = {"on", "put", "putting", "give", "giving", "wear", "wearing", "here's"}
+# First match wins; each entry is (meaning, words that must all appear).
+QUESTIONS = (
+    ("see", {"see"}), ("see", {"looking", "at"}), ("see", {"look", "at"}),
+    ("tally", {"how", "many"}), ("tally", {"sorted"}), ("tally", {"score"}),
+    ("why", {"why"}),
+    ("doing", {"doing"}),
+    ("who", {"who"}), ("who", {"your", "name"}),
+)
 
 
 def intent(text: str | None) -> str | None:
-    """'hat_on', 'hat_off' or None. "Off" wins, so "take the hat off" never reads as "on"."""
+    """None unless Pix is named; then 'hat_on', 'hat_off', a question ('see', 'tally', 'why', 'doing', 'who') or
+    'unknown'. For the hat, "off" wins, so "take the hat off" never reads as "on"."""
     words = set(re.findall(r"[a-z']+", (text or "").lower()))
-    if "hat" not in words:
+    if not words & NAMES:
         return None
-    if words & HAT_OFF:
-        return "hat_off"
-    if words & HAT_ON:
-        return "hat_on"
-    return None
+    if "hat" in words:
+        if words & HAT_OFF:
+            return "hat_off"
+        if words & HAT_ON:
+            return "hat_on"
+    for meaning, needed in QUESTIONS:
+        if needed <= words:
+            return meaning
+    return "unknown"
 
 
 def wav_bytes(pcm: bytes, rate: int = RATE) -> bytes:
@@ -106,7 +124,7 @@ def elevenlabs_transcriber(api_key: str, model: str, timeout_s: float = 8.0) -> 
 
     def transcribe(wav: bytes) -> str:
         return client.speech_to_text.convert(
-            model_id=model, file=("speech.wav", wav, "audio/wav"), language_code="en", keyterms=["cowboy hat"],
+            model_id=model, file=("speech.wav", wav, "audio/wav"), language_code="en", keyterms=["Pix", "cowboy hat"],
             request_options={"timeout_in_seconds": timeout_s, "max_retries": 0},
         ).text
 

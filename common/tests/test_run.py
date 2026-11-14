@@ -337,3 +337,12 @@ def test_the_robot_says_the_tally_between_bricks_and_each_recovery_step(make_cel
     assert ("next", {"n": 1, "perfect": 1, "defective": 0, "rechecked": 0}) in said
     assert events.index("roll") < events.index("regrasp")
     assert set(said[events.index("roll")][1]) == {"score"}  # the borderline score it is about to recheck
+
+
+def test_facts_for_pix_follow_the_run(make_cell):
+    cell, _ = make_cell(("defective",))
+    assert cell.facts()["signal"] is None and cell.facts()["sorted"] == 0
+    cell.run()
+    facts = cell.facts()
+    assert facts["sorted"] == 1 and facts["decided"] == "defective" and facts["tally"]["defective"] == 1
+    assert facts["signal"]["label"] == "defective" and facts["state"] == "DONE"

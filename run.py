@@ -24,6 +24,7 @@ import yaml
 
 import narrator
 import telemetry
+from narrator import answers
 from telemetry import sync as telemetry_sync
 from common import estop
 from common.capture import SharedCapture
@@ -60,6 +61,7 @@ class Cell:
         self.state = "IDLE"
         self.sorted = 0
         self.tally = {"perfect": 0, "defective": 0, "rechecked": 0}  # for the spoken run summary
+        self.decided: str | None = None  # the last brick's final label, for "Hey Pix, why that bowl?"
         self.next_brick = 1
         self.mode = "mock"
         self.pause_on_help = True  # False without a window (--headless): nobody can press P, so stop instead
@@ -117,6 +119,17 @@ class Cell:
             narrator.say("estop")
             raise
 
+    def facts(self) -> dict:
+        """What Pix knows right now, for its spoken answers (narrator/answers.py). Read from the listener thread:
+        each value is read once, so an answer may mix two moments a few ms apart, never a half-written value."""
+        signal = self.last_signal
+        return {
+            "state": self.state, "sorted": self.sorted, "tally": dict(self.tally), "decided": self.decided,
+            "obstacles": len(getattr(self.locator, "obstacles", [])),
+            "signal": None if signal is None else {"label": signal.label, "score": signal.score, "t_low": signal.t_low,
+                                                   "t_high": signal.t_high, "where": region(signal.bbox)},
+        }
+
     def _drive_to_table(self) -> None:
         """Before the first brick: the base drives the arm into reach, talked over live (the demo's opening)."""
         narrator.say("drive", cm=self.approach_cm)
@@ -164,6 +177,7 @@ class Cell:
         with self._stage("LOG", brick_id, final, label=label) as row:
             row["outcome"] = "sorted"
             self.tally[label] += 1
+            self.decided = label
             self.tally["rechecked"] += bool(self.steps)  # any look beyond the first
             row["note"] = ReasonTrace.from_signal(final, label, self.steps).note()
 
@@ -528,7 +542,7 @@ def main() -> None:
         narrator.enable_live(load_config("voices.yaml"))
         cell.reasoner = None if args.mock else nemotron_line()
     if not args.no_listen:
-        narrator.start_listening(load_config("voices.yaml"))
+        narrator.start_listening(load_config("voices.yaml"), answer=lambda meaning: answers.answer(meaning, cell.facts()))
     events = Path("runs/mock-events.jsonl" if args.mock else "runs/events.jsonl")
     telemetry.start(events)
     sync_stop = threading.Event()

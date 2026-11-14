@@ -11,8 +11,9 @@ purpose.
 
 On top of that, the robot explains its reasoning out loud, live, with its real numbers ("That scores 0.41, over my
 0.33 line, with a mark at the top left. Orange bowl."). In the demo it starts out of reach of the bricks, says so,
-and drags its wheeled base across a white box room to them. Tell it "I'm putting a cowboy hat on you" and it hears
-you, puts on a cowboy voice and keeps it until you say the hat is off.
+and drags its wheeled base across a white box room to them. The robot is called **Pix**: say "Hey Pix, what do
+you see now?" and it tells you, or "Hey Pix, I'm putting a cowboy hat on you" and it puts on a cowboy voice until
+you say the hat is off.
 
 > **Status:** the mock loop runs end to end; the real station is being brought up. Measured numbers live in
 > [`bench/results.md`](bench/results.md); anything not measured yet is marked TBD.
@@ -132,9 +133,11 @@ Every step, in order, with how to tell it worked: [`docs/station.md`](docs/stati
 - **It never goes silent:** every line also exists as a cached clip in both voices (`narrator/clips/`). A line
   not back within 3 s, a network drop or a spent budget (12,000 characters per run) plays the cached clip instead;
   the arm never waits for speech.
-- **It hears you:** the microphone is cut into utterances by loudness and sent to ElevenLabs speech-to-text
-  (about 0.8 s); "I'm putting a cowboy hat on you" switches to the cowboy voice until "I'm taking the hat off".
-  **H** does the same if the room is too loud.
+- **You can talk to it:** the microphone is cut into utterances by loudness and sent to ElevenLabs speech-to-text
+  (about 0.7–1.3 s). Pix acts only on sentences that name it: "Hey Pix, what do you see now?", "…how many have you
+  sorted?", "…why that bowl?", "…what are you doing?", "…who are you?", and "Hey Pix, I'm putting a cowboy hat on
+  you" / "…I'm taking the hat off" for the cowboy voice. Answers come from what it knows right now (stage, last
+  score and threshold, tally), so they are instant and always true. **H** toggles the hat if the room is too loud.
 - **It names what it doesn't recognise:** something on the plates that isn't a brick gets an instant
   "Holy smokes!", then, from a naming model, "…there's a coffee mug in my zone! That ain't no brick."
 - **Subtitles and reasoning panel:** what it is saying runs under the camera feed (amber for the cowboy), and each
