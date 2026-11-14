@@ -62,7 +62,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | A2: ACT training on Modal, SmolVLA waits on v2.5 N1 (camera rename); e-stop check in `robot/io.act` done; next: v2.5 yes/no, then N1 |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1, H2, H4 done; next H3 cached lines per reason, H6 physicalai notebook, H7 ReasonTrace panel |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4 done (H3 clips not generated yet); next H6 physicalai notebook, H7 ReasonTrace panel |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -89,6 +89,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 05:57 — merge — H3: a spoken line for every event and failure reason, calm + cowboy; clip generator — @harry [conflicts: @saliha]
+- **Where:** `systems-voice-harry` @ `6e597fe` · merged to `main`: yes
+- **Did:** `narrator/lines.py`: one conversational line per event `run.py` says and per `Reason` (`help.<reason>`), in both personas, plus the cowboy exclamations and the cool-down / half-way lines; no numbers (the grounded lines with scores come live from the reasoner). `narrator.say` now speaks the line (console until A6 playback). `narrator/cache.py`: `python -m narrator.cache --dry-run` lists 35 clips, 1,520 characters; without `--dry-run` it writes `narrator/clips/<persona>/<key>.wav` through the ElevenLabs SDK (`config/voices.yaml`: `cached_model: eleven_multilingual_v2`, `cached_format: wav_22050`), skipping clips that exist. Clips not generated yet. 76 tests pass with Nate's (generator tested against a fake client).
+- **Touched:** `narrator/`, `config/voices.yaml`
+- **Brief task:** H3 → ✅ done (code; clips to generate)
+- **⚠️ Conflicts:** @saliha: reasoner lines still go through `narrator.say(event, text=...)`; `text` wins over the cached line
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 05:52 — merge — H1: reason codes, stage deadlines, PAUSE_HUMAN, hold flag — @harry [conflicts: @nate @saliha]
 - **Where:** `systems-voice-harry` @ `18ae0d7` · merged to `main`: yes
