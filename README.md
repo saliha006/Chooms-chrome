@@ -78,7 +78,18 @@ Still uncertain → orange bowl, flagged and said aloud.
 | SmolVLA (450M parameters) | **GPU** | The heaviest model | CPU (f32) → PyTorch |
 | Capture, state machine, serial | **CPU** | Control-critical | — |
 
-Latency, energy per brick and bricks per minute: TBD, measured on the Intel laptop (`python -m bench.benchmark`).
+Measured on the Intel laptop (`python -m bench.benchmark`, full table in [`bench/results.md`](bench/results.md)),
+detector PaDiM INT8 trained on stand-in bricks (re-run on the real-brick model pending):
+
+| Device | p50 per inference | Net energy per inference | Package power | 5 min at full load |
+|---|---|---|---|---|
+| GPU | 1.00 ms | 33 mJ | 31.6 W | slows to 1.43× |
+| NPU | 7.17 ms | 68 mJ | 11.2 W | holds (0.96×) |
+| CPU | 8.91 ms | 300 mJ | 34.9 W | 1.06× |
+| PyTorch on CPU (baseline) | 17.27 ms | 836 mJ | 37.9 W | — |
+
+ACT (Studio export, our three cameras) compiles on the NPU in 2.3 s and runs in 8.9 ms per call (GPU 4.2 ms).
+Energy per brick and bricks per minute: TBD (the 20 trials).
 
 ## Run it
 

@@ -40,10 +40,17 @@ uncertainty band and the rules turn a score into an instruction that carries the
 defective, place it in the orange bowl"). Planning: the state machine (next brick, recovery, deadlines, grasp and
 place checks). Manipulation: ACT picks, SmolVLA places, a scripted mover behind the same interface as insurance.
 
-**Intel technology.** OpenVINO for every model. Placement (confirm on the Intel laptop once the NPU driver is in): Anomalib INT8 on the NPU, ACT and SmolVLA on the iGPU with a CPU
-fallback; Physical AI Studio for recording and ACT training; the `physicalai` runtime. Device table (p50 / p95,
-model size, compile time): TBD. Energy per inference and per brick, package power, temperature over the trials:
-TBD.
+**Intel technology.** OpenVINO for every model, measured on the Intel laptop (Core Ultra X9 388H, OpenVINO
+2026.4.1, NPU driver 1.38.0, mains power; `bench/results.md`). Every operator of the detector runs on the CPU, GPU
+and NPU. Detector (PaDiM, INT8, 47 MB, half the FP16 size), p50 per inference: **GPU 1.00 ms, NPU 7.17 ms, CPU
+8.91 ms**, against 17.27 ms in PyTorch on the CPU. Net energy per inference: **GPU 33 mJ, NPU 68 mJ, CPU 300 mJ**,
+at about 11 W of package power on the NPU against 32–35 W on the GPU and CPU. Five minutes at full load: the NPU
+holds its speed (0.96×), the GPU slows to 1.43× and the CPU to 1.06×. ACT (Studio's export with our three cameras)
+compiles on the NPU in 2.3 s and runs in 8.9 ms per call (GPU 4.2 ms, CPU 65.7 ms). These numbers come from a
+detector trained on stand-in synthetic bricks; the table is re-run on the real-brick model (TBD). Placement:
+Anomalib INT8 on the NPU (low power, steady under load, frees the GPU), ACT and SmolVLA on the iGPU with a CPU
+fallback; Physical AI Studio for recording and ACT training; the `physicalai` runtime. Energy per brick and
+temperature over the 20 trials: TBD.
 
 **Results.** Detector AUROC on held-out real bricks: TBD (interval TBD). Trials: k of 20 sorted without a human
 (95% CI TBD). Cycle time: TBD s per brick. Unseen start positions and a 3-brick pile: TBD. Which mode moved the

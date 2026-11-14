@@ -11,6 +11,21 @@ python -m bench.trials runs/events.jsonl --truth truth.csv
 places the bricks, before each trial. `telemetry/report.sql` on the Aiven table gives the latency and reason-code
 breakdowns. Mock runs are excluded by their `mock-` run id in both.
 
+## Morning steps (rehearsed 2026-11-14 20:15 on a 20-brick mock log: the report ran first time)
+
+1. Before each trial, the person placing bricks adds a line to `truth.csv` (`*` = every run):
+   ```
+   run_id,brick_id,truth
+   *,1,perfect
+   *,2,defective
+   ```
+2. After the 20 trials, on the Intel laptop:
+   ```bash
+   .venv/bin/python -m bench.trials runs/events.jsonl --truth truth.csv
+   ```
+   It prints the table below (sorted without a human, correct bowl, mistakes by name, cycle time), each with its
+   95% interval. Paste it into the slide and `docs/submission.md`.
+
 ## The slide
 
 **SortSense sorted k of 20 bricks without a human (95% CI lo–hi%).**
