@@ -247,12 +247,20 @@
 - **Evidence:** `perception/scene.py`, 9 tests on synthetic top views; on-station thresholds TUNE.
 - **Pitch line:** "It checks it's holding a brick before it judges the brick."
 
-### D28 · Personality · End-of-run dance — Status: Built (code) · Owner: @saliha (code in Nate's `robot/`) · Updated: 2026-11-14 08:50
+### D28 · Personality · End-of-run dance — Status: Built (code; accepted by @nate 11:53) · Owner: @saliha (code in Nate's `robot/`) · Updated: 2026-11-14 11:53
 - **Decision:** when the zone is empty after the last place, the arm dances: base sways ±25° for 3 cycles while the head bows 10° and tilts 10° towards each side, ~6 s, then home. Pure `robot.io` motion.
 - **Why:** a memorable, safe sign-off for the demo and video that costs no robot time to build; it reuses the joint limits, 5°/step speed cap and e-stop (D19, D21).
 - **Trade-off / risk:** joint sign conventions are TUNE (a move may go the wrong way the first time); never runs while holding a brick (run.py calls it only after the final place).
 - **Evidence:** `robot/dance.py`, 5 tests on the mock arm (speed cap, limits, e-stop, ends at home).
 - **Pitch line:** "And when the job's done, it celebrates."
+
+### D29 · Data · Degrees end to end, three cameras in every recording — Status: Planned · Owner: @nate · Updated: 2026-11-14 11:53
+- **Decision:** record joint positions in degrees, the unit `robot/io.py` drives the follower in, and record all three cameras (`top`, `inspect`, `wrist`) under exactly those keys in both datasets. SmolVLA maps them onto its pretrained slots as `top`→`camera1`, `wrist`→`camera2`, `inspect`→`camera3`.
+- **Why:** a policy trained on one joint unit and run in another commands the wrong positions; degrees keep the joint limits and the 5°/step speed cap in real angles (D19). `smolvla_base` was pretrained with three camera slots, and LeRobot rejected a two-camera dataset in our smoke run; one camera setup for both datasets keeps recording simple.
+- **Alternatives rejected:** normalized units end to end (Studio's driver default; every limit and tuning value would change, and "5 per step" would mean a different angle per joint), kept as the fallback if Studio can't record degrees; two cameras only (SmolVLA's third slot would be empty).
+- **Trade-off / risk:** ACT processes three images per step (more inference time; Saliha's benchmark measures it). Whether Studio records degrees is unverified until the first test episode is compared with `robot.io.observe()`. The public red-lego set is normalized, harmless because its models never drive our arm.
+- **Evidence:** TBD (first Studio test episode).
+- **Pitch line:** "What we record is exactly what the robot runs: same units, same cameras."
 
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
