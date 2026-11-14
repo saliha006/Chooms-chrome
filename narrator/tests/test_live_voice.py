@@ -147,3 +147,33 @@ def test_a_failed_warm_up_is_harmless():
 
 def test_a_centre_mark_is_said_naturally():
     assert "in the centre" in compose("calm", "defective", score=0.9, t_low=0.2, t_high=0.6, where="middle-centre")
+
+
+def test_run_summary_says_the_counts():
+    line = compose("calm", "empty", n=5, perfect=3, defective=2, rechecked=1)
+    assert line == "That's the last one. 5 bricks sorted: 3 perfect, 2 defective, and 1 needed a second look."
+    assert compose("cowboy", "quit", n=1, perfect=1, defective=0).startswith("Callin' it a day. 1 brick sorted")
+
+
+def test_an_empty_run_keeps_the_cached_summary():
+    assert compose("calm", "empty", n=0) is None
+
+
+def test_the_last_line_said_becomes_the_subtitle(monkeypatch):
+    monkeypatch.setattr(narrator, "_live", None)
+    narrator.say("grasp_fail")
+    assert narrator.subtitle() == ("Missed it. Let me try that again.", "calm")
+    assert narrator.subtitle(max_age_s=-1) is None  # older than the window
+
+
+def test_wait_idle_holds_until_the_last_line_reaches_the_player():
+    spy = Spy()
+
+    def slow(text, persona):
+        time.sleep(0.2)
+        return b"RIFF"
+
+    live = Live(slow, spy, timeout_s=5)
+    live.speak("summary", "calm", fallback=None)
+    assert live.wait_idle(2)
+    assert len(spy.played) == 1

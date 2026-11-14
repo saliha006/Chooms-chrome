@@ -18,7 +18,7 @@ _log = logging.getLogger("narrator.live")
 # Flash took 625-1563 ms per full line on the venue Wi-Fi (4 calls, 2026-11-14); 3 s keeps nearly every live line
 # while the voice lags the arm by about a second at most (Harry, 2026-11-14). The arm never waits either way.
 TIMEOUT_S = 3.0
-LIVE_EVENTS = {"perfect", "defective", "uncertain"}
+LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit"}
 
 # Conversational on purpose: the robot thinks aloud. {where} is empty or " at the top left".
 TEMPLATES = {
@@ -33,6 +33,11 @@ TEMPLATES = {
         "uncertain": "{score}? That's smack between my lines. Hold your horses, lemme look again.",
     },
 }
+SUMMARY = {
+    "calm": {"empty": "That's the last one. {tally}.", "quit": "Stopping here. {tally} so far."},
+    "cowboy": {"empty": "That's the whole herd. {tally}.", "quit": "Callin' it a day. {tally} so far."},
+}
+
 # run.py's `after` values -> what a person would say
 AFTER = {"looked again": "Second look: ", "reinspect 90": "After a wrist roll, ", "reinspect 0": "After a re-grasp, "}
 
@@ -48,9 +53,25 @@ def _where(cell: str | None) -> str:
     return " in the centre" if cell == "middle-centre" else f" at the {cell.replace('-', ' ')}"
 
 
+def _bricks(n: int) -> str:
+    return f"{n} brick" + ("" if n == 1 else "s")
+
+
+def summary(persona: str, event: str, n: int = 0, perfect: int = 0, defective: int = 0, rechecked: int = 0) -> str | None:
+    """The end-of-run line with this run's counts; None for an empty run (the cached line says it)."""
+    if not n or event not in SUMMARY.get(persona, {}):
+        return None
+    tally = f"{_bricks(n)} sorted: {perfect} perfect, {defective} defective"
+    if rechecked:
+        tally += f", and {rechecked} needed a second look"
+    return SUMMARY[persona][event].format(tally=tally)
+
+
 def compose(persona: str, event: str, score: float | None = None, t_low: float | None = None,
-            t_high: float | None = None, where: str | None = None, after: str | None = None, **_) -> str | None:
+            t_high: float | None = None, where: str | None = None, after: str | None = None, **counts) -> str | None:
     """The live line for a verdict, or None when the numbers it needs are missing (then the cached clip plays)."""
+    if event in ("empty", "quit"):
+        return summary(persona, event, **{k: v for k, v in counts.items() if k in ("n", "perfect", "defective", "rechecked")})
     template = TEMPLATES.get(persona, {}).get(event)
     if template is None or score is None or t_low is None or t_high is None:
         return None
@@ -70,6 +91,8 @@ class Live:
         self._requests: queue.Queue = queue.Queue()
         self._dir = Path(tempfile.mkdtemp(prefix="sortsense-live-"))
         self._count = 0
+        self._idle = threading.Event()
+        self._idle.set()
         threading.Thread(target=self._run, name="narrator-live", daemon=True).start()
 
     def warm_up(self) -> None:
@@ -85,7 +108,12 @@ class Live:
             _log.info("live voice warm-up failed (%s); cached lines will cover", type(exc).__name__)
 
     def speak(self, text: str, persona: str, fallback: Path | None, priority: bool = False) -> None:
+        self._idle.clear()
         self._requests.put((text, persona, fallback, priority, time.monotonic()))
+
+    def wait_idle(self, timeout_s: float) -> bool:
+        """End of a run: the last line (the summary) is still being synthesised; let it reach the player."""
+        return self._idle.wait(timeout_s)
 
     def _run(self) -> None:
         while True:
@@ -93,6 +121,8 @@ class Live:
             while not self._requests.empty():  # a newer line supersedes one not started yet
                 request = self._requests.get_nowait()
             self._say(*request)
+            if self._requests.empty():
+                self._idle.set()
 
     def _say(self, text: str, persona: str, fallback: Path | None, priority: bool, asked: float) -> None:
         try:

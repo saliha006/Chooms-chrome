@@ -268,3 +268,11 @@ def test_every_inspection_goes_to_the_reasoner_with_its_frame(make_cell):
     cell.run()
     assert [label for _, label, _ in seen] == ["uncertain", "perfect"]
     assert all(shape == (8, 8, 3) and persona == "calm" for shape, _, persona in seen)
+
+
+def test_run_summary_gets_the_tally(make_cell, monkeypatch):
+    said = []
+    monkeypatch.setattr(run.narrator, "say", lambda event, **kw: said.append((event, kw)))
+    cell, _ = make_cell(("perfect", "defective", "uncertain", "perfect"), bricks=3)
+    cell.run()
+    assert said[-1] == ("empty", {"n": 3, "perfect": 2, "defective": 1, "rechecked": 1})

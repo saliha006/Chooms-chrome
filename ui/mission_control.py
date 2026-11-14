@@ -93,6 +93,33 @@ def _heatmap(path: str | None) -> np.ndarray | None:
     return _heatmaps[path]
 
 
+def _wrap(line: str, width_px: int, scale: float) -> list[str]:
+    words, rows = line.split(), [""]
+    for word in words:
+        trial = f"{rows[-1]} {word}".strip()
+        if cv2.getTextSize(trial, FONT, scale, 2)[0][0] <= width_px or not rows[-1]:
+            rows[-1] = trial
+        else:
+            rows.append(word)
+    return rows[:2]  # the voice says the rest; two rows keep the feed visible
+
+
+def _subtitle(img: np.ndarray) -> None:
+    """What the robot is saying, across the bottom of the feed: the judges read it as they hear it."""
+    said = narrator.subtitle()
+    if said is None:
+        return
+    line, persona = said
+    x, y, w, h = FEED
+    rows = _wrap(line, w - 40, 0.75)
+    top = y + h - 18 - 32 * len(rows)
+    band = img[top:y + h, x:x + w]
+    band[:] = (band * 0.35).astype(np.uint8)  # darken, don't hide, the feed behind
+    colour = (80, 200, 255) if persona == "cowboy" else TEXT
+    for i, row in enumerate(rows):
+        _text(img, row, (x + 20, top + 30 + i * 32), 0.75, colour)
+
+
 def render(cell, control: Control, feed: np.ndarray | None) -> np.ndarray:
     img = np.full((HEIGHT, WIDTH, 3), BG, np.uint8)
 
@@ -121,6 +148,8 @@ def render(cell, control: Control, feed: np.ndarray | None) -> np.ndarray:
     else:
         _text(img, "no camera frame", (x + 20, y + 40), 1.0, DIM)
 
+    _subtitle(img)
+
     _text(img, "Reasoning", (x, TRACE_Y), 0.8, DIM)
     for i, line in enumerate(cell.trace[-TRACE_LINES:]):
         _text(img, line, (x, TRACE_Y + 28 + i * 26), 0.7)
@@ -137,7 +166,7 @@ def render(cell, control: Control, feed: np.ndarray | None) -> np.ndarray:
 
     _text(img, f"Bricks sorted: {cell.sorted}", (PANEL_X, 525), 1.1)
     for i, stage in enumerate(STAGES):
-        y = 560 + i * 26
+        y = 556 + i * 23  # seven stages fit above the window edge
         _text(img, stage.lower().replace("_", " "), (PANEL_X, y), 0.65, DIM, 1)
         if stage in cell.stage_ms:
             ms = f"{cell.stage_ms[stage]:.0f} ms"

@@ -142,3 +142,11 @@ def test_render_shows_help_and_hold(make_cell):
     assert mission_control.render(cell, control, None).shape[0] == mission_control.HEIGHT
     cell.drift_alert = True
     assert mission_control.render(cell, control, None).shape[0] == mission_control.HEIGHT
+
+
+def test_render_draws_a_long_subtitle_without_error(make_cell, monkeypatch):
+    cell, _ = make_cell()
+    control = mission_control.Control(cell)
+    monkeypatch.setattr(mission_control.narrator, "subtitle", lambda: ("word " * 60, "cowboy"))
+    assert mission_control.render(cell, control, None).shape == (mission_control.HEIGHT, mission_control.WIDTH, 3)
+    assert len(mission_control._wrap("word " * 60, 800, 0.75)) == 2
