@@ -8,6 +8,16 @@ pick_drop: null    # where a re-grasp puts the brick down (usually the pick pose
 inspect: null      # brick held in front of the inspection camera
 bowl_red: null     # over the red bowl
 bowl_blue: null    # over the blue bowl
+# Optional pick slots 2-5 (slot 1 = pick_above/pick): the scripted mover takes brick n from slot n, so 5 bricks on
+# 5 marked spots sort with no human. Teach each pair: python -m fallback.teach pick_above_2 pick_2 pick_above_3 pick_3 ...
+pick_above_2: null
+pick_2: null
+pick_above_3: null
+pick_3: null
+pick_above_4: null
+pick_4: null
+pick_above_5: null
+pick_5: null
 # Box-room drive (decisions.md D35, robot/drive.py): one floor stroke, taught at the start of the drive with the
 # board free to roll: python -m fallback.teach drive_reach drive_touch drive_drag drive_lift
 drive_reach: null   # gripper closed (rubber bands), held out ahead of the board, just above the floor

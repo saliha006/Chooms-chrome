@@ -15,6 +15,8 @@ from common import estop
 from robot import io
 
 POSES = ("home", "pick_above", "pick", "pick_drop", "inspect", "bowl_red", "bowl_blue")
+# Optional extra pick spots, so 5 bricks laid on 5 marked spots are sorted with no human: slot 1 is pick/pick_above.
+SLOT_POSES = tuple(f"{kind}_{n}" for n in range(2, 6) for kind in ("pick_above", "pick"))
 
 # Gripper thresholds and the inspection-pose tolerance live in robot/io.py, shared with LearnedMover,
 # so a tune on the arm (Nate's N8) changes one place.
@@ -28,7 +30,7 @@ def load_waypoints(path: Path) -> dict[str, np.ndarray]:
     missing = [name for name in POSES if raw.get(name) is None]
     if missing:
         raise ValueError(f"{path}: teach these poses first (python -m fallback.teach <name>): {', '.join(missing)}")
-    poses = {name: np.asarray(raw[name], float) for name in POSES}
+    poses = {name: np.asarray(raw[name], float) for name in POSES + SLOT_POSES if raw.get(name) is not None}
     wrong = [name for name, pose in poses.items() if pose.shape != (len(io.JOINTS),)]
     if wrong:
         raise ValueError(f"{path}: need {len(io.JOINTS)} joint values for {', '.join(wrong)}")
@@ -48,12 +50,20 @@ def bowl_for(instruction: str) -> str:
 class ScriptedMover:
     def __init__(self, poses: dict[str, np.ndarray]):
         self.poses = poses
+        self.slots = [("pick_above", "pick")] + [(f"pick_above_{n}", f"pick_{n}") for n in range(2, 6)
+                                                 if f"pick_{n}" in poses and f"pick_above_{n}" in poses]
+        self._next_slot = 0
 
     def pick_and_present(self) -> bool:
-        if not (self._go("pick_above", io.GRIPPER_OPEN) and self._go("pick", io.GRIPPER_OPEN)):
+        above, pick = self.slots[self._next_slot % len(self.slots)]
+        self._next_slot += 1
+        return self._pick_from(above, pick)
+
+    def _pick_from(self, above: str, pick: str) -> bool:
+        if not (self._go(above, io.GRIPPER_OPEN) and self._go(pick, io.GRIPPER_OPEN)):
             return False
         self._set_gripper(GRIPPER_CLOSED)
-        return self._go("pick_above", GRIPPER_CLOSED) and self._go("inspect", GRIPPER_CLOSED) and self._settled_holding()
+        return self._go(above, GRIPPER_CLOSED) and self._go("inspect", GRIPPER_CLOSED) and self._settled_holding()
 
     def place(self, instruction: str) -> bool:
         if not self._go(bowl_for(instruction), GRIPPER_CLOSED):
@@ -66,7 +76,7 @@ class ScriptedMover:
             if not self._go("pick_drop", GRIPPER_CLOSED):
                 return False
             self._set_gripper(io.GRIPPER_OPEN)
-            return self.pick_and_present()
+            return self._pick_from("pick_above", "pick")  # pick_drop is the slot-1 spot; a re-grasp must not use up a slot
         target = io.observe()
         target[io.WRIST_ROLL] += io.units(angle_deg)[io.WRIST_ROLL]
         target[io.GRIPPER] = GRIPPER_CLOSED

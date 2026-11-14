@@ -132,3 +132,31 @@ def test_teach_writes_poses_and_keeps_comments(tmp_path):
     text = path.read_text()
     assert "# header" in text and "# rest pose" in text
     assert yaml.safe_load(text)["home"] == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+
+
+def test_bricks_come_from_successive_pick_slots(monkeypatch):
+    from fallback import scripted
+
+    poses = {name: np.zeros(6) for name in scripted.POSES}
+    poses["pick_above_2"], poses["pick_2"] = np.full(6, 2.0), np.full(6, 2.5)
+    mover = scripted.ScriptedMover(poses)
+    visited = []
+    monkeypatch.setattr(mover, "_pick_from", lambda above, pick: visited.append(pick) or True)
+    for _ in range(3):
+        mover.pick_and_present()
+    assert visited == ["pick", "pick_2", "pick"]  # cycles back to slot 1 after the last taught slot
+
+
+def test_a_regrasp_does_not_use_up_a_slot(monkeypatch):
+    from fallback import scripted
+
+    poses = {name: np.zeros(6) for name in scripted.POSES}
+    poses["pick_above_2"], poses["pick_2"] = np.full(6, 2.0), np.full(6, 2.5)
+    mover = scripted.ScriptedMover(poses)
+    visited = []
+    monkeypatch.setattr(mover, "_pick_from", lambda above, pick: visited.append(pick) or True)
+    monkeypatch.setattr(mover, "_go", lambda *a: True)
+    monkeypatch.setattr(mover, "_set_gripper", lambda *a: None)
+    mover.reinspect(0)
+    mover.pick_and_present()
+    assert visited == ["pick", "pick"]

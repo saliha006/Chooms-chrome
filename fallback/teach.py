@@ -13,11 +13,11 @@ from pathlib import Path
 
 import yaml
 
-from fallback.scripted import POSES
+from fallback.scripted import POSES, SLOT_POSES
 from robot import io
 from robot.drive import STROKE
 
-TEACHABLE = POSES + STROKE  # sorting poses, then the box-room drive's floor stroke (decisions.md D35)
+TEACHABLE = POSES + SLOT_POSES + STROKE  # sorting poses, optional pick slots 2-5, the drive's floor stroke (D35)
 
 CONFIG = Path(__file__).resolve().parents[1] / "config"
 
