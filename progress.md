@@ -95,8 +95,6 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
-### 2026-11-14 14:30 — decision — The VLA strings carry the verdict; rehearse every stage by teleop before recording — @saliha [conflicts: @nate @harry]
-- **Where:** `context` (D23, D31, PRD §0/§7.3/§10, Nate and Harry briefs) · merged to `main`: n/a (docs)
 ### 2026-11-14 14:40 — feat — VLA strings carry the verdict; policies get the inspect camera — @harry [conflicts: @nate]
 - **Where:** `systems-voice-harry` → `main` @ `5e99561` · merged to `main`: yes
 - **Did:** `config/rules.yaml` now says `the brick is perfect, place it in the blue bowl` / `the brick is defective, place it in the red bowl` (D23); `config/models.yaml` policy cameras `[top, wrist, inspect]` (Nate's 11:53 row, order = camera1..3). 118 tests pass, `make mock` sorts 5 bricks.
@@ -107,6 +105,8 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **Agreed by:** @saliha (14:30 row), @nate (11:53 row)
 - **Status:** resolved by @harry 2026-11-14 14:40
 
+### 2026-11-14 14:30 — decision — The VLA strings carry the verdict; rehearse every stage by teleop before recording — @saliha [conflicts: @nate @harry]
+- **Where:** `context` (D23, D31, PRD §0/§7.3/§10, Nate and Harry briefs) · merged to `main`: n/a (docs)
 - **Did:** Saliha asked the agent to reason through the two proposals and decide. (a) adopted: `"the brick is perfect, place it in the blue bowl"` / `"the brick is defective, place it in the red bowl"` replace the colour-only strings before any SmolVLA episode exists. (b) adopted, folded into the practice runs (about 5 extra minutes). Corrected my earlier 13:10 stamps to 14:19 (the real time).
 - **Touched:** `train/RECORDING.md` (Nate: his edit), `config/rules.yaml` (Harry: his edit), plan docs on `context`
 - **Brief task:** none (new DO FIRST blocks at the top of Nate's and Harry's Current tasks)
