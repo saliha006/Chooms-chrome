@@ -44,6 +44,13 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 ---
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 2026-11-14 15:50 DEPENDENCIES everyone needs (same for all three; keep these in step)
+- **Every machine:** Python 3.12, `git`, `uv`, `tmux`; a git-ignored `.env` from `.env.example` (ElevenLabs, NVIDIA Build, Aiven, Hugging Face, Modal: each person's own keys, shared person to person, never git or chat).
+- **App and perception environment `.venv`** (perception, bench, reasoner, `run.py`, UI, narrator, telemetry): `uv venv --python 3.12 .venv && uv pip install --python .venv -r requirements.txt`. That installs `torch`/`torchvision` (CPU wheels), `anomalib[openvino]==2.7.0` (brings OpenVINO), `opencv-python` (the full build, not headless: mission control needs a window), `pyyaml`, `elevenlabs==2.78.0`, `python-dotenv`, `psycopg[binary]==3.3.9`, `confluent-kafka==2.16.1`, `pytest`.
+- **Robot and training environment `.venv-robot`** (robot I/O, policies, `train/`, the episode audit): Intel **Physical AI Studio** trainer `physicalai-train` 0.3.0 (trains ACT and exports it to OpenVINO), `lerobot` (0.6.x locally; `lerobot[smolvla]` 0.7.0 on Modal), `pandas` + `pyarrow`, `modal==1.6.4` (client), `pytest`. Keep it separate from `.venv`: the two stacks pin different versions.
+- **Physical AI Studio (the app, Nate):** on the Intel laptop with `uv run --extra xpu physicalai-studio serve` or Docker `--profile xpu`; you use it in the browser on the laptop. ACT is trained with its trainer and everything runs through the `physicalai` runtime (`InferenceModel`).
+- **Intel laptop only:** Ubuntu 26.04, NPU driver (pre-installed), `intel_gpu_top`, RAPL readable (needs a one-off `sudo chmod a+r /sys/class/powercap/intel-rapl*/energy_uj`), `pyrealsense2` for the D415 (not in `requirements.txt` yet: Harry adds it when the camera is wired), the camera and arm USB paths in `config/cameras.yaml`.
+- **Accounts:** Modal (training), Hugging Face (datasets), ElevenLabs, NVIDIA Build, Aiven. Nothing else.
 ### ✅ *(15:15, `main` `d6aa2ed`)* 🆕 2026-11-14 15:08 BOWL COLOURS: our bowls are purple (perfect) and orange (defective); do all of this in ONE commit before Nate records SmolVLA
 1. `config/rules.yaml`: `perfect: the brick is perfect, place it in the purple bowl`, `defective: the brick is defective, place it in the orange bowl`.
 2. `fallback/scripted.py` `_bowl_for`: map the colour in the text to the pose: purple -> `bowl_blue`, orange -> `bowl_red` (keep accepting red/blue). The pose, mask and `config/*.yaml` names stay `bowl_blue`/`bowl_red` (roles).
