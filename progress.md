@@ -40,6 +40,8 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 05:32 | @harry | @nate | 📨 waiting on | **E-stop check in `robot/io.py`** (decisions.md D21, @harry chose B): please add at the top of `act()`: `if estop.requested(): torque_off(); raise estop.EStopped()` with `from common import estop`. Then E stops learned-policy motion within one control step too (today only `ScriptedMover` and the stage boundaries check it). Keeps one thread on the motors; no lock needed | 2026-11-14 05:32 |
+| 2026-11-14 05:32 | @harry | @saliha | 📨 waiting on | **`opencv-python` instead of `opencv-python-headless`** in `perception/requirements.txt`: mission control (F6) needs a window, the headless build has none, and the two can't be installed together. Same library and API; perception code is unaffected | 2026-11-14 05:32 |
 | 2026-11-14 06:00 | @saliha | @nate | ⚠️ conflict | Kept **your** `train/` rework (D20) as the best version and dropped my overlapping edits; added one thing on top in `train/modal_train.py` (`38ce0cb`): it uses your `huggingface` Modal secret, or forwards `HF_TOKEN` from the shell when that secret isn't set up (fresh machine). Tests green. `git pull` before your next push | 2026-11-14 06:00 |
 | 2026-11-14 05:50 | @saliha | @nate | 📨 for you | **`handoff/nate-catch-up.md` on `context`** (sync, then have your agent read it first): setup, libraries, what's done, what's left (A2 smoke runs, A3 export test, A8 sweep), TUNE values. Your D20 rework is the version in force; I dropped my overlapping local edits. Export probe evidence for D20 added to `decisions.md`: the LeRobot wrapper in `physicalai-train` exports torch only | 2026-11-14 05:50 |
 | 2026-11-14 05:12 | @nate | @all | 🔀 scope proposal | **Training stack and F14 positions changed in my area** (`main` @ `8bc38a6`, `decisions.md` D20): ACT now trains with **Physical AI Studio's trainer** (`physicalai fit`), so it exports straight into the `physicalai` runtime; SmolVLA stays on LeRobot (Studio's SmolVLA loader is unfinished). ACT demos: **all 9 positions × 6, recorded in rounds**. @harry: F14's "new positions" trials use only the off-grid spots. Say no on this row if you object | 2026-11-14 05:12 |
@@ -61,7 +63,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A: `train/` reworked (Studio ACT + LeRobot SmolVLA, `main` @ `8bc38a6`); next: Modal login, A2 smoke run, A3 export test |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A3, A7 + real-station mode in `run.py` done; next A4 mission control, A5 Aiven, A8 README |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A4, A7 + real-station mode done; next A5 Aiven, A8 README |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -88,6 +90,16 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 05:32 — merge — A4 mission control + e-stop path (D21) — @harry [conflicts: @nate @saliha]
+- **Where:** `systems-voice-harry` @ `4d28398` · merged to `main`: yes
+- **Did:** `ui/mission_control.py`: one 1280×720 OpenCV window: inspection feed, heatmap, label + score + thresholds, model and device, bricks sorted, time per stage, and which mover is running (honesty guardrail). Keys: S start, P pause/resume at the next stage, E e-stop, Q finish the brick then home and stop, H hat trigger. The window runs on the main thread and only sets flags; the cell runs on its own control thread (`common/estop.py`, `Cell.paused` / `Cell.quit`), so one thread ever talks to the motors. E: torque off, never homes after. `ScriptedMover` checks E on every control step (its gripper moves no longer use `io.move_to`). `run.py --headless` = no window, start at once, Ctrl+C = e-stop. 55 tests pass with Nate's.
+- **Touched:** `ui/`, `common/estop.py`, `run.py`, `fallback/scripted.py`
+- **Brief task:** A4 → ✅ done
+- **⚠️ Conflicts:** @nate: learned-policy motion only stops at stage boundaries until `io.act` checks the e-stop (board row). @saliha: the window needs `opencv-python` (board row)
+- **📨 Needs:** @nate: the `io.act` check · @saliha: `opencv-python` in `perception/requirements.txt`
+- **Agreed by:** @harry (D21: e-stop path B)
+- **Status:** open
 
 ### 2026-11-14 05:18 — merge — `run.py` real-station mode: real cameras, Anomalib inspector, scripted or learned mover per part — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` @ `de5fe0a` · merged to `main`: yes
