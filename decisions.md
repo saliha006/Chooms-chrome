@@ -262,6 +262,14 @@
 - **Evidence:** TBD (first Studio test episode).
 - **Pitch line:** "What we record is exactly what the robot runs: same units, same cameras."
 
+### D30 · Efficiency · Preprocessing inside the OpenVINO graph, operator-support table, drift rule — Status: Built (code, CPU numbers) / Planned (Intel laptop runs) · Owner: @saliha · Updated: 2026-11-14 12:40
+- **Decision:** `perception/preprocess.py` writes `model_ppp.xml` beside each exported IR: the BGR→RGB flip, the /255 scaling and the NHWC→NCHW layout change run inside the graph (OpenVINO `PrePostProcessor`), so the model takes the resized frame as 1×256×256×3 uint8. Resizing stays on the CPU with the same INTER_AREA call, because OpenVINO's resize modes differ and would shift the scores `t_low`/`t_high` were measured with. `bench/operators.py` lists, per model and device, which operators the plugin can run (`query_model`) and which are left out, appended to `bench/results.md`. `perception/drift.py` is the F15 drift rule: how far the last 8 perfect bricks (at least 5) have crept from the good baseline (`good_mean` in `thresholds.yaml`) towards `t_low`; alarm at 0.5 (TUNE).
+- **Why:** the Intel slide names pre/post-processing and device choice "by operator support" (R7, R8); Aiven's meaningful-use score needs the stream to change what the cell does, and the drift alarm is that.
+- **Alternatives rejected:** moving the resize into the graph too (changes the scores); replacing the plain IR (both stay, the benchmark shows both rows and the measured numbers pick the deployed one).
+- **Trade-off / risk:** a second IR per model to keep in step; all thresholds TUNE on real bricks; NPU and GPU operator rows need the Intel laptop.
+- **Evidence (this laptop's CPU, stand-in bricks, not Intel numbers):** FP16 detector end-to-end p50 44.5 ms → 38.5 ms and p95 63.7 → 43.3 ms with preprocessing in the graph; INT8 unchanged (71.6 vs 72.2 ms, and slower than FP16 here); scores identical to 4 decimals in both; the PaDiM IR runs all 223 operators on CPU. A unit test on a toy model fails if the colour flip or the scaling is dropped. TBD (GPU and NPU rows on the Intel laptop).
+- **Pitch line:** "The model takes the raw camera frame; the Intel toolchain does the maths."
+
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
 |---|---|---|
