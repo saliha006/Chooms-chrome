@@ -1,23 +1,23 @@
 # Joint poses for the scripted fallback and LearnedMover, in normalized units (robot/io.py):
 # [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper 0-100]
 # Taught by hand-guiding on Saturday 09:30: python -m fallback.teach <name>
-home: null
-pick_above: null   # over the taped pick zone, gripper open
-pick: null         # down at the brick, gripper open
-pick_drop: null    # where a re-grasp puts the brick down (usually the pick pose)
-inspect: null      # brick held in front of the inspection camera
-bowl_red: null     # over the red bowl
-bowl_blue: null    # over the blue bowl
+home: [-15.6, -98.5, 55.4, 83.2, -3.0, 2.1]   
+pick_above: [-32.2, 26.5, 18.5, 30.5, -3.0, 2.1]   # over the taped pick zone, gripper open
+pick: [-32.1, 56.8, 6.2, 0.6, -2.9, 14.8]   # down at the brick, gripper open
+pick_drop: [-32.1, 56.8, 6.2, 0.6, -2.9, 14.8]   # where a re-grasp puts the brick down (usually the pick pose)
+inspect: [26.2, -97.4, 74.0, 76.7, -3.0, 14.8]   # brick held in front of the inspection camera
+bowl_red: [26.1, 60.4, -24.9, 46.6, -2.7, 14.8]   # over the red bowl
+bowl_blue: [78.0, 43.3, 16.3, 46.5, -2.8, 14.8]   # over the blue bowl
 # Optional pick slots 2-5 (slot 1 = pick_above/pick): the scripted mover takes brick n from slot n, so 5 bricks on
 # 5 marked spots sort with no human. Teach each pair: python -m fallback.teach pick_above_2 pick_2 pick_above_3 pick_3 ...
-pick_above_2: null
-pick_2: null
-pick_above_3: null
-pick_3: null
-pick_above_4: null
-pick_4: null
-pick_above_5: null
-pick_5: null
+pick_above_2: [-31.2, 84.2, -67.2, 88.9, 25.8, 41.1]   
+pick_2: [-31.1, 83.5, -67.1, 68.7, 24.7, 40.7]   
+pick_above_3: [-31.2, 87.8, -67.1, 42.6, 32.1, 26.3]   
+pick_3: [-31.2, 87.8, -66.9, 40.0, 32.1, 14.9]   
+pick_above_4: [-26.6, 46.3, -13.3, 52.2, 8.1, 5.7]   
+pick_4: [-26.7, 54.9, -11.4, 39.6, -7.5, 13.3]   
+pick_above_5: [-26.8, -96.4, 99.0, 57.0, -7.8, 3.5]   
+pick_5: [-26.8, -96.4, 99.0, 57.0, -7.8, 3.5]   
 # Box-room drive (decisions.md D35, robot/drive.py): one floor stroke, taught at the start of the drive with the
 # board free to roll: python -m fallback.teach drive_reach drive_touch drive_drag drive_lift
 drive_reach: null   # gripper closed (rubber bands), held out ahead of the board, just above the floor

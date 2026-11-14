@@ -1,5 +1,5 @@
 # Top-camera regions in pixels, clicked once at the station: python -m ui.click_regions
 # Each is 4 corners clockwise from top-left. Re-click if the top camera or the tape moves.
-zone: null        # the taped 10 x 10 cm pick zone (perception.scene.Zone)
-bowl_red: null    # around the red bowl, for the place check
-bowl_blue: null   # around the blue bowl
+zone: [[261, 14], [363, 73], [276, 164], [176, 81]]   # the taped 10 x 10 cm pick zone (perception.scene.Zone)
+bowl_red: [[450, 137], [544, 190], [510, 272], [393, 224]]   # around the red bowl, for the place check
+bowl_blue: [[368, 292], [485, 360], [408, 479], [293, 400]]   # around the blue bowl
