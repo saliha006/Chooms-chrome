@@ -92,7 +92,19 @@ Required: model, what it does, why it matters, how we improved its outputs.
   3. **A checker after the model.** `reasoner/live.py` throws away any line that names the wrong bowl or quotes a number we did not give it. It keeps only the newest request, so a slow answer never speaks over the next brick, and a late or failed call falls back to our fixed template lines.
 - Measured so far (stand-in image, NVIDIA Build API, 6 calls over perfect, defective, uncertain): 6 of 6 lines consistent with the verdict, 1.9-2.7 s. **Real bricks, the 20-frame evaluation and the spoken time from verdict to first audio: TBD.**
 
-## Modal (Nate to write)
+## Modal
 
-- What: ACT and SmolVLA trained on Modal GPUs from `train/modal_train.py`; the demo-count sweep fans out in
-  parallel. GPU type, time and cost: TBD (Nate). No frontend (we accept losing the deployed-app points).
+- **What runs on Modal:** all training, nothing at demo time. ACT (the pick policy) trains with Intel's Physical AI
+  Studio trainer and SmolVLA (the place policy) fine-tunes from `lerobot/smolvla_base` with LeRobot, each in its own
+  pinned image on an A100, from one script (`train/modal_train.py`). Checkpoints land on a Modal Volume, and a Modal
+  CPU job exports them to OpenVINO and checks them (`train/export.py`), because Studio's tooling does not run on our
+  Windows laptops. Inference stays on the Intel laptop: the robot never waits on the network.
+- **Why it helped:** jobs start on a deployed app and keep running when the laptop's connection drops, which killed
+  two runs before we moved to it. The demo-count sweep (ACT on 18, 36 and 54 demonstrations) runs as three jobs in
+  parallel, so the "how much data is enough" question costs one training time, not three. Every run's GPU, time and
+  cost goes to `train/runs.md`.
+- **Measured so far:** SmolVLA smoke run, 200 steps in 1.8 min (about $0.06). A failed ACT run (about 38 min, about
+  $1.33) found a video-decoding crash in forked data-loader workers; we reproduced it on a Modal CPU container and fixed
+  it the same day. The SmolVLA export on Modal matches LeRobot's own policy to 2.6e-6 on identical inputs.
+- **Real runs:** GPU time and cost for ACT, SmolVLA and the sweep: TBD (Nate, from `train/runs.md`).
+- No frontend: we chose not to build a web app, so we accept losing the deployed-app points.
