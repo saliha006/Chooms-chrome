@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 15:26 | @saliha | @nate | 📨 for you | **`python -m train.audit` is on `main` (`b35f055`).** After each recording round run it on the dataset folder: `--kind pick --cameras top,inspect,wrist` for ACT, `--kind place --tasks "<string 1>" "<string 2>"` for SmolVLA. It checks cadence, hesitation, teleop jumps, the end hold, the exact task strings, camera keys, units and q01/q99 statistics, and exits 1 on a failure; it reproduces what your smoke run found by hand on the public red-lego set. Use the robot environment (pandas and pyarrow) | 2026-11-14 15:26 |
 | 2026-11-14 15:08 | @saliha | @nate | 📨 for you | **Bowl colours: ours are purple (perfect) and orange (defective).** Record SmolVLA with exactly `"the brick is perfect, place it in the purple bowl"` and `"the brick is defective, place it in the orange bowl"`; update `train/RECORDING.md` lines 31-32. This supersedes the blue/red strings in my earlier rows. If you already recorded any SmolVLA episodes with the old strings, say so now | 2026-11-14 15:08 |
 | 2026-11-14 14:54 | @saliha | @nate | 📨 for you | **DO NOW (top of your brief, `context`): manual = you, agent = your coding agent in parallel.** Manual: rehearsal + N8 readings, test episode (unit check, 200-step ACT smoke), record the 54 ACT episodes, push, launch ACT; record the 50 SmolVLA episodes, push, launch SmolVLA; train both on Modal in parallel. Agent now: **A3 export test** (riskiest step, no robot needed), update `train/RECORDING.md` (new strings, N6 tips, audit step), review N3. Saliha's agent does N4, N5 and the episode audit. If recording has not started, tell us: the 17:00 and 19:00 gates move | 2026-11-14 14:54 |
 | 2026-11-14 14:54 | @saliha | @harry | 📨 for you | **DO NOW (top of your brief, `context`).** Manual: H5 station (cameras, RealSense, click zone and bowls, waypoints), the scripted full loop once Saliha has real bricks captured, Kafka service if the plan has it. Agent now: wire `bowl_check` into `run.py` + `io.holding()` in the scripted mover, A6b persona machine, drift alarm calling `perception.drift`, A8 README + architecture diagram (four layers named), draft the demo script and n = 20 slide. Say so here if you want Saliha's agent to take A6b or A8 | 2026-11-14 14:54 |
@@ -102,6 +103,13 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 15:26 — feat — Episode audit (`train/audit.py`), purple/orange bowl wording in the reasoner — @saliha [conflicts: @nate]
+- **Where:** `aiml-perception-saliha` → `main` @ `b35f055` · merged to `main`: yes
+- **Did:** `train/audit.py` (F21, switched from Nate): checks a LeRobot v3.0 dataset before training. Fails: wrong fps, missing camera keys, task strings that differ from D23, NaN, late frames, teleop jumps, a bad end hold; warns: hesitation, odd length, runtime speed cap, missing q01/q99, normalized-looking units, copied episodes, unbalanced tasks. On the public red-lego dataset (50 episodes) it reports no failures and reproduces the known missing statistics and normalized units. 204 tests pass (the audit tests need pyarrow: skipped in the perception environment, run in the robot one). My first merge to `main` (`925f8f6`) carried two test files with the same name that clashed when the whole suite ran from the root; fixed in `b35f055` within minutes
+- **Touched:** `train/audit.py`, `train/tests/test_episode_audit.py`, plan docs
+- **⚠️ Conflicts:** @nate: new file in his folder, nothing of his changed
+- **Status:** open
 
 ### 2026-11-14 15:15 — feat — Bowls are purple and orange everywhere — @harry [conflicts: @nate]
 - **Where:** `systems-voice-harry` → `main` @ `d6aa2ed` · merged to `main`: yes
