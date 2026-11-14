@@ -40,7 +40,8 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
-| 2026-11-14 01:00 | @saliha | @all | 🔀 scope proposal | **PRD v2.3 on `context` (`b423fc4`), re-sync.** The team vision is now written in: Intel task first (accurate, smooth, quick); then the robot **explains its reasoning out loud live** (Nemotron writes, ElevenLabs speaks) and an **obstacle or cowboy hat flips it into a cowboy persona**. NVIDIA Nemotron is in (@saliha, `reasoner/`). Aiven = Kafka streaming → PostgreSQL (@harry). Modal = training + logs only; the F16 dashboard is dropped (no frontend). **Branches renamed, one per person:** `perception-ml-saliha`, `robot-policies-nate`, `integration-voice-harry`. Contract additions in PRD 7.3 (`narrator.trigger`, `reasoner.explain`, `reasoner.hat_seen`) need @harry's yes before the 01:00 freeze | 2026-11-14 01:00 |
+| 2026-11-14 01:35 | @saliha | @all | ⚠️ conflict | **Branches renamed again, by discipline:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry` (older rows below use the previous names; none were pushed yet). New file **`decisions.md`** on `context` (design choices and why, for pitching): your agent updates it on its own as you build (CLAUDE.md §4a). Re-sync from `context` | 2026-11-14 01:35 |
+| 2026-11-14 01:00 | @saliha | @all | 🔀 scope proposal | **PRD v2.3 on `context` (`b423fc4`), re-sync.** The team vision is now written in: Intel task first (accurate, smooth, quick); then the robot **explains its reasoning out loud live** (Nemotron writes, ElevenLabs speaks) and an **obstacle or cowboy hat flips it into a cowboy persona**. NVIDIA Nemotron is in (@saliha, `reasoner/`). Aiven = Kafka streaming → PostgreSQL (@harry). Modal = training + logs only; the F16 dashboard is dropped (no frontend). **Branches renamed, one per person:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`. Contract additions in PRD 7.3 (`narrator.trigger`, `reasoner.explain`, `reasoner.hat_seen`) need @harry's yes before the 01:00 freeze | 2026-11-14 01:00 |
 | 2026-11-14 00:35 | @saliha | @all | 🔀 scope proposal | **PRD v2.2 on `context` (`84364a8`), re-sync.** New 🆕 items in every brief from the Junction challenge page + side-track pages: F11 demo-count sweep on Modal (@nate), F12 power/energy/thermal benchmark (@saliha), F13 shared cameras (@harry), F14 shifted + pile trials (@nate @harry), F15 Aiven drift alarm + more tables (@harry), F16 optional Modal dashboard (@harry), F4 now includes a re-grasp. Object = Duplo, cameras = top + inspection + wrist. Say no on this row if you object to any item in your brief | 2026-11-14 00:35 |
 | 2026-11-14 00:35 | @saliha | @nate @harry | 📨 waiting on | Before the 01:00 freeze, agree what `Mover.reinspect(angle_deg)` does now that F4 includes a re-grasp (proposal: `0` = put down and pick again, ±90 = wrist roll) | 2026-11-14 00:35 |
 | 2026-11-14 00:10 | @saliha | @harry | ⚠️ conflict | The repo already exists (`saliha006/Chooms-chrome`, `main` has `README.md` + this file). Your A1 still owns: MIT licence, folders per PRD §10, `Makefile`, `common/interfaces.py`. Pull before you push | 2026-11-14 00:10 |
@@ -56,9 +57,9 @@ own **Now** cell whenever you log an entry.
 
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
-| Saliha | `saliha006` | Perception ML (Anomalib), OpenVINO, Nemotron reasoner; doc owner | `perception-ml-saliha` | `perception/`, `bench/`, `reasoner/` | Block A: perception pipeline on stand-in images |
-| Nate | `{{github}}` | Robot and policies (Studio, ACT, SmolVLA), Modal training + logs | `robot-policies-nate` | `robot/`, `policies/`, `train/` | Block A: Modal script + policy export test |
-| Harry | `{{github}}` | Integration, ElevenLabs personality voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `integration-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: repo layout, interfaces, mock loop, voices |
+| Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A: perception pipeline on stand-in images |
+| Nate | `{{github}}` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A: Modal script + policy export test |
+| Harry | `{{github}}` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: repo layout, interfaces, mock loop, voices |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -70,25 +71,34 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 2. Plan docs stay off `main` by themselves: the `.gitignore` on `main` blocks every `.md` except `progress.md`, `README.md` and the brief-named files, plus `.env*`, datasets and checkpoints.
 3. Pull the docs from `context` (they never live on `main`): `git fetch origin context && git archive origin/context | tar -x
    && git rev-parse origin/context > .git/context-synced`. Install the skills: `mkdir -p .claude/skills && cp -r skills/* .claude/skills/ && rm -rf skills`.
-   Then `git switch -c <your branch>` (one per person: `perception-ml-saliha`, `robot-policies-nate`, `integration-voice-harry`).
+   Then `git switch -c <your branch>` (one per person: `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`).
 4. Put the `.env` @saliha or @harry sends you (directly, not via git or chat) at the repo root. Never commit it; never paste a key.
 5. Tell your agent "fetch the context": it reads `CLAUDE.md`, PRD §0 and your brief.
 6. Read your brief's `▶ Current tasks`, then the 📌 Open board above.
 
 ## 📊 Latest (volatile facts live only here)
-- **Plan (2026-11-14 01:00):** PRD v2.3 on `context` @ `b423fc4`.
+- **Plan (2026-11-14 01:40):** PRD v2.4 + `decisions.md` on `context` @ `72e2702`.
 - **`main` (2026-11-14 00:10):** `README.md` + `progress.md` only; no code yet. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
 
+### 2026-11-14 01:35 — docs — Roles by discipline, branches renamed, `decisions.md` added — @saliha [conflicts: @nate @harry]
+- **Where:** `context` @ `72e2702` · merged to `main`: this file only
+- **Did:** Grouped roles as AI/ML (Saliha), Robotics and robot learning (Nate), Systems and integration (Harry) in the PRD §1b, briefs and CLAUDE.md. Renamed the branches. Added `decisions.md` (17 decisions, pitch cheat sheet) and CLAUDE.md §4a: agents update it autonomously.
+- **Touched:** `prd.md`, `decisions.md`, briefs, `CLAUDE.md`, `progress.md`
+- **Brief task:** none
+- **⚠️ Conflicts:** @nate @harry: use the new branch names; add decision entries for your areas as you build
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 01:00 — scope — PRD v2.3: team vision, personality layer, Nemotron in, F16 dropped, branches renamed — @saliha [conflicts: @nate @harry]
 - **Where:** `context` @ `b423fc4`; `main`: this file + `.gitignore` · merged to `main`: yes
 - **Did:** Wrote the agreed vision into the PRD (§1a priority order), the briefs and CLAUDE.md. New: live reasoning voice + cowboy persona switch (F7, F18), Nemotron reasoner (F17), Aiven Kafka streaming (F15), stretch list (PRD §8a). Dropped: F16 Modal dashboard. Added a `.gitignore` so only `progress.md`, `README.md` and the brief-named markdown reach `main`.
 - **Touched:** `prd.md`, all three briefs, `CLAUDE.md`, `.gitignore`, `progress.md`
 - **Brief task:** none
-- **⚠️ Conflicts:** @harry: you now own the persona state machine (A6b), calm + cowboy voices, Kafka streaming; F16 is gone; three contract lines added to PRD 7.3 before the 01:00 freeze. @nate: branch renamed to `robot-policies-nate`; obstacles are skipped, never picked
+- **⚠️ Conflicts:** @harry: you now own the persona state machine (A6b), calm + cowboy voices, Kafka streaming; F16 is gone; three contract lines added to PRD 7.3 before the 01:00 freeze. @nate: branch renamed to `robotics-policies-nate`; obstacles are skipped, never picked
 - **📨 Needs:** @harry: yes or no on the PRD 7.3 additions before 01:00
 - **Agreed by:** @saliha (doc owner, vision from the team chat); teammates asked on the Open board
 - **Status:** open
