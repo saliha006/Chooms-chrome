@@ -40,8 +40,8 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
-| 2026-11-14 16:56 | @nate | @harry @saliha | ⚠️ conflict | **Policy observations now match the export (A3):** `policies/episode.py` sends `state`, `images.<camera>` (RGB, batch axis) and `task`, what the exported runtime reads; it was sending LeRobot's dataset keys and BGR frames. @harry: keep passing raw `SharedCapture` frames from `run.py` (no colour conversion there) and keep `config/models.yaml` `cameras: [top, wrist, inspect]` in that order. @saliha: use the same keys for any policy benchmark. Clear this row once read | 2026-11-14 16:56 |
-| 2026-11-14 17:00 | @harry | @all | 🔀 scope proposal | **Live voice moves up (Harry, for the ElevenLabs prize):** the "live voice line" leaves the cut order (CLAUDE.md item 4) because it is built and on `main`: each verdict is spoken live with its score, threshold and mark position, cached clip as fallback, the arm never waits. Doc owner: update the cut order if agreed. @saliha: `narrator.say(..., text=line)` now speaks your reasoner line live. Say no on this row if you object · **@nate: yes** (17:00) | 2026-11-14 17:00 |
+| 2026-11-14 16:56 | @nate | @harry @saliha | ⚠️ conflict | **Policy observations now match the export (A3):** `policies/episode.py` sends `state`, `images.<camera>` (RGB, batch axis) and `task`, what the exported runtime reads; it was sending LeRobot's dataset keys and BGR frames. @harry: keep passing raw `SharedCapture` frames from `run.py` (no colour conversion there) and keep `config/models.yaml` `cameras: [top, wrist, inspect]` in that order. @saliha: use the same keys for any policy benchmark. Clear this row once read · @saliha read 17:12 (will use the same keys for any policy benchmark) | 2026-11-14 16:56 |
+| 2026-11-14 17:00 | @harry | @all | 🔀 scope proposal | **Live voice moves up (Harry, for the ElevenLabs prize):** the "live voice line" leaves the cut order (CLAUDE.md item 4) because it is built and on `main`: each verdict is spoken live with its score, threshold and mark position, cached clip as fallback, the arm never waits. Doc owner: update the cut order if agreed. @saliha: `narrator.say(..., text=line)` now speaks your reasoner line live. Say no on this row if you object · **@nate: yes** (17:00) · **@saliha: yes** (17:12; cut order updated in `CLAUDE.md`) | 2026-11-14 17:00 |
 | 2026-11-14 16:50 | @harry | @saliha @nate | 📨 for you | **`docs/submission.md` is on `main`**: the Junction Platform text per track. Please write your section by Sunday 06:00: @saliha **NVIDIA** (model, what it does, why it matters, how we improved its outputs), @nate **Modal** (GPU type, time, cost, the sweep). Facts only, unmeasured numbers stay TBD | 2026-11-14 16:50 |
 | 2026-11-14 16:33 | @nate | @all | ⚠️ conflict | **Gates move (recording has not started at 16:33; the brief's rule):** ACT gate about **21:30** (was 17:00) and SmolVLA gate about **22:15** (was 19:00). Estimates: recording about 17:30–19:30 after the Intel laptop drivers, rehearsal and a test episode, then the brief's 2–3 h of training. The 23:00 freeze stays; the scripted loop is the insurance meanwhile | 2026-11-14 16:33 |
 | 2026-11-14 16:19 | @saliha | @nate | ⚠️ conflict | **N4 done on `main` (`668933e`): `train/commands.py` `smolvla()`** now passes `--policy.scheduler_decay_steps=<steps>` (LeRobot's default of 30,000 would leave a 10k run near the peak learning rate) and `--save_freq=2500`; the optional flags stay last (your tests read them by position); 14 train tests pass. Batch size stays 8: raise it only after you see the GPU memory (hyperparameters come after the data audit, D32). Not touched: your `launch.py` and `modal_train.py`. N5 (colour hedge) is still open: say if you want me to take it | 2026-11-14 16:19 |
@@ -142,7 +142,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **Agreed by:** @harry (3 s timeout + warm-up; live voice emphasised for ElevenLabs)
 - **Status:** open
 
-### 2026-11-14 17:40 — feat — N5 colour hedge: `train/hedge.py` and `--episode-ids` on the Modal ACT launch — @saliha [conflicts: @nate]
+### 2026-11-14 17:07 — feat — N5 colour hedge: `train/hedge.py` and `--episode-ids` on the Modal ACT launch — @saliha [conflicts: @nate]
 - **Where:** `aiml-perception-saliha` → `main` · merged to `main`: yes
 - **Did:** `python -m train.hedge <dataset root> --repo-id <hf id> --steps N` finds which episodes carry each fixed string and prints one `modal run … --policy act --tag purple|orange --episode-ids …` line per colour. `commands.act(episode_ids=…)` and `job_name(tag=…)` back it. Tested on a synthetic LeRobot v3.0 dataset (8 new tests, 271 pass). **The Modal entrypoint path itself is untested** (needs a Modal run); `launch.py` was not changed.
 - **Touched:** `train/hedge.py`, `train/commands.py`, `train/modal_train.py`, `train/tests/test_hedge.py`
@@ -157,8 +157,8 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **Touched:** `reasoner/live.py`, `reasoner/tests/test_live.py` (6 new tests, 254 pass)
 - **Brief task:** live Nemotron line → 🟡 built, not wired
 - **⚠️ Conflicts:** @harry: wiring is yours in `run.py` after DECIDE, for any label (not only uncertain): `live.submit(crop, signal, persona)`; `narrator.say(label, text=line)` already accepts the spoken text.
-- **📨 Needs:** @harry: your yes to wire it; blocks the NVIDIA eval on real bricks.
-- **Status:** open
+- **📨 Needs:** none (wired by @harry in `d6fbc81`, his 17:15 entry)
+- **Status:** resolved by @harry 2026-11-14 17:15
 
 ### 2026-11-14 16:50 — docs — Submission draft, station cheat sheet, trials slide on bench.trials — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
