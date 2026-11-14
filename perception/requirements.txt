@@ -1,0 +1,8 @@
+# Perception environment (Python 3.12). Install: uv pip install -r perception/requirements.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+anomalib[openvino]==2.7.0
+opencv-python-headless
+pyyaml
+pytest
