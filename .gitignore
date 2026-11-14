@@ -1,0 +1,43 @@
+# Markdown on main: only these. Plan docs live on the context branch.
+*.md
+!progress.md
+!README.md
+!bench/results.md
+!train/RECORDING.md
+!train/runs.md
+!train/rejected.md
+!docs/**/*.md
+builder-briefs/
+skills/
+handoff/
+
+# Secrets: never committed
+.env
+.env.*
+!.env.example
+
+# Local only
+.claude/
+Research-Context/
+intel track & others/
+extension-if-more-time.md
+
+# Data, models, outputs
+data/
+runs/
+checkpoints/
+outputs/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.onnx
+*.bin
+*.db
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
