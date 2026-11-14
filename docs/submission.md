@@ -80,12 +80,17 @@ The same table produces the trial report (`telemetry/report.sql`): success rate,
 per stage and device. Kafka stream (`sortsense.events`): TBD (only if the service is created). Drift alarm on
 real bricks: TBD.
 
-## NVIDIA Nemotron (Saliha to write)
+## NVIDIA Nemotron
 
 Required: model, what it does, why it matters, how we improved its outputs.
 - Model: `nvidia/nemotron-3.5-super-vl-120b-a12b` via NVIDIA Build.
-- What it does: TBD (Saliha). Advisory only: it explains the measured verdict and never changes it (D25).
-- How we improved its outputs: TBD (Saliha: grounding in the measured score and thresholds, eval table).
+- What it does: after each brick is inspected, Nemotron gets the brick crop plus the measured numbers (verdict, anomaly score, the two thresholds, defect box) and says one or two short sentences out loud: what it sees, what the score means against our thresholds, and what the robot will do. A text-to-speech voice (ElevenLabs) speaks it. It is advisory only: Anomalib and the thresholds decide, Nemotron explains and never changes the verdict (D25).
+- Why it matters: a sorting robot that says why it chose a bowl can be checked by the person watching. Because the explanation uses our measured scores, it is a true account of the decision, not a guess.
+- How we improved its outputs:
+  1. **Thinking off for live speech.** Nemotron Super VL reasons by default and spent its whole 80-token budget thinking (empty answer). With thinking switched off, answers take 1.9-2.7 s.
+  2. **Grounding in the decision.** Given only a score and thresholds, it read "below t_low" as bad and told a perfect brick to be set aside. Passing the already-decided action and what each band means fixed it (4 of 4 correct on a small check, including an uncertain brick).
+  3. **A checker after the model.** `reasoner/live.py` throws away any line that names the wrong bowl or quotes a number we did not give it. It keeps only the newest request, so a slow answer never speaks over the next brick, and a late or failed call falls back to our fixed template lines.
+- Measured so far (stand-in image, NVIDIA Build API, 6 calls over perfect, defective, uncertain): 6 of 6 lines consistent with the verdict, 1.9-2.7 s. **Real bricks, the 20-frame evaluation and the spoken time from verdict to first audio: TBD.**
 
 ## Modal (Nate to write)
 
