@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 06:04 | @harry | @nate | ⚠️ conflict | **Joint unit must match between recording and runtime** (H6): physicalai's `SO101` defaults to `unit="normalized"` ([-100, 100]) and the Intel tutorial passes no unit; `robot/io.py` runs in `"degrees"` (its limits and 5°/step cap are degrees); LeRobot's current SO follower records degrees (`use_degrees=True`). Please confirm which unit your recordings and the red-lego smoke-test set use, and record with the same one `io.py` runs. Also: camera names in the dataset must be `top` / `wrist` (`config/models.yaml`) | 2026-11-14 06:04 |
 | 2026-11-14 07:15 | @saliha | @all | 🔀 scope proposal | **PRD v2.5 on `context` (`5da0552`), re-sync.** A research pass (6 research agents + design + critic) put an ordered 🆕 v2.5 block at the top of each brief's ▶ Current tasks. Same vision. Highlights: no RL (D1, numbers in), every stage verified with reason codes/deadlines (D22), recovery order look-again → roll → re-grasp (D7), two fixed VLA strings + language-swap test + single-colour ACT hedge (D23), device/efficiency measured (D24), Nemotron advisory only (D25), **red-lego smoke test first** (D26). Bugs listed per person. Say no on this row to anything in your block. **@harry 05:41: yes** to the whole block, and yes to `run.py` calling `perception/scene.py` (zone gate + bowl-region check). **@nate 05:54: yes** to the whole block; N1's ACT export goes through Studio's Python API or runs on Modal (the `physicalai` CLI crashes on Windows: `fcntl`) | 2026-11-14 07:15 |
 | 2026-11-14 05:32 | @harry | @saliha | 📨 waiting on | **`opencv-python` instead of `opencv-python-headless`** in `perception/requirements.txt`: mission control (F6) needs a window, the headless build has none, and the two can't be installed together. Same library and API; perception code is unaffected | 2026-11-14 05:32 |
 | 2026-11-14 05:12 | @nate | @all | 🔀 scope proposal | **Training stack and F14 positions changed in my area** (`main` @ `8bc38a6`, `decisions.md` D20): ACT now trains with **Physical AI Studio's trainer** (`physicalai fit`), so it exports straight into the `physicalai` runtime; SmolVLA stays on LeRobot (Studio's SmolVLA loader is unfinished). ACT demos: **all 9 positions × 6, recorded in rounds**. @harry: F14's "new positions" trials use only the off-grid spots. Say no on this row if you object | 2026-11-14 05:12 |
@@ -61,7 +62,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed (red-lego, cameras mapped); N2 done; ACT smoke still training on Modal; next: ACT export test (N1), then N3 |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4 done (H3 clips not generated yet); next H6 physicalai notebook, H7 ReasonTrace panel |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4, H6 done (H3 clips not generated yet); next H7 ReasonTrace panel |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -88,6 +89,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 06:04 — docs — H6: read Intel's `physicalai` tutorial and runtime source against our code — @harry [conflicts: @nate]
+- **Where:** notes only (local research doc, Pass H6) · merged to `main`: n/a
+- **Did:** Read all of `examples/tutorials/collect_train_deploy.ipynb` plus the runtime, SO-101 plugin, inference and capture sources. Our imports are valid (`robot/io.py`'s `physicalai.robot.so101.SO101` is a backward-compatible forward to `physicalai_so101_plugin`; `InferenceModel(export_dir, backend=, device=)` matches). **Risk:** `SO101` defaults to `unit="normalized"`, `io.py` uses degrees (board row to @nate). `RobotRuntime.run(stop_event=...)` takes our abort natively and early exit is possible through a callback calling `stop()`, but it sends actions straight to the robot, skipping `io.act()`'s clip, speed cap and e-stop check, so it would need a safety callback. Verdict: **keep `Cell`, `io.py` and `SharedCapture`; no `RobotRuntime` before the 15:30 gate.** Optional add-on: read cameras through `physicalai.capture.create_camera(...)` (UVC + RealSense; `Frame.timestamp` is `time.monotonic()`, so `SharedCapture`'s fresh-frame wait still works); `discover_all()` lists cameras for the 08:00 setup.
+- **Touched:** nothing in the repo
+- **Brief task:** H6 → ✅ done
+- **⚠️ Conflicts:** @nate: joint unit and dataset camera names (board row)
+- **📨 Needs:** @nate: confirm the recording unit
+- **Status:** open
 
 ### 2026-11-14 06:01 — feat — N1 SmolVLA smoke passes (camera mapping); N2 early exit + stage deadline in the policy loop — @nate [conflicts: @harry]
 - **Where:** `robotics-policies-nate` @ `945310a` · merged to `main`: yes
