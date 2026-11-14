@@ -64,7 +64,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A: `train/` reworked (Studio ACT + LeRobot SmolVLA, `main` @ `8bc38a6`); next: Modal login, A2 smoke run, A3 export test |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A4, A7 + real-station mode done; next A5 Aiven, A8 README |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H2 bug fixes done, H4 already done (JSONL); next H1 reason codes, deadlines, PAUSE_HUMAN, recovery chain |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -91,6 +91,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 05:42 — fix — H2: uncertain chain uses fresh frames from the inspection camera; roll before re-grasp; help line says why — @harry [conflicts: @saliha @nate]
+- **Where:** `systems-voice-harry` @ `4bd8cb2` · merged to `main`: yes
+- **Did:** Every inspection now scores a frame grabbed after a 0.3 s settle (`SETTLE_S`, TUNE); before, "look again" re-scored the frame already judged uncertain. `config/rules.yaml`: `second_view: inspect` (the model only knows that camera), `reinspect_angles: [90, 0]` = roll, then re-grasp (PRD v2.5 order). The help line speaks the reason ("grasp failed twice"), not an exception name. 57 tests pass with Nate's. H4 (JSONL telemetry writer) was already built in A3: `telemetry/` → `runs/events.jsonl`, one row per stage.
+- **Touched:** `run.py`, `config/rules.yaml`, `common/tests/`
+- **Brief task:** H2 → ✅ done · H4 → ✅ done (A3)
+- **⚠️ Conflicts:** @saliha: the F4 chain is now look again (inspect cam) → `reinspect(90)` → `reinspect(0)` → defective, as PRD v2.5 says. @nate: `reinspect(90)` is now called before `reinspect(0)`, so the re-grasp starts from a rolled wrist
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 07:15 — scope — PRD v2.5 from a research pass: verified stages, recovery order, honest evaluation, smoke test on public data, no RL — @saliha [conflicts: @nate @harry]
 - **Where:** `context` @ `5da0552` · merged to `main`: n/a (docs)
