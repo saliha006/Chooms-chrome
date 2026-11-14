@@ -127,6 +127,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 23:15 — fix — N8 grip band measured (10-23); tests use the measured brick reading; recording varies brick angle — @saliha [conflicts: @nate @harry]
+- **Where:** `systems-voice-harry` and `robotics-policies-nate` → `main` · merged to `main`: yes
+- **Did:** Three hand-moved runs on the loose follower (`python -m robot.readings`): shut on nothing averages 1.5 (1.0-2.4), a Duplo brick 17.4 (15.2-19.8), half open 29.4 (25.7-31.8), wide 96.3. `robot/io.py`: `GRIPPER_EMPTY_BELOW` 10 (was 5), `GRIPPER_HOLD_MAX` 23 (was 45), `GRIPPER_OPEN` 60 unchanged. Test fixtures that used 30 for a held brick now use 17 (Harry's `common/tests/test_run_real.py`, `fallback/tests/test_scripted.py`; Nate's `policies/tests/test_mover.py`, `train/tests/test_episode_audit.py`, whose fake gripper now closes gradually). `train/RECORDING.md`: vary brick angle and colour each round; record only at the parked spot. `robot.readings --live` prints the gripper twice a second. 314 + 93 tests, mock sorts 5.
+- **Touched:** `robot/io.py`, `robot/readings.py`, test fixtures above, `train/RECORDING.md`
+- **Brief task:** N8 → ✅
+- **⚠️ Conflicts:** @harry: two test fixtures in your folders (value only); @nate: your grip band and audit tests
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 22:30 — feat — Station fixes: knock-tolerant reads, readings and goto tools, recording protocol, follower calibration — @saliha [conflicts: @nate]
 - **Where:** `robotics-policies-nate` → `main` @ `3487684` · merged to `main`: yes
 - **Did:** `robot.io.observe` retries four times 50 ms apart, so a knock's supply dip no longer kills a run (a dead bus still raises); Studio's own SO-101 driver on the laptop is patched the same way (12 attempts, 20 ms apart; backup `so101.py.orig`, active after a backend restart). New `python -m robot.readings` (loose follower, joint medians per time window; for N8) and `python -m robot.goto <pose> --gripper 0` (moves to a taught pose at the speed cap, holds it, Enter sends it home; for the brick photos; `home` must be a resting pose because the arm goes limp at the end). `train/RECORDING.md`: Studio's dataset folder, `physicalai-studio hf dataset export`, PR #1403 is fixed. `config/so101_follower.json` updated from the 20:31 recalibration. Station: both arms recalibrated (190-240° per joint), teleop works; the leader's power plug had come out (all six servos silent).
