@@ -122,6 +122,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 17:55 · voice polish + base drive voice-over · spoken run summary, subtitles on mission control, live narration of the base driving to the table (`Cell.approach` seam for Nate, `DRIVE` stage, `--mock --drive CM`), camera paths committed; all tests green on both laptops (283 + 5 slow here, 282 on the Intel laptop); `main` `5730a47`
 - 2026-11-14 17:15 · A6 live line + Nemotron add-on · verdicts spoken live with score, threshold and mark position (Flash, 3 s timeout + warm-up, cached fallback, `--no-live`); Saliha's Nemotron `LiveLine` wired into `run.py` (real runs); 625–1953 ms per line on the venue Wi-Fi; merged to `main` (`d6fbc81`), 171 tests pass
 - 2026-11-14 16:50 · submission draft + station prep · `docs/submission.md` (Intel, ElevenLabs, Aiven; NVIDIA and Modal asked of Saliha and Nate), `docs/station.md` (fresh laptop → scripted gate), trials slide on `bench.trials`; Intel laptop runs `main` (220 tests, mock sorts 5, CPU + GPU; NPU packages pending)
 - 2026-11-14 16:10 · DO NOW agent (a)–(e) + A6b + A8 · place check after home (`VERIFY_PLACE`), scripted grasp via `io.holding()`, persona switch, drift alarm on Aiven (speak + banner), README with the four layers, `docs/demo-script.md` + `docs/trials-slide.md`; merged to `main` (`ce9a437`), 149 tests pass
