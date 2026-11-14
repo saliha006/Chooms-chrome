@@ -1,3 +1,3 @@
-# Local client for train/modal_train.py (the Modal image installs lerobot itself)
+# Local client for train/modal_train.py (the Modal images install Studio's trainer and LeRobot themselves)
 modal==1.6.4
 pytest

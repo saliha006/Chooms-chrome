@@ -1,28 +1,55 @@
-"""The lerobot-train command line for one run (LeRobot 0.7). Pure, so it is testable without Modal."""
+"""Training command lines, one builder per policy. Pure, so they are testable without Modal.
+
+ACT trains with Physical AI Studio's trainer (`physicalai fit`), so its checkpoint exports straight into the
+`physicalai` runtime. SmolVLA fine-tunes `lerobot/smolvla_base` with LeRobot, because Studio's SmolVLA weight
+loader is unfinished (decisions.md D20).
+"""
 
 SWEEP_EPISODES = (18, 36, 54)  # F11: success vs number of demonstrations (decisions.md D9)
+ACT_LR = 1e-5  # 1e-4 makes ACT output one pose whatever it sees (Studio #998)
+BATCH_SIZE = 8
 
 
-def job_name(policy: str, episodes: int, steps: int) -> str:
-    return f"{policy}-{episodes or 'all'}ep-{steps}st"
+def job_name(policy: str, episodes: int, steps: int, stamp: str) -> str:
+    # The stamp keeps re-runs apart: LeRobot refuses to write into an existing output directory.
+    return f"{policy}-{episodes or 'all'}ep-{steps}st-{stamp}"
 
 
-def build(policy: str, dataset: str, steps: int, lr: float, output_dir: str, episodes: int = 0, batch_size: int = 8) -> list[str]:
-    if policy not in ("act", "smolvla"):
-        raise ValueError(f"policy must be act or smolvla, got {policy}")
+def _first_episodes(episodes: int) -> str:
+    return f"[{','.join(str(i) for i in range(episodes))}]"
+
+
+def act(dataset: str, steps: int, output_dir: str, lr: float | None = None, episodes: int = 0) -> list[str]:
     cmd = [
-        "lerobot-train",
-        "--policy.type=act" if policy == "act" else "--policy.path=lerobot/smolvla_base",
-        f"--dataset.repo_id={dataset}",
-        f"--steps={steps}",
-        f"--batch_size={batch_size}",
-        f"--policy.optimizer_lr={lr}",  # 1e-5 for ACT: 1e-4 makes it output one pose whatever it sees (Studio #998)
-        "--policy.device=cuda",
-        "--policy.push_to_hub=false",
-        "--wandb.enable=false",
-        f"--output_dir={output_dir}",
-        f"--job_name={job_name(policy, episodes, steps)}",
+        "physicalai", "fit",
+        "--model", "physicalai.policies.ACT",
+        "--model.optimizer_lr", str(lr or ACT_LR),
+        "--data", "physicalai.data.lerobot.LeRobotDataModule",
+        "--data.repo_id", dataset,
+        "--data.train_batch_size", str(BATCH_SIZE),
+        "--trainer.max_steps", str(steps),
+        "--trainer.accelerator", "gpu",
+        "--trainer.devices", "1",
+        "--trainer.default_root_dir", output_dir,
     ]
     if episodes:
-        cmd.append(f"--dataset.episodes=[{','.join(str(i) for i in range(episodes))}]")
+        cmd += ["--data.episodes", _first_episodes(episodes)]
+    return cmd
+
+
+def smolvla(dataset: str, steps: int, output_dir: str, lr: float | None = None, episodes: int = 0) -> list[str]:
+    cmd = [
+        "lerobot-train",
+        "--policy.path=lerobot/smolvla_base",
+        f"--dataset.repo_id={dataset}",
+        f"--steps={steps}",
+        f"--batch_size={BATCH_SIZE}",
+        "--policy.device=cuda",
+        "--policy.push_to_hub=false",
+        f"--output_dir={output_dir}",
+    ]
+    if lr:  # otherwise SmolVLA keeps its own default (1e-4)
+        cmd.append(f"--policy.optimizer_lr={lr}")
+    if episodes:
+        cmd.append(f"--dataset.episodes={_first_episodes(episodes)}")
     return cmd
