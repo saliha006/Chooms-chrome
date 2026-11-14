@@ -6,8 +6,8 @@ The plan itself is `CLAUDE.md`, `prd.md` and `builder-briefs/` on the `context` 
 > **Template.** Fill `{{…}}` as the project's details arrive (self-filling rule, `CLAUDE.md`).
 
 ## How this file works (read once)
-- **Newest first.** A new entry goes at the top of the Log. Stamps are `YYYY-MM-DD HH:MM` on the plan clock (PRD §10),
-  so top to bottom is newest to oldest.
+- **Newest first.** A new entry goes at the top of the Log. Stamps are `YYYY-MM-DD HH:MM` in **Espoo local time (EET, UTC+2)**,
+  so top to bottom is newest to oldest. Stamps before 2026-11-14 04:30 were UK time (2 h behind Espoo).
 - **One entry per finished thing:** a feature, a fix, a merge, an infra change, a gate result, a decision that changes
   someone's work, or a scope change. Not one per work-in-progress commit.
 - **The heading says whether it conflicts:** `[conflicts: none]` or `[conflicts: @name]`, so a skim of the headings shows
@@ -40,8 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
-| 2026-11-14 04:16 | @harry | @saliha | 📨 waiting on | **Conversational live lines + `reinspect` mirror.** (1) Please make the Nemotron live lines (F17, `reasoner/`) conversational: the robot thinks aloud like a person (what it sees, what the score means, what it will do and why), short enough to speak in a few seconds; voices are calm `etWmxTqEKhIYyGKMpDcb` and cowboy David `0hh7H4ZVAtaGpm1VZyEN` (D12, D13). (2) @harry agreed `reinspect` at 04:16: mirror it into PRD 7.3 / §0 and Harry's brief as Nate's 01:35 entry asks | 2026-11-14 04:16 |
-| 2026-11-14 01:42 | @nate | @all | ❓ question | **Which clock do our plan times use?** Board stamps so far track UTC (the 00:10 entry was committed at 00:07 UTC), but Espoo is UTC+2 and Saliha's commits since 03:11 carry +02:00. If the plan runs on UTC, our 09:00 internal submit is 11:00 in Espoo, after a 10:00 Espoo deadline. (My laptop is on UTC.) | 2026-11-14 01:42 |
+| 2026-11-14 04:30 | @saliha | @nate | ⚠️ conflict | **Saliha (doc owner) asked me to write your hardware-free Block A code on `robotics-policies-nate`**, since you have less Claude usage: `robot/io.py` + `MockRobot`, `policies/act.py` + `policies/smolvla.py` (Mover), `train/modal_train.py` (+ `--episodes`, `sweep`), `train/RECORDING.md`, `train/runs.md`. **You keep** Modal login and runs, the export test on real checkpoints, Studio, calibration, recording, every robot slot. `git pull` before you push to that branch; say stop on this row if you object | 2026-11-14 04:30 |
 | 2026-11-14 01:35 | @saliha | @all | ⚠️ conflict | **Branches renamed again, by discipline:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry` (older rows below use the previous names; none were pushed yet). New file **`decisions.md`** on `context` (design choices and why, for pitching): your agent updates it on its own as you build (CLAUDE.md §4a). Re-sync from `context` | 2026-11-14 01:35 |
 | 2026-11-14 01:00 | @saliha | @all | 🔀 scope proposal | **PRD v2.3 on `context` (`b423fc4`), re-sync.** The team vision is now written in: Intel task first (accurate, smooth, quick); then the robot **explains its reasoning out loud live** (Nemotron writes, ElevenLabs speaks) and an **obstacle or cowboy hat flips it into a cowboy persona**. NVIDIA Nemotron is in (@saliha, `reasoner/`). Aiven = Kafka streaming → PostgreSQL (@harry). Modal = training + logs only; the F16 dashboard is dropped (no frontend). **Branches renamed, one per person:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`. Contract additions in PRD 7.3 (`narrator.trigger`, `reasoner.explain`, `reasoner.hat_seen`) need @harry's yes before the 01:00 freeze. **@nate 01:42: yes** | 2026-11-14 01:00 |
 | 2026-11-14 00:35 | @saliha | @all | 🔀 scope proposal | **PRD v2.2 on `context` (`84364a8`), re-sync.** New 🆕 items in every brief from the Junction challenge page + side-track pages: F11 demo-count sweep on Modal (@nate), F12 power/energy/thermal benchmark (@saliha), F13 shared cameras (@harry), F14 shifted + pile trials (@nate @harry), F15 Aiven drift alarm + more tables (@harry), F16 optional Modal dashboard (@harry), F4 now includes a re-grasp. Object = Duplo, cameras = top + inspection + wrist. Say no on this row if you object to any item in your brief. **@nate 01:42: yes** | 2026-11-14 00:35 |
@@ -79,12 +78,22 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## 📊 Latest (volatile facts live only here)
 - **Plan (2026-11-14 01:35):** PRD v2.4 + `decisions.md` on `context` @ `c67ba2b` (Nate's brief and `decisions.md` D7 updated).
-- **perception (2026-11-14 03:55):** `main` @ `dd1c4d7`: 28 tests pass (4 slow). Not yet run on the Intel laptop or real bricks.
+- **perception (2026-11-14 04:30):** `main` @ `99f1d09`: 28 tests pass (4 slow); live Nemotron line 1.7–2.7 s. Not yet run on the Intel laptop or real bricks.
 - **`main` (2026-11-14 00:10):** `README.md` + `progress.md` only; no code yet. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 04:30 — decision — Espoo time for everything; `reinspect` mirrored; Nemotron lines live and conversational — @saliha [conflicts: @nate @harry]
+- **Where:** `context` @ `053f5de`; `main` @ `99f1d09` · merged to `main`: yes
+- **Did:** Answered @nate's 01:42 question: all plan times and board stamps are **Espoo local (UTC+2)**, the event's clock, so the 09:00 internal submit is one hour before the 10:00 Espoo deadline. Mirrored the agreed `reinspect` into PRD §0 / 7.3 and Harry's brief. A11 done: live Nemotron (`nvidia/nemotron-3.5-super-vl-120b-a12b`) with thinking off, conversational think-aloud lines, 1.7–2.7 s each; it now gets the decided action, so it can't invert a verdict (it did before the fix).
+- **Touched:** `reasoner/client.py`, `prd.md`, `CLAUDE.md`, all briefs, `decisions.md` D11, this file
+- **Brief task:** A11 → ✅ done
+- **⚠️ Conflicts:** @nate @harry: board times before 04:30 were UK time. @harry: `reasoner.client.explain(crop, signal, persona)` returns `(line, ms)`; personas `calm` / `cowboy`
+- **📨 Needs:** none
+- **Agreed by:** @saliha (clock, doc owner); `reinspect`: @nate, @harry, @saliha
+- **Status:** resolved by @saliha 2026-11-14 04:30 (Nate's clock question, Harry's 04:16 request)
 
 ### 2026-11-14 04:16 — decision — `reinspect` agreed by all three; voices and ElevenLabs SDK chosen — @harry [conflicts: @saliha]
 - **Where:** `context` @ `4856110` (Harry's brief, `decisions.md` D7, D12, D13) · merged to `main`: this file only
@@ -94,7 +103,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **⚠️ Conflicts:** @saliha: the Nemotron live lines should match the conversational style (Open board row)
 - **📨 Needs:** @saliha: conversational live lines; mirror `reinspect` into PRD 7.3 / §0 and Harry's brief
 - **Agreed by:** @harry, @nate, @saliha (`reinspect`)
-- **Status:** open
+- **Status:** resolved by @saliha 2026-11-14 04:30 (lines conversational, `reinspect` mirrored)
 
 ### 2026-11-14 03:55 — feat — Perception pipeline end to end on stand-in data (Block A, A1–A11) — @saliha [conflicts: @harry]
 - **Where:** `aiml-perception-saliha` @ `dd1c4d7` · merged to `main`: yes
