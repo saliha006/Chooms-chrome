@@ -12,6 +12,7 @@ connected here; the leader is teleop only and never driven (PRD §0).
 """
 
 import time
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -24,6 +25,12 @@ JOINT_MIN = np.array([-110.0, -100.0, -97.0, -95.0, -157.0, 0.0])
 JOINT_MAX = np.array([110.0, 100.0, 97.0, 95.0, 163.0, 100.0])
 MAX_STEP_DEG = 5.0  # speed cap: largest change per joint per act() call (150 deg/s at 30 Hz). TUNE with the arm watched
 CONTROL_HZ = 30
+
+
+@dataclass
+class MockObservation:
+    joint_positions: np.ndarray
+    timestamp: float
 
 
 class MockRobot:
@@ -44,8 +51,8 @@ class MockRobot:
     def is_connected(self) -> bool:
         return self.connected
 
-    def get_observation(self):
-        return type("Obs", (), {"joint_positions": self.joints.copy(), "timestamp": time.monotonic()})()
+    def get_observation(self) -> MockObservation:
+        return MockObservation(self.joints.copy(), time.monotonic())
 
     def send_action(self, action: np.ndarray, *, goal_time: float = 0.1) -> None:
         if self.torque:
