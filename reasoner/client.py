@@ -20,9 +20,13 @@ import numpy as np
 from perception.contract import DefectSignal
 
 BASE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+ACTIONS = {"perfect": "place it in the blue bowl", "defective": "place it in the red bowl", "uncertain": "take a second look"}
+BAND = "score below t_low means perfect, above t_high means defective, in between means uncertain"
 SYSTEM = (
-    "You are the voice of a brick-sorting robot. In one sentence of at most 20 words, explain the verdict "
-    "using only the numbers given (score, thresholds) and what you see in the image. Never contradict the label. "
+    "You are a brick-sorting robot thinking aloud while you work. In one or two short sentences (at most 30 words), "
+    "say what you see on the brick, what the score means against your thresholds, and what you will do and why. "
+    "The label and action are already decided: explain them, never change them. Use only the numbers given. "
+    "Sound like a person talking, not a report. "
     'Reply as JSON: {"line": "..."}'
 )
 
@@ -36,9 +40,10 @@ def _image_url(crop_bgr: np.ndarray) -> str:
 
 def request_body(crop_bgr: np.ndarray, signal: DefectSignal, persona: str, model: str) -> dict:
     facts = {k: v for k, v in asdict(signal).items() if k in ("label", "score", "t_low", "t_high", "bbox", "view")}
+    facts |= {"action": ACTIONS[signal.label], "meaning": BAND}
     return {
         "model": model,
-        "max_tokens": 80,
+        "max_tokens": 120,
         "temperature": 0.3,
         "chat_template_kwargs": {"enable_thinking": False},  # Super VL reasons by default and spends max_tokens thinking
         "messages": [
