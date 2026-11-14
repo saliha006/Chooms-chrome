@@ -127,6 +127,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 22:30 — feat — Station fixes: knock-tolerant reads, readings and goto tools, recording protocol, follower calibration — @saliha [conflicts: @nate]
+- **Where:** `robotics-policies-nate` → `main` @ `3487684` · merged to `main`: yes
+- **Did:** `robot.io.observe` retries four times 50 ms apart, so a knock's supply dip no longer kills a run (a dead bus still raises); Studio's own SO-101 driver on the laptop is patched the same way (12 attempts, 20 ms apart; backup `so101.py.orig`, active after a backend restart). New `python -m robot.readings` (loose follower, joint medians per time window; for N8) and `python -m robot.goto <pose> --gripper 0` (moves to a taught pose at the speed cap, holds it, Enter sends it home; for the brick photos; `home` must be a resting pose because the arm goes limp at the end). `train/RECORDING.md`: Studio's dataset folder, `physicalai-studio hf dataset export`, PR #1403 is fixed. `config/so101_follower.json` updated from the 20:31 recalibration. Station: both arms recalibrated (190-240° per joint), teleop works; the leader's power plug had come out (all six servos silent).
+- **Touched:** `robot/io.py`, `robot/readings.py`, `robot/goto.py`, `robot/tests/`, `train/RECORDING.md`, `config/so101_follower.json`
+- **Brief task:** N8 tooling → 🟡 (readings tool built, readings pending) · knock dropouts → 🟡 (software side done)
+- **⚠️ Conflicts:** @nate: your `robot/` and `train/RECORDING.md`, through your branch; review when you can
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 20:20 — docs — Box-room docs; measured device numbers in the submission; trial report rehearsed — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` → `main` @ `f1d9279` · merged to `main`: yes
 - **Did:** `docs/demo-script.md` now follows the box room minute by minute (drive, hat by voice, tally, borderline, mug, summary) with a table-top fallback; `docs/station.md` builds the room and parked spot before anything is taught and adds the microphone check; README describes every voice feature with measured speeds. `docs/submission.md` and the README carry Saliha's measured device numbers (PaDiM INT8 p50 GPU 1.00 / NPU 7.17 / CPU 8.91 ms vs PyTorch 17.27 ms; net 33 / 68 / 300 mJ; NPU ~11 W and steady over 5 min; ACT on the NPU 8.9 ms), marked as stand-in-brick numbers until the real-brick re-run. `bench.trials` ran first time on a 20-brick rehearsal log (20/20, 19/20 with a planted mistake named); the morning steps are in `docs/trials-slide.md`. The wheel base may be dropped (team discussing, not decided): every voice feature stays; the drive lines only run when `cell.approach` is set.
