@@ -103,10 +103,10 @@ def connect(port: str | None = None, calibration: str | None = None, mock: bool 
     if mock:
         _robot, _per_degree = MockRobot(), np.ones(len(JOINTS))
     else:
-        from physicalai.robot.so101 import SO101  # hardware import stays out of mock runs and tests
-
         if calibration is None:
             raise ValueError("the follower needs its calibration file: normalized units and the speed cap come from it")
+        from physicalai.robot.so101 import SO101  # hardware import stays out of mock runs and tests
+
         _per_degree = per_degree(calibration)
         _robot = SO101(port, calibration=calibration, role="follower", unit="normalized")
     _robot.connect()

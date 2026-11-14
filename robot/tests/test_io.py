@@ -53,6 +53,8 @@ def test_observe_needs_connect():
 def test_degree_sizes_follow_each_joints_calibrated_range(tmp_path):
     import json
 
+    pytest.importorskip("physicalai.robot.so101")  # the calibration reader is the robot package's
+
     joints = {name: {"id": i + 1, "drive_mode": 0, "homing_offset": 0, "range_min": 1000, "range_max": 3000}
               for i, name in enumerate(io.JOINTS)}
     joints["wrist_roll"].update(range_min=0, range_max=4095)  # full turn
