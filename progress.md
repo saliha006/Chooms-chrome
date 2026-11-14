@@ -40,7 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
-| 2026-11-14 04:30 | @saliha | @nate | ⚠️ conflict | **Saliha (doc owner) asked me to write your hardware-free Block A code on `robotics-policies-nate`**, since you have less Claude usage: `robot/io.py` + `MockRobot`, `policies/act.py` + `policies/smolvla.py` (Mover), `train/modal_train.py` (+ `--episodes`, `sweep`), `train/RECORDING.md`, `train/runs.md`. **You keep** Modal login and runs, the export test on real checkpoints, Studio, calibration, recording, every robot slot. `git pull` before you push to that branch; say stop on this row if you object | 2026-11-14 04:30 |
+| 2026-11-14 05:15 | @saliha | @nate | 📨 waiting on | **Your Block A code is on `main` (`ac2e2f2`)**: review it; then `modal token new`, add a Modal secret `huggingface` (HF_TOKEN), run the A2 smoke (`modal run train/modal_train.py --dataset lerobot/svla_so100_pickplace --steps 200`) and the A3 export test on those checkpoints. Pick the 🟠 in `train/RECORDING.md` | 2026-11-14 05:15 |
 | 2026-11-14 01:35 | @saliha | @all | ⚠️ conflict | **Branches renamed again, by discipline:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry` (older rows below use the previous names; none were pushed yet). New file **`decisions.md`** on `context` (design choices and why, for pitching): your agent updates it on its own as you build (CLAUDE.md §4a). Re-sync from `context` | 2026-11-14 01:35 |
 | 2026-11-14 01:00 | @saliha | @all | 🔀 scope proposal | **PRD v2.3 on `context` (`b423fc4`), re-sync.** The team vision is now written in: Intel task first (accurate, smooth, quick); then the robot **explains its reasoning out loud live** (Nemotron writes, ElevenLabs speaks) and an **obstacle or cowboy hat flips it into a cowboy persona**. NVIDIA Nemotron is in (@saliha, `reasoner/`). Aiven = Kafka streaming → PostgreSQL (@harry). Modal = training + logs only; the F16 dashboard is dropped (no frontend). **Branches renamed, one per person:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`. Contract additions in PRD 7.3 (`narrator.trigger`, `reasoner.explain`, `reasoner.hat_seen`) need @harry's yes before the 01:00 freeze. **@nate 01:42: yes** | 2026-11-14 01:00 |
 | 2026-11-14 00:35 | @saliha | @all | 🔀 scope proposal | **PRD v2.2 on `context` (`84364a8`), re-sync.** New 🆕 items in every brief from the Junction challenge page + side-track pages: F11 demo-count sweep on Modal (@nate), F12 power/energy/thermal benchmark (@saliha), F13 shared cameras (@harry), F14 shifted + pile trials (@nate @harry), F15 Aiven drift alarm + more tables (@harry), F16 optional Modal dashboard (@harry), F4 now includes a re-grasp. Object = Duplo, cameras = top + inspection + wrist. Say no on this row if you object to any item in your brief. **@nate 01:42: yes** | 2026-11-14 00:35 |
@@ -57,7 +57,7 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A: `reinspect` agreed (waiting on @harry); next the Modal script and `MockRobot` |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A code on `main` (written by Saliha's agent); next: Modal login + smoke run, export test |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1, A2 done (interfaces, configs, mocks on `main`); next A2b shared capture, A3 `run.py` |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
@@ -77,12 +77,22 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## 📊 Latest (volatile facts live only here)
 - **Plan (2026-11-14 01:35):** PRD v2.4 + `decisions.md` on `context` @ `c67ba2b` (Nate's brief and `decisions.md` D7 updated).
+- **robot/policies/train (2026-11-14 05:15):** `main` @ `ac2e2f2`: whole suite 55 pass (4 slow skipped); Modal not yet run.
 - **perception (2026-11-14 04:30):** `main` @ `99f1d09`: 28 tests pass (4 slow); live Nemotron line 1.7–2.7 s. Not yet run on the Intel laptop or real bricks.
 - **`main` (2026-11-14 00:10):** `README.md` + `progress.md` only; no code yet. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 05:15 — feat — Nate's hardware-free Block A: robot I/O + MockRobot, learned Mover, Modal training — @saliha (for @nate) [conflicts: @nate @harry]
+- **Where:** `robotics-policies-nate` @ `ac2e2f2` · merged to `main`: yes
+- **Did:** Written by Saliha's agent at the doc owner's request (04:30 board row). `robot/io.py` on the physicalai SO-101 driver with joint limits + a 5°/step speed cap and `MockRobot`; `policies/mover.py` `LearnedMover` (ACT pick, SmolVLA place, `reinspect` as agreed); `train/modal_train.py` (LeRobot 0.7 on an A100, `--episodes`, `--sweep` 18/36/54); `train/RECORDING.md`, `runs.md`, `rejected.md`. 24 tests; whole suite 55 pass.
+- **Touched:** `robot/`, `policies/`, `train/` (Nate's paths, with the doc owner's go-ahead)
+- **Brief task:** Nate A4, A4b, A5, A6, A7 → ✅ · A1, A8 → 🟡 (need Nate's Modal login + smoke run) · A2, A3 → ⬜ (Nate)
+- **⚠️ Conflicts:** @nate: review the code before Saturday; TUNE values are marked; one 🟠 choice in `RECORDING.md` (hold back 2 grid positions or not). @harry: `fallback/scripted.py` can call `robot.io.move_to(pose, seconds)`; `io.connect(mock=True)` gives you `MockRobot`
+- **📨 Needs:** @nate: `modal token new`, a Modal secret `huggingface` with `HF_TOKEN`, then `modal run train/modal_train.py --dataset lerobot/svla_so100_pickplace --steps 200`
+- **Status:** open
 
 ### 2026-11-14 04:23 — merge — A2: `config/*.yaml` and the mocks — @harry [conflicts: @nate @saliha]
 - **Where:** `systems-voice-harry` @ `81f946d` · merged to `main`: yes
