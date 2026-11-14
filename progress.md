@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 07:15 | @saliha | @all | 🔀 scope proposal | **PRD v2.5 on `context` (`5da0552`), re-sync.** A research pass (6 research agents + design + critic) put an ordered 🆕 v2.5 block at the top of each brief's ▶ Current tasks. Same vision. Highlights: no RL (D1, numbers in), every stage verified with reason codes/deadlines (D22), recovery order look-again → roll → re-grasp (D7), two fixed VLA strings + language-swap test + single-colour ACT hedge (D23), device/efficiency measured (D24), Nemotron advisory only (D25), **red-lego smoke test first** (D26). Bugs listed per person. Say no on this row to anything in your block | 2026-11-14 07:15 |
 | 2026-11-14 05:32 | @harry | @nate | 📨 waiting on | **E-stop check in `robot/io.py`** (decisions.md D21, @harry chose B): please add at the top of `act()`: `if estop.requested(): torque_off(); raise estop.EStopped()` with `from common import estop`. Then E stops learned-policy motion within one control step too (today only `ScriptedMover` and the stage boundaries check it). Keeps one thread on the motors; no lock needed | 2026-11-14 05:32 |
 | 2026-11-14 05:32 | @harry | @saliha | 📨 waiting on | **`opencv-python` instead of `opencv-python-headless`** in `perception/requirements.txt`: mission control (F6) needs a window, the headless build has none, and the two can't be installed together. Same library and API; perception code is unaffected | 2026-11-14 05:32 |
 | 2026-11-14 06:00 | @saliha | @nate | ⚠️ conflict | Kept **your** `train/` rework (D20) as the best version and dropped my overlapping edits; added one thing on top in `train/modal_train.py` (`38ce0cb`): it uses your `huggingface` Modal secret, or forwards `HF_TOKEN` from the shell when that secret isn't set up (fresh machine). Tests green. `git pull` before your next push | 2026-11-14 06:00 |
@@ -90,6 +91,16 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 07:15 — scope — PRD v2.5 from a research pass: verified stages, recovery order, honest evaluation, smoke test on public data, no RL — @saliha [conflicts: @nate @harry]
+- **Where:** `context` @ `5da0552` · merged to `main`: n/a (docs)
+- **Did:** Ran a research pass at Saliha's request (current-state map, 4 domain agents, a broad web/code/data search, a system-design agent, a harsh critic). Folded the accepted CORE items, bugs and ranked add-ons into PRD §0 v2.5, the three briefs (new top blocks), decisions.md (D1 RL numbers, D5–D7 note, D22–D26; Harry's D21 kept) and CLAUDE.md (cut order). No contract change to `common/interfaces.py`. Code reuse confirmed allowed on site.
+- **Touched:** `prd.md`, `decisions.md`, `CLAUDE.md`, all briefs, `handoff/nate-catch-up.md`
+- **Brief task:** none
+- **⚠️ Conflicts:** @harry: `run.py` reason enum, deadlines, PAUSE_HUMAN, second-view and `rules.yaml` bugs (H1–H2). @nate: red-lego smoke test first, early exit + abort, gripper band, wrist roll-back bug, SmolVLA recipe gaps (N1–N4)
+- **📨 Needs:** @harry: yes to `perception/scene.py` (zone gate + bowl-region check) being called from `run.py`
+- **Agreed by:** @saliha (doc owner); teammates asked on the Open board
+- **Status:** open
 
 ### 2026-11-14 05:32 — merge — A4 mission control + e-stop path (D21) — @harry [conflicts: @nate @saliha]
 - **Where:** `systems-voice-harry` @ `4d28398` · merged to `main`: yes
