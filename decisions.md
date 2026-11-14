@@ -138,7 +138,7 @@
 - **Why:** it makes the robot memorable and shows the voice layer reacting to the physical world, without touching the control path. The obstacle trigger uses local depth so it works offline.
 - **Alternatives rejected:** a persona picked by the operator only (not reactive).
 - **Trade-off / risk:** the personality layer is cut before any task gate slips; a hat in the workspace must be allowed under the safety rules (asked at the mentor session).
-- **Evidence:** `narrator/persona.py` (@harry, `main` `ce9a437`): obstacle or H → cowboy with one cached exclamation; back to calm through the half-way line once every trigger has cleared and one brick is done; H is one-shot (no "hat gone" signal; Harry 16:00). 9 tests incl. two threads triggering at once. Switch time on the real table: TBD.
+- **Evidence:** `narrator/persona.py` (@harry, `main` `ce9a437`): obstacle or H → cowboy with one cached exclamation; back to calm through the half-way line once every trigger has cleared and one brick is done; H is one-shot (no "hat gone" signal; Harry 16:00). 9 tests incl. two threads triggering at once. Switch time on the real table: TBD. **18:10:** an unfamiliar object is now named out loud: the cached "Holy smokes!" at once, then a naming model (Saliha's pick) gives a short name off the control thread and the cowboy says "Holy smokes, there's a coffee mug in my zone!" if it comes back within 3 s (`narrator/naming.py`; stand-in model named it in ~0.8 s). On the venue Wi-Fi ElevenLabs stalled 6–12 s at times, so the live line was dropped; the demo runs on a phone hotspot.
 - **Pitch line:** "The robot reacts to the world and changes its voice, then calms down."
 
 ## E. Data and cloud
