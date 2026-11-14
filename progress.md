@@ -40,7 +40,6 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
-| 2026-11-14 05:52 | @harry | @nate | 📨 waiting on | **Stage deadline for N2's `abort_event`:** `run.py` arms `common.deadline` around PICK, REINSPECT, PLACE and HOME (`DEADLINE_S`, TUNE). In `LearnedMover`, pass `abort_event=deadline.abort` (a `threading.Event`, `from common import deadline`) to `run_episode` and return `False` when it fires; `run.py` turns that into a TIMEOUT reason. `ScriptedMover` already does this | 2026-11-14 05:52 |
 | 2026-11-14 07:15 | @saliha | @all | 🔀 scope proposal | **PRD v2.5 on `context` (`5da0552`), re-sync.** A research pass (6 research agents + design + critic) put an ordered 🆕 v2.5 block at the top of each brief's ▶ Current tasks. Same vision. Highlights: no RL (D1, numbers in), every stage verified with reason codes/deadlines (D22), recovery order look-again → roll → re-grasp (D7), two fixed VLA strings + language-swap test + single-colour ACT hedge (D23), device/efficiency measured (D24), Nemotron advisory only (D25), **red-lego smoke test first** (D26). Bugs listed per person. Say no on this row to anything in your block. **@harry 05:41: yes** to the whole block, and yes to `run.py` calling `perception/scene.py` (zone gate + bowl-region check). **@nate 05:54: yes** to the whole block; N1's ACT export goes through Studio's Python API or runs on Modal (the `physicalai` CLI crashes on Windows: `fcntl`) | 2026-11-14 07:15 |
 | 2026-11-14 05:32 | @harry | @saliha | 📨 waiting on | **`opencv-python` instead of `opencv-python-headless`** in `perception/requirements.txt`: mission control (F6) needs a window, the headless build has none, and the two can't be installed together. Same library and API; perception code is unaffected | 2026-11-14 05:32 |
 | 2026-11-14 05:12 | @nate | @all | 🔀 scope proposal | **Training stack and F14 positions changed in my area** (`main` @ `8bc38a6`, `decisions.md` D20): ACT now trains with **Physical AI Studio's trainer** (`physicalai fit`), so it exports straight into the `physicalai` runtime; SmolVLA stays on LeRobot (Studio's SmolVLA loader is unfinished). ACT demos: **all 9 positions × 6, recorded in rounds**. @harry: F14's "new positions" trials use only the off-grid spots. Say no on this row if you object | 2026-11-14 05:12 |
@@ -61,7 +60,7 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | A2: ACT training on Modal, SmolVLA waits on v2.5 N1 (camera rename); e-stop check in `robot/io.act` done; next: v2.5 yes/no, then N1 |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed (red-lego, cameras mapped); N2 done; ACT smoke still training on Modal; next: ACT export test (N1), then N3 |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4 done (H3 clips not generated yet); next H6 physicalai notebook, H7 ReasonTrace panel |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
@@ -81,14 +80,23 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## 📊 Latest (volatile facts live only here)
 - **Plan (2026-11-14 05:47):** PRD v2.5, `context` @ `5da0552`.
-- **robot/policies/train (2026-11-14 05:47):** `main` @ `f6a9f65`: 64 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped); mock loop sorts 5 bricks.
-- **Modal A2 (2026-11-14 05:47):** SmolVLA image fixed (LeRobot `training` extra), now stops on camera names (`camera1..3` expected; v2.5 N1); ACT via Studio training, result pending.
+- **robot/policies/train (2026-11-14 06:01):** `main` @ `945310a`: 79 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped); mock loop sorts 5 bricks.
+- **Modal (2026-11-14 06:01):** SmolVLA 200 steps on the red-lego set: 1.8 min, ~5 steps/s, loss 0.287, AV1 decodes, checkpoint in the `sortsense-runs` volume (`train/runs.md`). ACT via Studio on the public set: still in Studio's one-off quantile pass (~40 s per episode), result pending.
 - **perception (2026-11-14 04:30):** `main` @ `99f1d09`: 28 tests pass (4 slow); live Nemotron line 1.7–2.7 s. Not yet run on the Intel laptop or real bricks.
-- **`main` (2026-11-14 05:47):** @ `f6a9f65`, code in every area. Plan docs on `context`.
+- **`main` (2026-11-14 06:01):** @ `945310a`, code in every area. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 06:01 — feat — N1 SmolVLA smoke passes (camera mapping); N2 early exit + stage deadline in the policy loop — @nate [conflicts: @harry]
+- **Where:** `robotics-policies-nate` @ `945310a` · merged to `main`: yes
+- **Did:** `--cameras top,gripper,left` maps a dataset's cameras onto `smolvla_base`'s `camera1..3` (LeRobot `--rename_map`). SmolVLA 200 steps on `eruedas/so101_3cams_pickplace-red-lego_real`: 1.8 min on an A100, ~5 steps/s, loss 0.287, AV1 video decodes, checkpoint saved (`train/runs.md`). N2: `run_episode` takes `stop()` (early exit) and `abort_event`; `LearnedMover` passes `common.deadline.abort` and returns `False` when it fires (Harry's request). 79 tests pass; mock loop sorts 5 bricks.
+- **Touched:** `train/commands.py`, `train/modal_train.py`, `train/runs.md`, `policies/episode.py`, `policies/mover.py`, tests
+- **Brief task:** N1 → 🟡 (SmolVLA ✅; ACT smoke + export next) · N2 → ✅ · A2 → SmolVLA part ✅
+- **⚠️ Conflicts:** @harry: `LearnedMover.pick_and_present` and `place` now return `False` once your stage deadline fires (no step is sent after it)
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 05:57 — merge — H3: a spoken line for every event and failure reason, calm + cowboy; clip generator — @harry [conflicts: @saliha]
 - **Where:** `systems-voice-harry` @ `6e597fe` · merged to `main`: yes
@@ -106,7 +114,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **Brief task:** H1 → ✅ done
 - **⚠️ Conflicts:** @nate: `LearnedMover` should pass `common.deadline.abort` as `abort_event` (board row). @saliha: `perception/scene.py` sets `cell.hold` for something tall and feeds the bowl-region check into PLACE's success; reason codes are ready for your `ReasonTrace` (S6)
 - **📨 Needs:** @nate: `abort_event=deadline.abort` in `LearnedMover`
-- **Status:** open
+- **Status:** @nate part resolved by @nate 2026-11-14 06:01 (`LearnedMover` passes it, `945310a`); @saliha part open
 
 ### 2026-11-14 05:47 — fix — E-stop check in `robot/io.act`; SmolVLA image gets LeRobot's training extra; sweep takes smaller sizes — @nate [conflicts: @harry]
 - **Where:** `robotics-policies-nate` @ `f6a9f65` · merged to `main`: yes
