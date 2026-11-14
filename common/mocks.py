@@ -1,5 +1,6 @@
 """Correct-shaped stand-ins so the whole loop runs with no hardware (`run.py --mock`)."""
 
+import time
 from itertools import cycle
 from pathlib import Path
 
@@ -14,8 +15,9 @@ IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp"}
 class MockCamera:
     """Cycles through a folder of images, or plain numbered frames when no folder is given."""
 
-    def __init__(self, folder: str | Path | None = None, size: tuple[int, int] = (480, 640)):
+    def __init__(self, folder: str | Path | None = None, size: tuple[int, int] = (480, 640), fps: float | None = None):
         self._size = size
+        self._period = 1 / fps if fps else 0.0
         self._count = 0
         self._paths = None
         if folder is not None:
@@ -25,6 +27,8 @@ class MockCamera:
             self._paths = cycle(paths)
 
     def read(self) -> np.ndarray:
+        # A real camera blocks until its next frame; pacing keeps a capture thread from spinning.
+        time.sleep(self._period)
         self._count += 1
         if self._paths is not None:
             return cv2.imread(str(next(self._paths)))
@@ -49,6 +53,19 @@ class MockInspector:
             t_low=self.T_LOW, t_high=self.T_HIGH, bbox=None, heatmap_path=None,
             model="mock", device="CPU", latency_ms=0.0,
         )
+
+
+class MockLocator:
+    """Reports `n` bricks in the pick zone, then an empty zone."""
+
+    def __init__(self, n: int = 5):
+        self._left = n
+
+    def next_brick(self) -> bool:
+        if self._left == 0:
+            return False
+        self._left -= 1
+        return True
 
 
 class MockMover:
