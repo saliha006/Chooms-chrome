@@ -1,7 +1,7 @@
-> **Status, 2026-11-14 00:55.** PRD v2.3: Intel task first (accurate, smooth, quick), personality layer on top; Modal = training + logs only, no frontend. Nothing built yet. Block A (Modal + export test) starts 00:45. Docs on `context`, board on `main`.
+> **Status, 2026-11-14 01:30.** Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3: Intel task first (accurate, smooth, quick), personality layer on top; Modal = training + logs only, no frontend. Nothing built yet. Block A (Modal + export test) starts 00:45. Docs on `context`, board on `main`.
 
-# Nate: robot and policies (Studio, ACT, SmolVLA, Modal)
-**GitHub:** `{{github}}` · **Branch:** `robot-policies-nate` (one branch for all your work) · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:55 by saliha
+# Nate: robotics and robot learning (robot I/O, imitation-learning policies, Modal training)
+**GitHub:** `{{github}}` · **Branch:** `robotics-policies-nate` (one branch for all your work) · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 01:30 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -89,6 +89,7 @@ Goal: remove the two biggest unknowns before the robot exists: **Modal training*
 - *(empty)*
 
 ## 5. Working-style notes for the agent
+- When you decide or finish something that changes the design, add or update its entry in `decisions.md` the same turn (CLAUDE.md §4a): facts and measured numbers only.
 - Options + a recommendation, no teaching notes unless asked. Flag scope creep at once. Spell out abbreviations once.
 - Hackathon pace: the smallest thing that passes its *Done when*.
 

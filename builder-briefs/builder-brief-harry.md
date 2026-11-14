@@ -1,7 +1,7 @@
-> **Status, 2026-11-14 00:55.** PRD v2.3: you own the personality layer: live reasoning voice and the cowboy switch (ElevenLabs), plus Aiven streaming. F16 dashboard dropped: no frontend. Repo exists (`saliha006/Chooms-chrome`; `main` has `README.md` + `progress.md`). The rest of Block A starts 00:45. Docs on `context`.
+> **Status, 2026-11-14 01:30.** Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3: you own the personality layer: live reasoning voice and the cowboy switch (ElevenLabs), plus Aiven streaming. F16 dashboard dropped: no frontend. Repo exists (`saliha006/Chooms-chrome`; `main` has `README.md` + `progress.md`). The rest of Block A starts 00:45. Docs on `context`.
 
-# Harry: integration, ElevenLabs personality voice, Aiven streaming, demo + submission
-**GitHub:** `{{github}}` · **Branch:** `integration-voice-harry` (one branch for all your work) · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 00:55 by saliha
+# Harry: systems and integration (orchestration, ElevenLabs voice, Aiven streaming, demo) + submission
+**GitHub:** `{{github}}` · **Branch:** `systems-voice-harry` (one branch for all your work) · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 01:30 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -88,6 +88,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - *(empty)*
 
 ## 5. Working-style notes for the agent
+- When you decide or finish something that changes the design, add or update its entry in `decisions.md` the same turn (CLAUDE.md §4a): facts and measured numbers only.
 - Options + a recommendation, no teaching notes unless asked. Flag scope creep at once. Spell out abbreviations once.
 - Hackathon pace: the smallest thing that passes its *Done when*.
 

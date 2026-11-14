@@ -1,7 +1,7 @@
-> **Status, 2026-11-14 00:55.** PRD v2.3 (team vision: Intel task first, then the live reasoning voice and the cowboy switch). You now also own the Nemotron reasoner. Nothing built yet. Block A (stand-in pipeline) starts 00:45. Docs on `context`, board on `main`.
+> **Status, 2026-11-14 01:30.** Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3 (team vision: Intel task first, then the live reasoning voice and the cowboy switch). You now also own the Nemotron reasoner. Nothing built yet. Block A (stand-in pipeline) starts 00:45. Docs on `context`, board on `main`.
 
-# Saliha: perception ML (Anomalib), OpenVINO, Nemotron reasoning + doc owner
-**GitHub:** `saliha006` · **Branch:** `perception-ml-saliha` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 00:55 by saliha
+# Saliha: AI/ML (computer vision, edge-AI optimisation, LLM reasoning) + doc owner
+**GitHub:** `saliha006` · **Branch:** `aiml-perception-saliha` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 01:30 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -95,6 +95,7 @@ Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday 
 - *(empty)*
 
 ## 5. Working-style notes for the agent
+- When you decide or finish something that changes the design, add or update its entry in `decisions.md` the same turn (CLAUDE.md §4a): facts and measured numbers only.
 - Verbosity Level 0: options + a recommendation, no teaching notes. Flag scope creep at once. Spell out abbreviations once.
 - Hackathon pace: the smallest thing that passes its *Done when*.
 

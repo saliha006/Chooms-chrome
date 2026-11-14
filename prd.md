@@ -5,8 +5,8 @@
 | Event | Junction 2026, Espoo |
 | Main track | **Intel x Ignite Next: Physical AI** (scored out of 100 by Intel) |
 | Side tracks | **ElevenLabs** (MLH: live reasoning voice + the cowboy personality switch, F7/F18) · **NVIDIA Nemotron 3.5 Super VL** (the reasoning brain behind the voice, F17) · **Aiven** (live event streaming that the cell reacts to, F15) · **Modal** (training + training logs only, F10/F11; **no frontend ever**, dropped if it would need one). Nothing else. |
-| Team | Saliha (perception ML, OpenVINO, Nemotron reasoning), Nate (robot and policies, Modal training), Harry (integration, ElevenLabs personality voice, Aiven streaming, demo) |
-| Version | v2.3, Sat 14 Nov 00:55 (v2.2 + the team's product vision: Intel task first, then the personality layer; changes listed in §0) |
+| Team | **AI/ML:** Saliha (perception ML, edge optimisation, Nemotron reasoning) · **Robotics and robot learning:** Nate (robot I/O, policies, Modal training) · **Systems and integration:** Harry (state machine, ElevenLabs voice, Aiven streaming, demo). See §1b |
+| Version | v2.4, Sat 14 Nov 01:30 (v2.3 + roles by discipline, branches renamed, `decisions.md`; changes listed in §0) |
 | **Hard deadline** | **Final submission SUNDAY 15 Nov 10:00** (Junction official). **Internal: everything submitted by 09:00 Sunday.** Ask the mentors whether 11:50 is our demo slot. |
 | Work blocks | **Block A:** tonight 00:45–02:30, at home, **no Intel laptop, no arms**. **Block B:** Sat 08:00 → Sun 09:00, all hardware. **Feature freeze Sat 23:00.** |
 
@@ -16,7 +16,7 @@
 **In force**
 - Only the follower arm moves; the leader is teleop only (Intel slides).
 - Contracts in §7.3 frozen at 01:00 Sat; changes need all three and a `progress.md` decision entry.
-- Docs: `CLAUDE.md`, `prd.md`, `builder-briefs/`, `skills/` live on the `context` branch; `progress.md` and code on `main` (a `.gitignore` keeps everything else local). **One branch per person:** `perception-ml-saliha`, `robot-policies-nate`, `integration-voice-harry`.
+- Docs: `CLAUDE.md`, `prd.md`, `builder-briefs/`, `skills/` live on the `context` branch; `progress.md` and code on `main` (a `.gitignore` keeps everything else local). **One branch per person:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`.
 - v2.1 fixes (2026-11-14 00:10): ACT = **54** episodes (9 start positions × 6); SmolVLA 19:00 gate follows Nate's brief (keep at ≥ 4/10 unless scripted placement is clearly better); Modal added to §13 Q5; Saliha's §10 slots aligned with Saliha's brief. Where §10 and a brief still differ on times, **the brief wins**.
 
 - **v2.2 (2026-11-14 00:30), from the Junction challenge page and side-track pages:**
@@ -26,6 +26,7 @@
   - New features: F11 demo-count sweep on Modal (Nate) · F12 power, energy and thermal benchmark (Saliha) · F13 shared capture (Harry) · F14 shifted/cluttered test (Nate + Harry) · F15 Aiven as system of record + drift alarm (Harry + Saliha) · F16 Modal live dashboard (Harry, optional, after the freeze is safe) · F17 Nemotron (pending).
   - Anomalib model choice: if the good bricks come in **several colours**, PaDiM's one-Gaussian-per-patch assumption breaks; use PatchCore or one PaDiM per colour (§7.2, Saliha's brief).
 
+- **v2.4 (2026-11-14 01:30):** roles grouped by discipline (§1b); branches renamed `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`; new shared file `decisions.md` (design choices, features and their reasons for pitching; agents keep it current, CLAUDE.md §4a).
 - **v2.3 (2026-11-14 00:55), the team's vision (§1a):**
   - **Priority 1, always:** the Intel task done accurately, with smooth arm motion and a reasonable cycle time. Nothing in the personality layer may slow or risk it.
   - **Priority 2, the twist:** the robot **explains its reasoning out loud, live**, in a cool, collected voice; an **obstacle** or a **cowboy hat** flips it into a **cowboy persona** ("Holy smokes!", cowboy accent and wording) until the moment passes, then it drifts back to calm (F7, F18).
@@ -56,6 +57,14 @@ On top of that it has a personality. It **talks through its reasoning while it w
 3. **Cowboy personality switch (ElevenLabs).** Triggers: an obstacle in the workspace (local RealSense depth, F18) or the cowboy hat in view or touched (Nemotron VL on the top view, plus the H key as a demo-safe backup). In: instant, with a cached "Holy smokes!". Out: once the trigger has cleared and one brick is done, one half-way line, then calm. **The motion never waits for a word.**
 4. **Side tracks ride on 2 and 3:** Nemotron is the brain (NVIDIA), the voice is the face (ElevenLabs), Kafka carries the events everyone reacts to (Aiven), and Modal trains the policies (Modal).
 5. **Never:** a frontend, anything on the control path that needs the network, a gag that costs a gate.
+
+## 1b. Roles by discipline
+| Discipline | Person | Sub-areas | Folders | Branch |
+|---|---|---|---|---|
+| **AI/ML** | Saliha | Computer vision (anomaly detection, Anomalib) · edge-AI optimisation (OpenVINO, quantisation, benchmarking, power) · LLM/VLM reasoning (Nemotron) | `perception/`, `bench/`, `reasoner/` | `aiml-perception-saliha` |
+| **Robotics and robot learning** | Nate | Robot I/O and calibration (SO-101, LeRobot) · imitation learning (ACT, SmolVLA, Physical AI Studio) · training infrastructure (Modal, datasets) | `robot/`, `policies/`, `train/` | `robotics-policies-nate` |
+| **Systems and integration** | Harry | Backend and orchestration (state machine, scripted fallback, mission control) · voice and UX (ElevenLabs, persona) · data engineering (Aiven Kafka and PostgreSQL) · demo and submission | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, docs | `systems-voice-harry` |
+Nate's work is also machine learning (policy learning), so two of us do ML; the split is by *what* is learned: Saliha's models see and reason, Nate's models move, Harry's code connects and speaks.
 
 ## 2. Where we win: how we weight effort
 Every criterion must be covered, but effort follows **points × how much we control the outcome**.
