@@ -6,7 +6,6 @@ missing, the cached clip for the same event plays instead, so the voice never wa
 """
 
 import logging
-import queue
 import tempfile
 import threading
 import time
@@ -20,7 +19,12 @@ _log = logging.getLogger("narrator.live")
 # Flash took 625-1563 ms per full line on the venue Wi-Fi (4 calls, 2026-11-14); 3 s keeps nearly every live line
 # while the voice lags the arm by about a second at most (Harry, 2026-11-14). The arm never waits either way.
 TIMEOUT_S = 3.0
-LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit", "drive", "arrived", "obstacle_named"}
+# Credits: a 20-brick run costs about 5.5-11k characters (Nate's estimate, 17:55). Past the run budget the cached
+# clips take over; below the account floor the run starts on cached lines only. Both TUNE.
+RUN_BUDGET_CHARS = 12_000
+ACCOUNT_FLOOR_CHARS = 10_000
+LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit", "drive", "arrived", "obstacle_named",
+               "next", "roll", "regrasp"}
 
 # Conversational on purpose: the robot thinks aloud. {where} is empty or " at the top left".
 TEMPLATES = {
@@ -52,6 +56,16 @@ DRIVE = {
 OBSTACLE = {
     "calm": "There's {thing} in my zone. That's not a brick, so I'll leave it alone.",
     "cowboy": "Holy smokes, there's {thing} in my zone! That ain't no brick, so I'm leavin' it be.",
+}
+
+# Between bricks and during recovery: only facts the audience can't see yet (the tally, the borderline score).
+STEPS = {
+    "calm": {"next": "That's {n} sorted so far: {perfect} perfect, {defective} defective. On to the next one.",
+             "roll": "Still {score}, right between my lines. Rolling it ninety degrees for a better look.",
+             "regrasp": "Still undecided at {score}. I'll set it down and pick it up fresh."},
+    "cowboy": {"next": "{n} down, partner: {perfect} clean, {defective} busted. Next one.",
+               "roll": "Still {score}, smack between my lines. Turnin' it ninety degrees for a better look.",
+               "regrasp": "Still can't call it at {score}. Settin' it down to grab it fresh."},
 }
 
 # run.py's `after` values -> what a person would say
@@ -86,6 +100,10 @@ def summary(persona: str, event: str, n: int = 0, perfect: int = 0, defective: i
 def compose(persona: str, event: str, score: float | None = None, t_low: float | None = None,
             t_high: float | None = None, where: str | None = None, after: str | None = None, **counts) -> str | None:
     """The live line for a verdict, or None when the numbers it needs are missing (then the cached clip plays)."""
+    if event == "next":
+        return STEPS[persona][event].format(**{k: counts.get(k, 0) for k in ("n", "perfect", "defective")})             if counts.get("n") else None
+    if event in ("roll", "regrasp"):
+        return None if score is None else STEPS[persona][event].format(score=_number(score))
     if event == "obstacle_named":
         name = counts.get("name")
         return OBSTACLE[persona].format(thing=with_article(name)) if name else None
@@ -107,17 +125,21 @@ def compose(persona: str, event: str, score: float | None = None, t_low: float |
 
 
 class Live:
-    """One worker thread: takes the newest request, synthesises it, hands the WAV (or the fallback) to `submit`."""
+    """Each line is synthesised on its own thread as soon as it is asked for, a few at once, so a line never waits
+    behind the one before it (at one line every ~3 s, a single queue made most of them late). Whatever comes back,
+    WAV or fallback, goes to `submit` only if no newer line has gone out already: the robot never says things out
+    of order."""
 
     def __init__(self, synth: Callable[[str, str], bytes], submit: Callable[[Path, bool], None],
-                 timeout_s: float = TIMEOUT_S):
+                 timeout_s: float = TIMEOUT_S, budget_chars: int = RUN_BUDGET_CHARS, parallel: int = 3):
         self._synth, self._submit, self.timeout_s = synth, submit, timeout_s
-        self._requests: queue.Queue = queue.Queue()
+        self.budget_chars, self.spent_chars = budget_chars, 0
         self._dir = Path(tempfile.mkdtemp(prefix="sortsense-live-"))
-        self._count = 0
+        self._lock = threading.Lock()
+        self._slots = threading.Semaphore(parallel)  # ElevenLabs limits concurrent requests per plan
+        self._asked = self._sent = self._pending = 0
         self._idle = threading.Event()
         self._idle.set()
-        threading.Thread(target=self._run, name="narrator-live", daemon=True).start()
 
     def warm_up(self) -> None:
         """Open the connection before the first brick, so its set-up cost isn't paid on a real verdict."""
@@ -132,40 +154,72 @@ class Live:
             _log.info("live voice warm-up failed (%s); cached lines will cover", type(exc).__name__)
 
     def speak(self, text: str, persona: str, fallback: Path | None, priority: bool = False) -> None:
-        self._idle.clear()
-        self._requests.put((text, persona, fallback, priority, time.monotonic()))
+        with self._lock:
+            self._asked += 1
+            self._pending += 1
+            self._idle.clear()
+            seq = self._asked
+        threading.Thread(target=self._say, args=(seq, text, persona, fallback, priority, time.monotonic()),
+                         name="narrator-live", daemon=True).start()
 
     def wait_idle(self, timeout_s: float) -> bool:
         """End of a run: the last line (the summary) is still being synthesised; let it reach the player."""
         return self._idle.wait(timeout_s)
 
-    def _run(self) -> None:
-        while True:
-            request = self._requests.get()
-            while not self._requests.empty():  # a newer line supersedes one not started yet
-                request = self._requests.get_nowait()
-            self._say(*request)
-            if self._requests.empty():
-                self._idle.set()
-
-    def _say(self, text: str, persona: str, fallback: Path | None, priority: bool, asked: float) -> None:
+    def _say(self, seq: int, text: str, persona: str, fallback: Path | None, priority: bool, asked: float) -> None:
         try:
-            audio = self._synth(text, persona)
+            self._send(seq, self._clip(seq, text, persona, fallback, asked), priority)
+        finally:
+            with self._lock:
+                self._pending -= 1
+                if not self._pending:
+                    self._idle.set()
+
+    def _clip(self, seq: int, text: str, persona: str, fallback: Path | None, asked: float) -> Path | None:
+        """The live WAV, or the fallback (None if there is none) when over budget, failed or late."""
+        cached = fallback if fallback is not None and fallback.exists() else None
+        with self._lock:
+            over = self.spent_chars + len(text) > self.budget_chars
+            if over and self.spent_chars <= self.budget_chars:
+                _log.warning("live voice budget of %d characters spent: cached lines from here", self.budget_chars)
+                self.spent_chars = self.budget_chars + 1
+            elif not over:
+                self.spent_chars += len(text)
+        if over:
+            return cached
+        try:
+            with self._slots:
+                audio = self._synth(text, persona)
             took = time.monotonic() - asked
             if took > self.timeout_s:
                 raise TimeoutError(f"{took:.2f} s")
-        except Exception as exc:  # network, quota or timeout: the cached clip says the same verdict
-            cached = fallback is not None and fallback.exists()
+        except Exception as exc:  # network, quota or timeout: the cached clip says the same thing, minus the numbers
             _log.info("live line %s (%s)", "fell back to the cached clip" if cached else "dropped, no cached clip",
                       type(exc).__name__)
-            if cached:
-                self._submit(fallback, priority)
-            return
-        self._count += 1
-        path = self._dir / f"line-{self._count % 8}.wav"  # a small ring: the player is done with older files
+            return cached
+        path = self._dir / f"line-{seq % 8}.wav"  # a small ring: the player is done with older files
         path.write_bytes(audio)
         _log.info("live line ready in %.0f ms", took * 1000)
-        self._submit(path, priority)
+        return path
+
+    def _send(self, seq: int, clip: Path | None, priority: bool) -> None:
+        with self._lock:
+            if clip is None or seq < self._sent:
+                return  # nothing to say, or a newer line already went out
+            self._sent = seq
+        self._submit(clip, priority)
+
+
+def credits_left(api_key: str) -> int | None:
+    """Characters left on the account, or None when the key may not read it (needs the user_read permission)."""
+    from elevenlabs.client import ElevenLabs
+
+    try:
+        sub = ElevenLabs(api_key=api_key).user.subscription.get(request_options={"timeout_in_seconds": 5, "max_retries": 0})
+        return sub.character_limit - sub.character_count
+    except Exception as exc:
+        _log.info("can't read the credit balance (%s); the run budget still applies", type(exc).__name__)
+        return None
 
 
 def elevenlabs_synth(voices: dict, api_key: str, timeout_s: float = TIMEOUT_S) -> Callable[[str, str], bytes]:

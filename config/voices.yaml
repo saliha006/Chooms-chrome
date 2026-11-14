@@ -4,3 +4,7 @@ cowboy: 0hh7H4ZVAtaGpm1VZyEN   # David, deep southern cowboy
 live_model: eleven_flash_v2_5
 cached_model: eleven_multilingual_v2   # fixed clips; eleven_v3 is more expressive if the account has it
 cached_format: wav_22050               # WAV straight from the API: no decoder needed to play it
+stt_model: scribe_v1                   # speech-to-text for "hat on / hat off" (needs the key's speech_to_text permission)
+listen:
+  device: default                      # arecord -l on the Intel laptop; e.g. plughw:1,0 for a USB mic
+  threshold: 600                       # TUNE: RMS loudness that counts as speech (room and servos below it)

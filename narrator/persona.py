@@ -1,17 +1,17 @@
 """CALM <-> COWBOY persona (PRD F18, A6b).
 
-An obstacle or the hat flips the robot to the cowboy at once, with a cached exclamation. It drifts back to calm
-through the half-way line once every trigger has cleared and one more brick is done. The hat has no "gone"
-signal (the H key), so it counts as cleared the moment it is seen (Harry, 2026-11-14).
+An obstacle or the hat flips the robot to the cowboy at once, with a cached line. The hat stays on until someone
+says it's off (or presses H again), and taking it off brings the calm voice straight back (Harry, 2026-11-14 18:45:
+"on until further notice"). An obstacle drifts back to calm through the half-way line once it has gone and one more
+brick is done.
 
-Called from the control thread (obstacles, bricks) and the window thread (H key), hence the lock.
+Called from the control thread (obstacles, bricks), the window thread (H key) and the listener (voice), hence the lock.
 """
 
 import threading
 from collections.abc import Callable
 
-EXCLAIM = {"obstacle": "obstacle", "hat": "yeehaw"}  # line keys in narrator/lines.py (cowboy)
-ONE_SHOT = {"hat"}
+EXCLAIM = {"obstacle": "obstacle", "hat": "hat_on"}  # line keys in narrator/lines.py (cowboy)
 
 
 class Persona:
@@ -21,18 +21,39 @@ class Persona:
         self.current = "calm"
         self._active: set[str] = set()
 
+    @property
+    def hat_on(self) -> bool:
+        return "hat" in self._active
+
     def trigger(self, kind: str) -> None:
         with self._lock:
-            if kind not in ONE_SHOT:
-                self._active.add(kind)
+            first = kind not in self._active
+            self._active.add(kind)
             flipped = self.current == "calm"
             self.current = "cowboy"
-        if flipped:
+        if flipped or (kind == "hat" and first):  # a hat on an already-cowboy robot still gets its line
             self._say(EXCLAIM[kind], persona="cowboy")
 
     def clear(self, kind: str) -> None:
         with self._lock:
             self._active.discard(kind)
+
+    def take_off_hat(self) -> None:
+        """Straight back to calm, unless an obstacle is still keeping the cowboy around."""
+        with self._lock:
+            had_it = "hat" in self._active
+            self._active.discard("hat")
+            back = had_it and self.current == "cowboy" and not self._active
+            if back:
+                self.current = "calm"
+        if back:
+            self._say("hat_off", persona="calm")
+
+    def toggle_hat(self) -> None:
+        if self.hat_on:
+            self.take_off_hat()
+        else:
+            self.trigger("hat")
 
     def brick_done(self) -> None:
         with self._lock:

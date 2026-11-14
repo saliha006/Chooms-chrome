@@ -325,3 +325,15 @@ def test_a_new_obstacle_is_sent_to_the_namer_once(make_cell, monkeypatch):
     cell.namer = Namer()
     cell.run()
     assert sent == [((8, 8, 3), None)]  # once while it stays; no pixel box until scene.Blob has one
+
+
+def test_the_robot_says_the_tally_between_bricks_and_each_recovery_step(make_cell, monkeypatch):
+    said = []
+    monkeypatch.setattr(run.narrator, "say", lambda event, **kw: said.append((event, kw)))
+    cell, _ = make_cell(("perfect", "uncertain", "uncertain", "uncertain", "uncertain"), bricks=2)
+    cell.run()
+    events = [event for event, _ in said]
+    assert events[0] == "first"
+    assert ("next", {"n": 1, "perfect": 1, "defective": 0, "rechecked": 0}) in said
+    assert events.index("roll") < events.index("regrasp")
+    assert set(said[events.index("roll")][1]) == {"score"}  # the borderline score it is about to recheck

@@ -1,3 +1,7 @@
 # Local client for train/modal_train.py (the Modal images install Studio's trainer and LeRobot themselves)
 modal==1.6.4
 pytest
+# train.audit and train.card read LeRobot's parquet files; train.card reads config/rules.yaml
+pandas
+pyarrow
+pyyaml

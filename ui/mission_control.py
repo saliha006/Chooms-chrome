@@ -68,7 +68,7 @@ def handle_key(key: int, control: Control) -> bool:
             return False
         control.cell.quit.set()
     elif key == "h":
-        narrator.trigger("hat")
+        narrator.toggle_hat()
     return True
 
 

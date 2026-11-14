@@ -1,5 +1,5 @@
 """SortSense cell: one brick at a time through the PRD 7.1 state machine.
-
+`   1`  123w`1q2` pp
     python run.py --mock                    # whole loop with stand-ins, no hardware
     python run.py --mock --headless         # same, no window (tests, SSH without a display)
     python run.py --scripted pick,place     # real station, scripted motion (the 15:30 gate)
@@ -134,6 +134,10 @@ class Cell:
         narrator.say("arrived", cm=travelled, seconds=time.monotonic() - started)
 
     def sort_one(self, brick_id: int) -> None:
+        if self.sorted:
+            narrator.say("next", n=self.sorted, **self.tally)
+        else:
+            narrator.say("first")
         # The arm is home here (start, or after the last place), so the bowls are in clear view.
         bowls_before = self._top_frame() if self.bowl_check else None
         self._pick(brick_id)
@@ -227,6 +231,7 @@ class Cell:
             narrator.say(signal.label, **spoken_numbers(signal), after="looked again")
             return signal.label
         for angle in chain["reinspect_angles"]:
+            narrator.say("roll" if angle else "regrasp", score=signal.score)
             with self._stage("REINSPECT", brick_id, note=f"angle {angle}") as row:
                 back = self.picker.reinspect(angle)
                 timed_out = deadline.expired()
@@ -507,6 +512,7 @@ def main() -> None:
     ap.add_argument("--headless", action="store_true", help="no window: start at once, Ctrl+C = e-stop")
     ap.add_argument("--aiven", action="store_true", help="also send a mock run to Aiven (real runs always do)")
     ap.add_argument("--no-live", action="store_true", help="cached voice lines only: no ElevenLabs calls during the run")
+    ap.add_argument("--no-listen", action="store_true", help="don't listen to the microphone (the H key still toggles the hat)")
     ap.add_argument("--drive", type=float, metavar="CM", help="--mock only: a stand-in base drives CM to the table first (rehearse the voice-over)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
@@ -521,6 +527,8 @@ def main() -> None:
     if not args.no_live:
         narrator.enable_live(load_config("voices.yaml"))
         cell.reasoner = None if args.mock else nemotron_line()
+    if not args.no_listen:
+        narrator.start_listening(load_config("voices.yaml"))
     events = Path("runs/mock-events.jsonl" if args.mock else "runs/events.jsonl")
     telemetry.start(events)
     sync_stop = threading.Event()

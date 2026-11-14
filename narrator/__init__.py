@@ -13,7 +13,7 @@ import time
 
 from narrator.cache import clip_path
 from narrator.lines import key_for, line_for
-from narrator.live import LIVE_EVENTS, Live, compose, elevenlabs_synth
+from narrator.live import ACCOUNT_FLOOR_CHARS, LIVE_EVENTS, Live, compose, credits_left, elevenlabs_synth
 from narrator.persona import EXCLAIM, Persona
 from narrator.player import Player, system_player
 
@@ -67,6 +67,15 @@ def clear(kind: str) -> None:
     _persona.clear(kind)
 
 
+def take_off_hat() -> None:
+    _persona.take_off_hat()
+
+
+def toggle_hat() -> None:
+    """The H key: the backup for saying it out loud."""
+    _persona.toggle_hat()
+
+
 def brick_done() -> None:
     _persona.brick_done()
 
@@ -81,9 +90,31 @@ def enable_live(voices: dict) -> bool:
     if not key:
         _log.info("ELEVENLABS_API_KEY not set: cached lines only")
         return False
+    left = credits_left(key)
+    if left is not None and left < ACCOUNT_FLOOR_CHARS:
+        _log.warning("only %d ElevenLabs credits left: cached lines only, keep them for the demo", left)
+        return False
     _live = Live(elevenlabs_synth(voices, key), _player.submit)
     _live.warm_up()
     return True
+
+
+def start_listening(voices: dict):
+    """Called once by run.py: hat on / hat off by voice (narrator/listen.py). None when it can't run."""
+    from dotenv import load_dotenv
+
+    from narrator.listen import Listener, elevenlabs_transcriber, microphone
+
+    load_dotenv()
+    key = os.environ.get("ELEVENLABS_API_KEY")
+    listen = voices.get("listen", {})
+    mic = microphone(listen.get("device", "default"))
+    if not key or mic is None:
+        _log.info("not listening (%s): the H key toggles the hat", "no key" if not key else "no arecord")
+        return None
+    actions = {"hat_on": lambda: trigger("hat"), "hat_off": take_off_hat}
+    return Listener(mic, elevenlabs_transcriber(key, voices.get("stt_model", "scribe_v1")),
+                    lambda meant: actions[meant](), listen.get("threshold", 600))
 
 
 def wait_idle(timeout_s: float = 10.0) -> bool:
