@@ -64,7 +64,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | All hardware-free tasks done (S1, S5, S6, bench, dance); next: 08:00 Intel laptop install (S2), 10:00 capture |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed; ACT smoke crash found and fixed (no forked loader workers), re-run on red-lego in flight (~07:15); next: ACT export test, then N3 |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Wired Saliha's scene check, ReasonTrace, dance; click tool ready for H5; next: station (H5, 15:30 gate) |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Voice clips committed; next: station (H5 setup + click tool, bowl check, 15:30 gate) |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -91,6 +91,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 11:41 — feat — H3 clips: 37 cached voice lines generated and committed; bowl check stays, built at the venue — @harry [conflicts: none]
+- **Where:** `systems-voice-harry` @ `7bd7d7b` · merged to `main`: yes
+- **Did:** `python -m narrator.cache` generated every fixed line in `narrator/lines.py` (calm `etWmxTqEKhIYyGKMpDcb`, cowboy David `0hh7H4ZVAtaGpm1VZyEN`, `eleven_multilingual_v2`, WAV 22 kHz mono): 37 clips, 1,632 characters of credit, 98 s of audio, 4.3 MB, all checked as valid WAV. Committed in `narrator/clips/` (Harry's call) so the Intel laptop speaks offline without the key. Playback (A6) still to wire. Bowl check (Saliha's `brick_in_bowl`): Harry wants it; the timing (home after each place vs later) is settled and tested at the venue.
+- **Touched:** `narrator/clips/`
+- **Brief task:** H3 → ✅ clips generated
+- **⚠️ Conflicts:** none
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 11:37 — merge — Saliha's scene check, ReasonTrace and dance wired into `run.py`; region click tool; fallback uses `io` thresholds — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` @ `ac268a7` · merged to `main`: yes
