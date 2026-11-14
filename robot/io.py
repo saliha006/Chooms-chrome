@@ -35,8 +35,8 @@ TICKS_PER_DEGREE = 4095 / 360  # the driver's own degree convention
 
 # Shared by the learned and scripted movers, so a tune on the arm changes one place. TUNE (PRD v2.5 N8).
 POSE_TOLERANCE_DEG = 8.0  # how close counts as "at the inspection pose"
-GRIPPER_EMPTY_BELOW = 10.0  # F5: shut on nothing reads 2.3; on a Duplo brick 19.2-19.8 (N8, Intel laptop, 2026-11-14 22:40)
-GRIPPER_HOLD_MAX = 35.0  # above this it is open, not holding (half open 25.7, wide 96.8; N8); margin for a firmer grip or another brick face
+GRIPPER_EMPTY_BELOW = 10.0  # F5: shut on nothing averages 1.5 (1.0-2.4), a Duplo brick 17.4 (15.2-19.8); N8, 3 runs, 2026-11-14
+GRIPPER_HOLD_MAX = 23.0  # above this it is open, not holding: half open averages 29.4 (25.7-31.8), wide 96.3; midway from the brick max 19.8
 GRIPPER_SETTLE_S = 0.3  # a held brick stops swinging after this long; read the band only then (decisions.md D22)
 GRIPPER_OPEN = 60.0  # opening used to release a brick
 CONTROL_HZ = 30

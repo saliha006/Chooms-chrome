@@ -13,11 +13,11 @@ FPS = 30
 TASKS = ["the brick is perfect, place it in the purple bowl", "the brick is defective, place it in the orange bowl"]
 
 
-def episode(index, seconds=10.0, end_gripper=30.0, task=0, pause=False, jump=False):
+def episode(index, seconds=10.0, end_gripper=17.0, task=0, pause=False, jump=False):
     """A steady sweep in normalized units (every arm joint inside -100..100), ending at a given gripper value."""
     n = int(seconds * FPS)
     t = np.linspace(0, 1, n)
-    state = np.stack([120 * t - 60, 90 * np.sin(3 * t), 40 * t, 30 * t, 180 * t - 90, np.full(n, 40.0)], axis=1)
+    state = np.stack([120 * t - 60, 90 * np.sin(3 * t), 40 * t, 30 * t, 180 * t - 90, np.linspace(40.0, end_gripper, n)], axis=1)
     state[:, :5] += np.random.default_rng(index).normal(0, 0.05, (n, 5))  # no two real episodes are identical
     if pause:  # stand still for 3 s, then carry on from the same pose
         state = np.concatenate([state[: n // 3], np.repeat(state[n // 3: n // 3 + 1], 3 * FPS, axis=0), state[n // 3:]])
@@ -59,7 +59,7 @@ def test_missing_camera_wrong_fps_and_wrong_strings_fail(tmp_path):
 
 
 def test_pick_must_end_holding_and_place_must_end_open(tmp_path):
-    root = write(tmp_path, [episode(i, end_gripper=io.GRIPPER_HOLD_MAX + 20, task=i % 2) for i in range(4)])
+    root = write(tmp_path, [episode(i, end_gripper=io.GRIPPER_OPEN, task=i % 2) for i in range(4)])
     assert any("outside the holding band" in f for f in audit(root, "pick").fails)
     assert not any("not open" in f for f in audit(root, "place").fails)
     assert any("not open" in f for f in audit(write(tmp_path / "b", [episode(i, end_gripper=5.0, task=i % 2) for i in range(4)]), "place").fails)
