@@ -1,7 +1,15 @@
 # Reliability slide (n = 20): draft for H8
 
-Fill from the 20 logged trials (Saturday 23:00–01:00) with `telemetry/report.sql` on the Aiven `events` table.
-Real runs only; mock runs are excluded by their `mock-` run id.
+Fill from the 20 logged trials (Saturday 23:00–01:00). The numbers and their 95% intervals come from Saliha's
+report, which reads the local event log and needs no network (run it on the Intel laptop):
+
+```bash
+python -m bench.trials runs/events.jsonl --truth truth.csv
+```
+
+`truth.csv` (`run_id,brick_id,truth`, truth = perfect or defective; `run_id` may be `*`) is written by whoever
+places the bricks, before each trial. `telemetry/report.sql` on the Aiven table gives the latency and reason-code
+breakdowns. Mock runs are excluded by their `mock-` run id in both.
 
 ## The slide
 
@@ -9,11 +17,12 @@ Real runs only; mock runs are excluded by their `mock-` run id.
 
 | | Result | Source (`report.sql`) |
 |---|---|---|
-| Sorted without help | k / 20 (95% CI from the table below) | query 1, `sorted` and `help_pauses` |
+| Sorted without help | k / 20 (95% CI) | `bench.trials` |
+| Correct bowl | k / 20 against `truth.csv` (95% CI), mistakes by name | `bench.trials` |
 | Why it asked for help | reason codes and counts | query 2 |
 | Needed a second look | n bricks, all resolved / flagged | query 4 |
 | Inspection latency (p50 / p95) and device | ms on the NPU | query 3, `INSPECT` row |
-| Cycle time | s per brick (bricks per minute) | query 3, sum of stage means |
+| Cycle time | s per brick (bricks per minute) | `bench.trials` |
 | Mode | which policy or scripted mover ran each stage | run header in the log |
 
 Say "k of 20 with a 95% interval of lo–hi%": twenty trials can't support a single precise percentage, and
@@ -37,7 +46,5 @@ judges trust a stated interval more than a bare one.
 
 ## Open before the trials
 
-- **Was each verdict right?** The `events` table records what the robot decided, not the brick's true label.
-  To report sorting accuracy (not just "sorted without help"), the trial operator has to note each brick's
-  true label. Agree how with Nate before 23:00 (owner of the trials: Nate + Harry).
+- **Who writes `truth.csv`** during the trials (the person placing the bricks): agree with Nate before 23:00.
 - Which bricks and positions: the F14 shifted / pile trials use the off-grid spots only (Nate, D20).
