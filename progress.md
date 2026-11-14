@@ -58,7 +58,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A: `reinspect` agreed (waiting on @harry); next the Modal script and `MockRobot` |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1 done (`common/interfaces.py` on `main`); next A2 configs + mocks |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1, A2 done (interfaces, configs, mocks on `main`); next A2b shared capture, A3 `run.py` |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -83,6 +83,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 04:23 — merge — A2: `config/*.yaml` and the mocks — @harry [conflicts: @nate @saliha]
+- **Where:** `systems-voice-harry` @ `81f946d` · merged to `main`: yes
+- **Did:** `config/rules.yaml` (PRD 7.3 verdict → instruction; uncertain → `reinspect_angles: [0]` then defective), `cameras.yaml` (roles `top`, `inspect`, `wrist`, each with its `DefectSignal.view` name; paths null until the station), `robot.yaml` (port and speed cap null: set at the station from the safety guidelines), `voices.yaml` (calm + David). `common/mocks.py`: `MockCamera` (folder of images or plain frames), `MockInspector` (label script, scores on the right side of the thresholds), `MockMover` (records calls; first N picks can fail). 11 tests pass.
+- **Touched:** `config/`, `common/`
+- **Brief task:** A2 → ✅ done
+- **⚠️ Conflicts:** @nate: `config/cameras.yaml` is shared, record with the same role names and paths. @saliha: `cameras.yaml` gives the `view` string per camera
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 04:30 — decision — Espoo time for everything; `reinspect` mirrored; Nemotron lines live and conversational — @saliha [conflicts: @nate @harry]
 - **Where:** `context` @ `053f5de`; `main` @ `99f1d09` · merged to `main`: yes

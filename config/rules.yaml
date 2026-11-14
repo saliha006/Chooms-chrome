@@ -1,0 +1,6 @@
+# Verdict -> what the robot does (PRD 7.3, R11). Edit here for the Challenge-Day rules.
+perfect: place the brick in the blue bowl
+defective: place the brick in the red bowl
+uncertain:
+  reinspect_angles: [0]   # 0 = put down and pick again, ±90 = wrist roll (decisions.md D7)
+  then: defective         # still uncertain after the reinspects -> treat as defective, said aloud
