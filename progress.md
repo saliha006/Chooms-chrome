@@ -137,7 +137,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ### 2026-11-15 01:40 — feat — Drive wired behind --base; energy per brick in every run; critic doc items — @harry [conflicts: @nate @saliha]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
-- **Did:** `run.py --base` opens a real run with Nate's `robot.drive.approach` (dock + stroke poses checked before anything moves, 60 s deadline, drive narration plays as built). `Cell.run` is wrapped in `bench.power.measure()`: each run logs package energy, average power, peak temperature and joules per brick (`ENERGY` row); none on machines without a readable RAPL counter. Docs: white plates or loose bricks (a coloured plate reads as one obstacle), Physical AI Studio as part of Intel's Robotics AI Suite, the drive teach/check steps and the RAPL chmod. 366 tests pass.
+- **Did:** `run.py --base` opens a real run with Nate's `robot.drive.approach` (dock + stroke poses checked before anything moves, 60 s deadline, drive narration plays as built). `Cell.run` is wrapped in `bench.power.measure()`: each run logs package energy, average power, peak temperature and joules per brick (`ENERGY` row); none on machines without a readable RAPL counter. Docs: white plates or loose bricks (a coloured plate reads as one obstacle), Physical AI Studio as part of Intel's Robotics AI Suite, the drive teach/check steps and the RAPL chmod. 364 tests pass (full suite after merging main).
 - **Touched:** `run.py`, `common/tests/`, `README.md`, `docs/`
 - **⚠️ Conflicts:** @nate: the drive is called from `run.py` now; @saliha: `run.py` imports `bench.power`
 - **📨 Needs:** none
