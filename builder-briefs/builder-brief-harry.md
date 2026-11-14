@@ -44,11 +44,15 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 ---
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 2026-11-14 15:08 BOWL COLOURS: our bowls are purple (perfect) and orange (defective); do all of this in ONE commit before Nate records SmolVLA
+1. `config/rules.yaml`: `perfect: the brick is perfect, place it in the purple bowl`, `defective: the brick is defective, place it in the orange bowl`.
+2. `fallback/scripted.py` `_bowl_for`: map the colour in the text to the pose: purple -> `bowl_blue`, orange -> `bowl_red` (keep accepting red/blue). The pose, mask and `config/*.yaml` names stay `bowl_blue`/`bowl_red` (roles).
+3. `narrator/lines.py`: "Blue bowl" -> "Purple bowl", "Red bowl" -> "Orange bowl" in both personas, then regenerate only those clips (`python -m narrator.cache`, your key); `common/tests/test_mocks.py` asserts the colours in `rules.yaml`: update it. Optional: `ui/click_regions.py` outline colours purple and orange.
 ### 🆕 2026-11-14 14:53 DO NOW, ranked (Saliha: who does what; manual = you at the station, agent = your coding agent in parallel)
 **Manual, you:** (1) H5 station: camera by-id paths, which one is the RealSense, click the zone and both bowls, teach the waypoints (re-teach any that moved after Nate's rehearsal); (2) the scripted full loop with the real Anomalib (the 15:30 gate): it needs Saliha's real-brick capture first, so agree a slot with Saliha; (3) if Aiven offers Kafka on our plan, create the service and the two topics.
 **Agent, now, in parallel:** (a) wire the place check into `run.py`: build a `bowl_check` from `scene.brick_in_bowl` and the clicked bowl masks and pass it to `LearnedMover(bowl_check=...)`; let `fallback/scripted.py` use `io.holding()` for its grasp check (same numbers as the learned mover); (b) **A6b** persona state machine (`narrator/persona.py`); (c) the drift alarm: call `perception.drift.drift` from your consumer (PostgreSQL is enough; Kafka only if the service exists); (d) **A8** README skeleton and the architecture diagram with the four layers named (perception, reasoning, planning, manipulation: PRD §5); (e) draft the H8 demo script and the n = 20 slide. If you want me to take (b) or (d), say so on the board.
 ### 🆕 2026-11-14 14:26 from Saliha (decisions.md D23, D31)
-1. ✅ *(14:40, `main` `5e99561`)* **`config/rules.yaml` strings:** `perfect: the brick is perfect, place it in the blue bowl` and `defective: the brick is defective, place it in the red bowl` (they carry the verdict; the VLA is recorded with exactly these). Tests that pass other strings keep working; `fallback/scripted.py` still reads "red bowl" / "blue bowl" from the text. Do it before Nate records SmolVLA.
+1. ✅ *(14:40, `main` `5e99561`)* **`config/rules.yaml` strings:** `perfect: the brick is perfect, place it in the purple bowl` and `defective: the brick is defective, place it in the orange bowl` (they carry the verdict; the VLA is recorded with exactly these). Tests that pass other strings keep working; `fallback/scripted.py` still reads "orange bowl" / "purple bowl" from the text. Do it before Nate records SmolVLA.
 2. **Layout:** Nate rehearses every stage by teleop before recording; if a tape dot or bowl moves, re-click the zone and bowls (`ui/click_regions.py`) and re-teach the waypoints that moved.
 ### 🆕 v2.5 research pass (2026-11-14 07:10): do these first, in order (same vision; PRD §0 v2.5, decisions.md D1, D7, D22–D26)
 *Must exist by 15:30: real-wired `run.py` with the scripted mover, shared capture on real cameras, real Inspector, localisation zone gate, grasp band and bowl-region checks, reason codes and deadlines, the recovery chain, JSONL telemetry, cached lines.*
@@ -92,7 +96,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 | Time | Status | Task | Done when |
 |---|---|---|---|
 | 08:00–09:00 | ⬜ | Mount the cameras and lamp, tape the pick zone (10×10 cm), inspection mark and bowls; `ls /dev/v4l/by-id/` → `cameras.yaml`; RealSense via `pyrealsense2`; SSH plus tmux set up for everyone | All 3 streams open by path |
-| 09:30–10:00 (robot) | ⬜ | Teach waypoints by hand-guiding: pick spot, inspection pose, red bowl, blue bowl, home | Scripted sort works |
+| 09:30–10:00 (robot) | ⬜ | Teach waypoints by hand-guiding: pick spot, inspection pose, orange bowl, purple bowl, home | Scripted sort works |
 | 10:00–10:30 | ⬜ | Hold the inspection pose for Saliha's capture | — |
 | 10:30–14:00 | ⬜ | Resets for Nate's recordings; in between, **F9 localization**: colour blob in the pick zone (overhead webcam) plus RealSense depth → brick present and position; stop when empty | Position logged |
 | **15:30 gate (robot)** | ⬜ | With Saliha: **scripted full loop with real Anomalib, 5 bricks, no human** | Pass; film it as the backup video v1 |
@@ -140,8 +144,8 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 ### Narrator templates (deterministic fallback when the reasoner is late; no LLM)
 | Event | Calm | Cowboy 🆕 |
 |---|---|---|
-| `perfect` | "Looks perfect. Blue bowl." | "Clean as a whistle. Blue bowl, partner." |
-| `defective` | "Defect near the {region}. Red bowl." | "Well I'll be, a mark near the {region}. Red bowl it is." |
+| `perfect` | "Looks perfect. Purple bowl." | "Clean as a whistle. Purple bowl, partner." |
+| `defective` | "Defect near the {region}. Orange bowl." | "Well I'll be, a mark near the {region}. Orange bowl it is." |
 | `uncertain` | "Not sure about this one, taking a second look." | "Hold your horses, lemme look again." |
 | `grasp_fail` | "Missed it, trying again." | "Dang, slipped. One more go." |
 | `help` | "I need a hand, going home." | "Need a hand here, headin' home." |
