@@ -24,7 +24,7 @@ POSES = {
 class BrickRobot(io.MockRobot):
     def send_action(self, action, *, goal_time=0.1):
         action = np.asarray(action, float).copy()
-        action[io.GRIPPER] = max(action[io.GRIPPER], 30.0)  # a brick is always in the gripper's way
+        action[io.GRIPPER] = max(action[io.GRIPPER], 17.0)  # a brick is always in the gripper's way (N8: a Duplo brick reads ~17)
         super().send_action(action, goal_time=goal_time)
 
 

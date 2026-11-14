@@ -20,7 +20,7 @@ POSES = {
     "bowl_red": [-15, 5, 0, 0, 0, 0],
     "bowl_blue": [20, 5, 0, 0, 0, 0],
 }
-BRICK_WIDTH = 30.0  # gripper reading when closed on a brick
+BRICK_WIDTH = 17.0  # gripper reading when closed on a Duplo brick (N8 average 17.4, Intel laptop 2026-11-14)
 
 
 class BrickRobot(io.MockRobot):

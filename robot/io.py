@@ -35,11 +35,13 @@ TICKS_PER_DEGREE = 4095 / 360  # the driver's own degree convention
 
 # Shared by the learned and scripted movers, so a tune on the arm changes one place. TUNE (PRD v2.5 N8).
 POSE_TOLERANCE_DEG = 8.0  # how close counts as "at the inspection pose"
-GRIPPER_EMPTY_BELOW = 5.0  # F5: a fully closed gripper (0-100) means nothing is in it
-GRIPPER_HOLD_MAX = 45.0  # above this the gripper is open, not holding: a dropped or never-closed grip. TUNE from the N8 readings
+GRIPPER_EMPTY_BELOW = 10.0  # F5: shut on nothing averages 1.5 (1.0-2.4), a Duplo brick 17.4 (15.2-19.8); N8, 3 runs, 2026-11-14
+GRIPPER_HOLD_MAX = 23.0  # above this it is open, not holding: half open averages 29.4 (25.7-31.8), wide 96.3; midway from the brick max 19.8
 GRIPPER_SETTLE_S = 0.3  # a held brick stops swinging after this long; read the band only then (decisions.md D22)
 GRIPPER_OPEN = 60.0  # opening used to release a brick
 CONTROL_HZ = 30
+OBSERVE_RETRIES = 4  # extra reads after a failed one, OBSERVE_RETRY_S apart (~0.2 s in all)
+OBSERVE_RETRY_S = 0.05
 
 
 @dataclass
@@ -117,6 +119,13 @@ def robot():
 
 
 def observe() -> np.ndarray:
+    # A knock on the arm dips the servo supply for tens of ms and the driver's own quick retries all land inside
+    # the dip (Studio logged `comm result -6` this way); waiting a little rides through it, a dead bus still raises.
+    for _ in range(OBSERVE_RETRIES):
+        try:
+            return np.asarray(robot().get_observation().joint_positions, float)
+        except ConnectionError:
+            time.sleep(OBSERVE_RETRY_S)
     return np.asarray(robot().get_observation().joint_positions, float)
 
 

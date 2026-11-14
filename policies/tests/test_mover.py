@@ -10,8 +10,8 @@ from policies.mover import LearnedMover
 from robot import io
 
 HOME = np.zeros(6)
-INSPECT = np.array([0.0, -30, 40, 20, 0, 30])  # gripper 30 = holding a brick
-DROP = np.array([10.0, 20, 20, 0, 0, 30])
+INSPECT = np.array([0.0, -30, 40, 20, 0, 17])  # gripper 17 = holding a Duplo brick (N8 average 17.4)
+DROP = np.array([10.0, 20, 20, 0, 0, 17])
 
 
 class FakePolicy:
@@ -119,7 +119,7 @@ def test_estop_and_home(mover):
     assert not io.robot().torque
 
 
-@pytest.mark.parametrize(("gripper", "held"), [(4.0, False), (io.GRIPPER_EMPTY_BELOW, True), (30.0, True),
+@pytest.mark.parametrize(("gripper", "held"), [(4.0, False), (io.GRIPPER_EMPTY_BELOW, True), (17.0, True),
                                                (io.GRIPPER_HOLD_MAX, True), (io.GRIPPER_HOLD_MAX + 1, False)])
 def test_holding_is_a_band_not_just_not_closed(mover, gripper, held):
     joints = io.observe()
