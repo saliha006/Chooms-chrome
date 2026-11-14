@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 16:33 | @nate | @all | ⚠️ conflict | **Gates move (recording has not started at 16:33; the brief's rule):** ACT gate about **21:30** (was 17:00) and SmolVLA gate about **22:15** (was 19:00). Estimates: recording about 17:30–19:30 after the Intel laptop drivers, rehearsal and a test episode, then the brief's 2–3 h of training. The 23:00 freeze stays; the scripted loop is the insurance meanwhile | 2026-11-14 16:33 |
 | 2026-11-14 16:19 | @saliha | @nate | ⚠️ conflict | **N4 done on `main` (`668933e`): `train/commands.py` `smolvla()`** now passes `--policy.scheduler_decay_steps=<steps>` (LeRobot's default of 30,000 would leave a 10k run near the peak learning rate) and `--save_freq=2500`; the optional flags stay last (your tests read them by position); 14 train tests pass. Batch size stays 8: raise it only after you see the GPU memory (hyperparameters come after the data audit, D32). Not touched: your `launch.py` and `modal_train.py`. N5 (colour hedge) is still open: say if you want me to take it | 2026-11-14 16:19 |
 | 2026-11-14 16:19 | @saliha | @harry | 📨 for you | **`python -m bench.trials runs/events.jsonl --truth truth.csv` is on `main`**: from your event log it prints sorted-without-help, correct bowl against what each brick really is, the mistakes by name, cycle time and bricks per minute, each with an exact 95% interval; it needs no Aiven and ignores `mock-` runs. `truth.csv` columns: `run_id,brick_id,truth` (`*` for every run; truth is `perfect` or `defective`): whoever places the bricks writes it during the 20 trials. Paste its table into `docs/trials-slide.md` | 2026-11-14 16:19 |
 | 2026-11-14 16:15 | @nate | @all | 🔀 scope proposal | **Base move (Saliha's parked wheeled-platform item, option b):** the mentors say unclamping is allowed (Nate asked). Nate's call: **dock now** (tape outline and a stop block behind the base; the base stays clamped in the dock for every recording and run), and **the move itself only after the 23:00 freeze**, on the parked item's conditions (20 trials logged, README and video safe, a free robot slot). @harry: yes or no. @saliha: please add the mentor answer and the dock to the parked item | 2026-11-14 16:15 |
@@ -70,7 +71,7 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Hardware-free work done (S1, S5, S6, bench, dance, drift rule, in-graph preprocessing, operator support); next: Intel laptop install (S2), 10:00 capture, S4 evaluate, S7 runs |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Agent: N3 reviewed, durable Modal launches, RECORDING current, red-lego ACT smoke running. Manual next: Intel laptop drivers (16:01 row), rehearsal and test episode, then record |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Agent: SmolVLA export check running, red-lego ACT smoke training; gates moved (ACT ~21:30, SmolVLA ~22:15). Manual next: Intel laptop drivers, dock and clamp, rehearsal, test episode, record |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | A6 playback done, A5 PostgreSQL live; next: station (H5, bowl check, 15:30 gate); Kafka waits on the service |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
@@ -101,6 +102,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 16:33 — decision — ACT and SmolVLA gates move to about 21:30 and 22:15; OpenVINO export check added — @nate [conflicts: @saliha @harry]
+- **Where:** `robotics-policies-nate` (this push) · merged to `main`: yes
+- **Did:** Recording had not started by 16:30, so per the brief the 17:00 ACT gate moves to about 21:30 and the 19:00 SmolVLA gate to about 22:15 (estimates; the 23:00 freeze stays). Added `train/export.py`: exports a job's latest checkpoint from the Modal volume with Studio's Python API and compiles and runs the IR on CPU, on Modal's Linux since the `physicalai` CLI does not start on Windows; first run: the LeRobot-trained SmolVLA smoke checkpoint exported through Studio's API to OpenVINO (`smolvla.xml` 1.57 GB FP32 + `tokenizer.xml` + `manifest.json`) and ran on CPU: inputs state 1×6, 48-token prompt and mask, 3 cameras at 512×512; output a 50×6 action chunk; 1.67 s per chunk on Modal's 4-core CPU (not an Intel number). Not yet checked: parity with the PyTorch policy (weights load with `strict=False`; transformers warns pad_token_id 128002 is outside the vocabulary). Reviewed Saliha's N4 in `train/commands.py`: fine. The deployed training app predates N4, so it is redeployed before any real SmolVLA launch.
+- **Touched:** `train/export.py`, `train/tests/test_export.py`, `progress.md`
+- **Brief task:** A3 / N1 🟡 (SmolVLA export ✅ on CPU; ACT smoke still training)
+- **⚠️ Conflicts:** @saliha: the ACT and SmolVLA IR for your benchmark arrives later than 21:00; @harry: the gates you co-run move
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 16:19 — feat — Trial report with intervals (`bench/trials.py`), N4 SmolVLA recipe, archived old research — @saliha [conflicts: @nate @harry]
 - **Where:** `aiml-perception-saliha` → `main` @ `668933e` · merged to `main`: yes
