@@ -103,6 +103,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 11:41 · H3 clips · 37 WAV clips generated (1,632 characters, 98 s, 4.3 MB) and committed in `narrator/clips/` (`7bd7d7b`); bowl check: wanted, timing settled at the venue
 - 2026-11-14 11:37 · Saliha's 08:50 wiring (part): `SceneLocator` once the zone is clicked, obstacle trigger, `ReasonTrace` note + region, end-of-run dance; `ui/click_regions.py` for H5; fallback on `io` thresholds (Nate's ask); merged to `main` (`ac268a7`), 95 tests pass. Open: bowl check timing, depth hold
 - 2026-11-14 06:09 · H7 (part) · reasoning panel under the feed (`Cell.trace`: each look vs both thresholds, recovery moves, decision or help reason) + each learned policy's real OpenVINO device in the mover line; merged to `main` (`ffdf8e4`), 82 tests pass. Left: station Intel-stack items
 - 2026-11-14 06:04 · H6 · read the `physicalai` tutorial + runtime source: imports valid; keep `Cell`/`io.py`/`SharedCapture`, no `RobotRuntime` before 15:30 (it bypasses `io.act`'s clip and e-stop); joint-unit risk flagged to @nate (`SO101` defaults to normalized, `io.py` uses degrees); optional `create_camera` adapter for UVC + RealSense

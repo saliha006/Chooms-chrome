@@ -123,12 +123,12 @@
 - **Evidence so far (stand-in bricks, Saliha's laptop, NVIDIA Build API):** model `nvidia/nemotron-3.5-super-vl-120b-a12b`. Improvement 1: it is a reasoning model and spent the whole 80-token budget thinking (empty answer), so thinking is turned off for live speech; answers then take 1.7–2.7 s. Improvement 2: given only the score and thresholds, it read "below t_low" as bad and told a perfect brick to be set aside; passing the already-decided action and the band's meaning fixed it (4/4 correct on a small check, including an uncertain brick). Full 20-frame eval on real bricks: TBD (Saturday 22:00).
 - **Pitch line:** "The model explains what it sees using our measured scores, so it can't make things up."
 
-### D12 · Voice · Live reasoning through ElevenLabs, calm voice by default — Status: Planned · Owner: @harry · Updated: 2026-11-14 04:14
+### D12 · Voice · Live reasoning through ElevenLabs, calm voice by default — Status: Planned · Owner: @harry · Updated: 2026-11-14 11:41
 - **Decision:** explanations are spoken through the laptop speakers while the arm works. The robot talks through its thought process in a conversational way, like a person thinking aloud (what it sees, what the score means, what it will do and why), so the judges hear the reasoning behind each move. Default (calm) voice: a standard conversational ElevenLabs voice (`etWmxTqEKhIYyGKMpDcb`, chosen by @harry 2026-11-14 04:11, open to change); the cowboy persona uses David (D13). Live lines use a low-latency ElevenLabs model (`eleven_flash_v2_5`) with streaming and a 1.5 s timeout; exclamations and fallback phrases are pre-generated with the more expressive model and cached as audio. Stale lines are dropped so speech never lags the arm.
 - **Why:** the ElevenLabs track rewards natural, emotionally expressive, fully autonomous audio; spoken reasoning makes the system's decisions legible to judges in real time.
 - **Alternatives rejected:** a pre-recorded script (not live, not grounded); local text-to-speech only (kept as a stretch offline fallback). Calling the ElevenLabs REST API by hand with `requests` (we would write the audio streaming ourselves); we use the official `elevenlabs` Python SDK pinned to 2.78.0 instead (@harry, 2026-11-14 04:14).
 - **Trade-off / risk:** network latency and quota; the cached clips cover it.
-- **Evidence:** TBD (time from verdict to first audio).
+- **Evidence:** 37 fixed lines (every event and failure reason, both personas) cached as WAV with `eleven_multilingual_v2`: 1,632 characters of credit, 98 s of audio, committed in `narrator/clips/` so the robot speaks with no network. TBD (time from verdict to first audio, live line).
 - **Pitch line:** "You can hear it think, with the real numbers."
 
 ### D13 · Personality · Cowboy persona on obstacle or hat, instant in, gradual out — Status: Planned · Owner: @harry @saliha · Updated: 2026-11-14 04:11
