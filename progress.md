@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 23:20 | @harry | @saliha @nate | 📨 for you | **`physicalai` is not declared in any requirements file**, but `robot/io.py` (normalized units) now imports it in two `robot/tests/test_io.py` tests, so a fresh `.venv` fails them. Harry installed `physicalai[so101]==0.4.0` locally (the Intel laptop's version) and the full suite passes: 335 passed, 4 skipped. Please add it to the right requirements file (your call which). Heads-up: it pulls in `opencv-python-headless` again, so after installing put the window build back (`docs/station.md` step 0) | 2026-11-14 23:20 |
 | 2026-11-14 21:35 | @saliha | @harry | 📨 for you | **Cowboy trigger decided (Saliha, option C; PRD §0, decisions.md D13):** keep the hat (voice + H) flipping the whole persona as you built it, and add **one short cowboy exclamation on every defective verdict** (a cached clip such as "Holy smokes!" / "Well I'll be"), played before the calm explanation; the score explanation itself stays in the calm voice. About 20 lines in `narrator/`; please build it after the MVP gate. Also in PRD §0: the drive is scripted and ends at a physical stop block; waypoints, clicked regions and recordings all happen at that parked spot | 2026-11-14 21:35 |
 | 2026-11-14 21:35 | @saliha | @nate | ⚠️ conflict | **The follower still drops out in Studio** (`Sync read failed with comm result -6`, 10 times 18:59-21:23, during teleop and at session start). Power is right (all 6 follower motors at 12.2-12.3 V idle, 33-35 °C; leader 5.8 V) and USB never disconnects, so it points at a 3-pin servo cable or the brick sagging under load. Saliha is re-seating the cables; recording waits on a clean 2-minute teleop. Also PRD §0: record everything at the parked spot (stop block), never during the drive | 2026-11-14 21:35 |
 | 2026-11-14 19:55 | @harry | @saliha @nate | 📨 for you | **Follower port and calibration are on `main`:** `config/robot.yaml` `port: /dev/serial/by-id/usb-1a86_USB_Single_Serial_5AB0157419-if00` (follower, `ttyACM0` today; the leader `5AE7045242` is never driven) and `config/so101_follower.json` copied byte for byte from the Intel laptop (Studio, 18:34). **@saliha, on the Intel laptop before the next `git pull`:** `mv config/so101_follower.json /tmp/` (it is untracked there and would block the pull; the same file arrives from `main`). @nate: say if Studio should keep its own copy elsewhere | 2026-11-14 19:55 |
@@ -126,6 +127,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 23:20 — feat — The robot is Pix: "Hey Pix, …" questions and hat by voice (post-freeze, freeze flexible per Nate) — @harry [conflicts: @saliha @nate]
+- **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
+- **Did:** the listener acts only on sentences that name Pix (Harry: "hey pix for everything"; sound-alikes like "picks" count; "Pix" is a speech-to-text key term). Questions answered from the cell's own facts (`Cell.facts()`, `narrator/answers.py`): what it sees, how many sorted, why that bowl, what it's doing, who it is; anything else gets a hint. End to end with generated speech: "Hey Pix, what do you see now?" heard in 750 ms and answered with the stage, last score and threshold; "Hey Pix, why that bowl?" answered in the cowboy voice while the hat was on; "I'm taking the hat off" without the name was ignored. Demo script and README updated. Full suite 335 passed, 4 skipped (after installing `physicalai[so101]` locally, see the board row).
+- **Touched:** `narrator/listen.py`, `narrator/answers.py`, `narrator/__init__.py`, `run.py`, `docs/demo-script.md`, `README.md`, tests
+- **⚠️ Conflicts:** @saliha @nate: hat commands now need "Hey Pix" too; `physicalai` undeclared (row)
+- **📨 Needs:** @saliha @nate: declare `physicalai[so101]`
+- **Agreed by:** @harry (wake word for everything; answers from facts)
+- **Status:** open
 
 ### 2026-11-14 23:15 — fix — N8 grip band measured (10-23); tests use the measured brick reading; recording varies brick angle — @saliha [conflicts: @nate @harry]
 - **Where:** `systems-voice-harry` and `robotics-policies-nate` → `main` · merged to `main`: yes
