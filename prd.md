@@ -14,6 +14,7 @@
 
 ## 0. NOW (decisions in force, pending, gates)
 **In force**
+- **Box-room demo (2026-11-14 ~18:15, Saliha's update as doc owner, published by Harry 19:30 on her behalf because her API calls failed; Harry agreed 18:45; @nate to confirm on the board).** The theme is autonomy plus anomaly detection. A white room (matte white card walls and floor, open top so the overhead camera and the audience see in; diffuse light from above) makes every object contrast with the background. The robot starts on one side; the bricks of different colours sit **on the plates** on the other side. It sees the plates are out of reach and says so, decides to go over, and the arm **scrapes the 29 × 29 × 8.9 cm wheeled board across the floor** on a **pre-planned route** (not a learned one); the overhead camera can confirm progress. The operator says "I'm putting a cowboy hat on you": it hears it (ElevenLabs speech-to-text), reacts, and stays in the cowboy voice **until told the hat is off** ("Ohhh, I'm no longer a cowboy"); H is the backup. It reasons out loud the whole way, then stops and **sorts (the main event: Anomalib)**, names unfamiliar objects out loud, and knows when it is done (spoken summary, dance). Owners: drive motion @nate; room-level vision (plate distance, object naming model) @saliha; voice, listening, persona, narration and the loop @harry. Built on `main` (`789142a`): hat by voice, object-naming voice, drive narration hook (`Cell.approach`), live verdict lines, run summary, subtitles. **Open:** where sorted bricks go (bowls?); the naming model (local CLIP/SigLIP recommended); MVP target 00:00 vs the 23:00 freeze (board 18:55). The table-top loop stays the insurance (§11 fallback).
 - **All plan times and board stamps are Espoo local time (EET, UTC+2)**, the event's clock: Sunday 10:00 deadline, 09:00 internal submit, 23:00 freeze. Board stamps before 2026-11-14 04:30 were written in UK time (UTC); treat them as 2 hours earlier than Espoo.
 - **`reinspect` agreed by all three (2026-11-14 04:16):** `reinspect(0)` = put the brick down in the pick zone and pick it again (the F4 re-grasp); `reinspect(±90)` = wrist roll in place; both return `True` only when the brick is back at the inspection pose. Signature unchanged.
 - Only the follower arm moves; the leader is teleop only (Intel slides).
@@ -343,6 +344,17 @@ After 09:00: rehearse 3–4 times, including the e-stop drill and the uncertain-
 - **`progress.md`** (on `main`) gets one entry per finished thing: who, what, when (date and time), and whether it conflicts with anyone. Format at the top of the file.
 
 ## 11. Demo script (2 minutes)
+**Box-room demo (2026-11-14, see §0; timings to be set at rehearsal):**
+- 0:00 The problem (factory inspection by eye) and the room: robot on one side, bricks on the plates on the other.
+- 0:10 Press S: the robot sees the plates are out of reach and says so live ("about 80 centimetres out of my reach, so I'm heading over").
+- 0:20 As it sets off, the operator says "I'm putting a cowboy hat on you" and puts it on: "Well I'll be, a cowboy hat!"; it scrapes across the floor narrating in the cowboy voice; "Made it: … centimetres in … seconds."
+- 0:45 Sorting (the main event): perfect and defective bricks, each verdict spoken with its score and threshold; a borderline brick gets a second look; an unfamiliar object is named out loud and skipped.
+- 1:15 Mid-sort the operator says "I'm taking the hat off": "Ohhh, I'm no longer a cowboy… back to business."
+- 1:25 Architecture and device map (NPU / GPU / CPU, speech and Nemotron off the control path).
+- 1:40 Benchmark before → after, energy per brick; reliability from the Aiven stream.
+- 1:55 Done: spoken summary of the counts, then the dance. End.
+
+**Fallback: the table-top script (in force before 2026-11-14; used if the room or the drive is not ready):**
 - 0:00 The problem (factory inspection by eye).
 - 0:10 Press S: perfect brick → purple bowl, the calm voice explains why with the score.
 - 0:30 Defective brick: heatmap → orange bowl, explained.
