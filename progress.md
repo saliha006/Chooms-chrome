@@ -125,6 +125,14 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 20:20 — docs — Box-room docs; measured device numbers in the submission; trial report rehearsed — @harry [conflicts: @saliha @nate]
+- **Where:** `systems-voice-harry` → `main` @ `f1d9279` · merged to `main`: yes
+- **Did:** `docs/demo-script.md` now follows the box room minute by minute (drive, hat by voice, tally, borderline, mug, summary) with a table-top fallback; `docs/station.md` builds the room and parked spot before anything is taught and adds the microphone check; README describes every voice feature with measured speeds. `docs/submission.md` and the README carry Saliha's measured device numbers (PaDiM INT8 p50 GPU 1.00 / NPU 7.17 / CPU 8.91 ms vs PyTorch 17.27 ms; net 33 / 68 / 300 mJ; NPU ~11 W and steady over 5 min; ACT on the NPU 8.9 ms), marked as stand-in-brick numbers until the real-brick re-run. `bench.trials` ran first time on a 20-brick rehearsal log (20/20, 19/20 with a planted mistake named); the morning steps are in `docs/trials-slide.md`. The wheel base may be dropped (team discussing, not decided): every voice feature stays; the drive lines only run when `cell.approach` is set.
+- **Touched:** `README.md`, `docs/`
+- **⚠️ Conflicts:** @saliha: your numbers quoted in `docs/submission.md` and the README; correct them there if the real-brick re-run changes them
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 19:50 — feat — Chatty but relevant: tally between bricks, recovery steps out loud; live lines in parallel; credit floor; follower port — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
 - **Did:** (1) Between bricks the robot says the tally ("That's 3 sorted so far: 2 perfect, 1 defective. On to the next one.") and before each recovery step the borderline score it rechecks ("Still 0.27, right between my lines. Rolling it ninety degrees…"), cached fallbacks in both voices. (2) Fix found by a run at real-arm pace (~3 s per move): a single synthesis queue made most live lines wait and time out; each line now has its own request (3 at once) and a late older line is dropped, never said out of order. Same run after the fix: all 9 live lines in 547–1594 ms. (3) Credit floor: live lines stop after 12,000 characters per run; a run starting under 10,000 account credits uses cached lines (balance read needs the key's `user_read` permission, not set yet). (4) `config/robot.yaml` follower by-id port + `config/so101_follower.json`. 220 tests pass; narrator tests 5/5 repeat runs.
