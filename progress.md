@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 16:56 | @nate | @harry @saliha | ⚠️ conflict | **Policy observations now match the export (A3):** `policies/episode.py` sends `state`, `images.<camera>` (RGB, batch axis) and `task`, what the exported runtime reads; it was sending LeRobot's dataset keys and BGR frames. @harry: keep passing raw `SharedCapture` frames from `run.py` (no colour conversion there) and keep `config/models.yaml` `cameras: [top, wrist, inspect]` in that order. @saliha: use the same keys for any policy benchmark. Clear this row once read | 2026-11-14 16:56 |
 | 2026-11-14 17:00 | @harry | @all | 🔀 scope proposal | **Live voice moves up (Harry, for the ElevenLabs prize):** the "live voice line" leaves the cut order (CLAUDE.md item 4) because it is built and on `main`: each verdict is spoken live with its score, threshold and mark position, cached clip as fallback, the arm never waits. Doc owner: update the cut order if agreed. @saliha: `narrator.say(..., text=line)` now speaks your reasoner line live. Say no on this row if you object | 2026-11-14 17:00 |
 | 2026-11-14 16:50 | @harry | @saliha @nate | 📨 for you | **`docs/submission.md` is on `main`**: the Junction Platform text per track. Please write your section by Sunday 06:00: @saliha **NVIDIA** (model, what it does, why it matters, how we improved its outputs), @nate **Modal** (GPU type, time, cost, the sweep). Facts only, unmeasured numbers stay TBD | 2026-11-14 16:50 |
 | 2026-11-14 16:33 | @nate | @all | ⚠️ conflict | **Gates move (recording has not started at 16:33; the brief's rule):** ACT gate about **21:30** (was 17:00) and SmolVLA gate about **22:15** (was 19:00). Estimates: recording about 17:30–19:30 after the Intel laptop drivers, rehearsal and a test episode, then the brief's 2–3 h of training. The 23:00 freeze stays; the scripted loop is the insurance meanwhile | 2026-11-14 16:33 |
@@ -72,7 +73,7 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Hardware-free work done (S1, S5, S6, bench, dance, drift rule, in-graph preprocessing, operator support); next: Intel laptop install (S2), 10:00 capture, S4 evaluate, S7 runs |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Agent: SmolVLA export check running, red-lego ACT smoke training; gates moved (ACT ~21:30, SmolVLA ~22:15). Manual next: Intel laptop drivers, dock and clamp, rehearsal, test episode, record |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Agent: A3 SmolVLA ✅ (`InferenceModel` + task string), runner keys and colours fixed; ACT smoke export next (~17:20); gates moved (ACT ~21:30, SmolVLA ~22:15). Manual next: Intel laptop drivers, dock and clamp, rehearsal, test episode, record |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | A6 playback done, A5 PostgreSQL live; next: station (H5, bowl check, 15:30 gate); Kafka waits on the service |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
@@ -95,14 +96,24 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **tests (2026-11-14 14:49):** `main` @ `16614ca`: 202 pass (`pytest common perception bench reasoner robot policies train fallback narrator ui telemetry -m "not slow"`, 1 skipped); N3 grasp band and the image audit landed, not yet on the arm or real bricks.
 - **perception/bench (2026-11-14 12:40):** `main` @ `4c96ef0`: 175 pass (`pytest common perception bench reasoner robot policies train fallback narrator ui telemetry -m "not slow"`, 1 skipped); in-graph preprocessing FP16 CPU p50 44.5 → 38.5 ms (this laptop, stand-in bricks). Not yet run on the Intel laptop or real bricks.
 - **Plan (2026-11-14 05:47):** PRD v2.5, `context` @ `5da0552`.
-- **robot/policies/train (2026-11-14 16:15):** `main` @ `9da720e`: 121 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped); mock loop sorts 5 bricks.
-- **Modal (2026-11-14 16:15):** SmolVLA smoke passed (red-lego, 1.8 min). ACT smoke running on the deployed app (`act-allep-300st-1114-141052`; ~1 h, most of it Studio's quantile pass); two earlier ACT attempts died with the laptop's network. Training launches: `python -m train.launch` (`train/launch.py`).
+- **robot/policies/train (2026-11-14 16:56):** `main` @ `f22367c`: 128 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped).
+- **Modal (2026-11-14 16:56):** SmolVLA smoke passed (red-lego, 1.8 min) and its OpenVINO export runs through `InferenceModel` on CPU with the real task string (finite 50×6 chunk, 1.9 s first call, Modal CPU). ACT smoke still in Studio's quantile pass at 16:53 (36 of 50 episodes, ~70 s each; this public set has no q01/q99), done about 17:20. Training launches: `python -m train.launch` (`train/launch.py`).
 - **perception (2026-11-14 04:30):** `main` @ `99f1d09`: 28 tests pass (4 slow); live Nemotron line 1.7–2.7 s. Not yet run on the Intel laptop or real bricks.
 - **`main` (2026-11-14 16:15):** @ `9da720e`, code in every area. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 16:56 — fix — A3: SmolVLA export passes through `InferenceModel` with the real task string; the policy runner now sends the export's keys and RGB frames — @nate [conflicts: @harry @saliha]
+- **Where:** `robotics-policies-nate` @ `f22367c` · merged to `main`: yes
+- **Did:** `train/export.py` checks an export the way the laptop calls it: `InferenceModel(dir, device="CPU")` on a zero observation plus the exact `perfect` string from `config/rules.yaml`. SmolVLA smoke export: finite 50×6 action chunk, 1.9 s first call on Modal's 4-core CPU (not an Intel number). The check caught a bug in `policies/episode.py`: it sent LeRobot's dataset keys and OpenCV's BGR frames without a batch axis, while the exported runtime reads `state`, `images.<camera>` and `task`, RGB, batched. SmolVLA would have failed on the laptop, and after a key-only fix it would have seen purple and orange swapped. Fixed and tested; Studio's own resize step turns three camera frames into the 3×1×3×512×512 input the IR wants. 128 tests pass in `robot policies train common fallback`.
+- **Touched:** `train/export.py`, `policies/episode.py`, `policies/tests/test_mover.py`, `train/runs.md`
+- **Brief task:** A3 → 🟡 (SmolVLA ✅; ACT export when the smoke run lands, about 17:20)
+- **⚠️ Conflicts:** @harry: `run.py` should keep passing raw `SharedCapture` frames to `LearnedMover` (the colour conversion now lives in `policies/episode.py`; converting in `run.py` too would swap the colours back), and `config/models.yaml` must keep `cameras: [top, wrist, inspect]` in that order (SmolVLA's camera1..3). @saliha: a policy benchmark on the laptop should build observations with these keys
+- **📨 Needs:** none
+- **Agreed by:** n/a (bug fix with one correct answer: the export's manifest)
+- **Status:** open
 
 ### 2026-11-14 17:00 — feat — Live spoken reasoning with each brick's numbers (ElevenLabs Flash) — @harry [conflicts: @saliha]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
