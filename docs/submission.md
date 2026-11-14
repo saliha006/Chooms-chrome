@@ -49,8 +49,9 @@ holds its speed (0.96×), the GPU slows to 1.43× and the CPU to 1.06×. ACT (St
 compiles on the NPU in 2.3 s and runs in 8.9 ms per call (GPU 4.2 ms, CPU 65.7 ms). These numbers come from a
 detector trained on stand-in synthetic bricks; the table is re-run on the real-brick model (TBD). Placement:
 Anomalib INT8 on the NPU (low power, steady under load, frees the GPU), ACT and SmolVLA on the iGPU with a CPU
-fallback; Physical AI Studio for recording and ACT training; the `physicalai` runtime. Energy per brick and
-temperature over the 20 trials: TBD.
+fallback; Physical AI Studio (part of Intel's Robotics AI Suite) for recording and ACT training; the
+`physicalai` runtime. Every real run measures its own package energy, average power and peak temperature and logs
+joules per brick (`bench/power.py`, an `ENERGY` row per run); energy per brick over the 20 trials: TBD.
 
 **Results.** Detector AUROC on held-out real bricks: TBD (interval TBD). Trials: k of 20 sorted without a human
 (95% CI TBD). Cycle time: TBD s per brick. Unseen start positions and a 3-brick pile: TBD. Which mode moved the

@@ -91,6 +91,10 @@ Saliha's real-brick capture, then `make rebaseline` (writes the model `config/mo
 
 ## 6. The MVP gate
 
+Energy per brick is logged by every real run (an `ENERGY` row and a log line). The power counter is root-only and
+resets on reboot, so once per boot: `sudo chmod a+r /sys/class/powercap/intel-rapl:0/energy_uj`.
+
+
 ```bash
 .venv/bin/python run.py --scripted pick,place
 ```
@@ -101,9 +105,13 @@ After a lighting or table change: `make rebaseline`. Before every run: check the
 
 ## 7. The full box-room run
 
-Base on its start side, bricks on the plates, laptop on a phone hotspot (live lines need a steady connection).
+Once: board seated in the dock → `python -m robot.drive --teach-dock`; `python -m fallback.teach drive_reach
+drive_touch drive_drag drive_lift` for the stroke. Base on its start side, bricks on the plates, laptop on a phone
+hotspot (live lines need a steady connection). Drive go/no-go: 3 clean runs out of 3 at 05:40, otherwise run
+without `--base` from the dock.
 ```bash
-.venv/bin/python run.py --scripted pick,place       # with Nate's drive wired into cell.approach
+.venv/bin/python -m robot.drive --check              # the overhead camera sees the tag; how far from the dock
+.venv/bin/python run.py --scripted pick,place --base   # opens with the drive (Nate's robot/drive.py)
 ```
 Press **S**, say "I'm putting a cowboy hat on you" as it sets off, "I'm taking the hat off" mid-sort. Film it
 (backup video v2). The beats and what to do if one fails: `docs/demo-script.md`.

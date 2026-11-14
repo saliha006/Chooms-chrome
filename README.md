@@ -90,7 +90,9 @@ detector PaDiM INT8 trained on stand-in bricks (re-run on the real-brick model p
 | PyTorch on CPU (baseline) | 17.27 ms | 836 mJ | 37.9 W | — |
 
 ACT (Studio export, our three cameras) compiles on the NPU in 2.3 s and runs in 8.9 ms per call (GPU 4.2 ms).
-Energy per brick and bricks per minute: TBD (the 20 trials).
+Physical AI Studio, used to record and train the policies, is part of Intel's Robotics AI Suite. Every real run
+logs its own energy, average power, peak temperature and joules per brick; energy per brick and bricks per minute
+over the 20 trials: TBD.
 
 ## Run it
 
@@ -113,6 +115,7 @@ cp .env.example .env   # then add your own keys; never commit .env
 | `pytest -m "not slow"` | Tests |
 | `python run.py --mock --drive 42` | Rehearse the box-room opening: a stand-in base "drives" 42 cm first, talked over live |
 | `--no-live` / `--no-listen` | Cached voice lines only (no ElevenLabs calls) / don't listen to the microphone |
+| `python run.py --scripted pick,place --base` | Real run that opens with the arm stroking its wheeled board into the dock (needs `config/dock.yaml` and the four drive poses) |
 
 **Keys in the window:** **S** start · **P** pause · **E** e-stop (torque off) · **Q** home and quit · **H** cowboy hat on/off (backup for saying it).
 

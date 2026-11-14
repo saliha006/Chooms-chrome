@@ -32,6 +32,7 @@ from common.interfaces import DefectSignal, Inspector, Mover
 from common import deadline
 from common.locate import CountLocator
 from common.reasons import HelpNeeded, Reason
+from bench import power
 from perception.reason_trace import ReasonTrace, region
 
 CONFIG = Path(__file__).parent / "config"
@@ -42,7 +43,8 @@ MOCK_DRIVE_S = 3.0  # the stand-in base's drive, long enough to hear the opening
 
 
 # TUNE on the arm. Motion stages only: the deadline stops the motion loop, so a stuck move ends as TIMEOUT.
-DEADLINE_S = {"PICK": 20.0, "REINSPECT": 25.0, "PLACE": 15.0, "HOME": 15.0, "DRIVE": 30.0}
+# DRIVE: 4-5 floor strokes of ~5.5 s each into the dock, plus settling (Nate, robot/drive.py).
+DEADLINE_S = {"PICK": 20.0, "REINSPECT": 25.0, "PLACE": 15.0, "HOME": 15.0, "DRIVE": 60.0}
 
 
 class Cell:
@@ -87,6 +89,21 @@ class Cell:
         self.hold = threading.Event()  # something tall in the zone (depth / scene check): wait until it clears
 
     def run(self) -> None:
+        """Measured as a whole (energy, power, peak temperature) so every logged trial carries its joules per brick."""
+        with power.measure() as self.energy:
+            self._run()
+        self._report_energy()
+
+    def _report_energy(self) -> None:
+        e = self.energy
+        if e.joules is None:  # no RAPL counter here (Windows, macOS) or it isn't readable
+            return
+        per_brick = f", {e.joules / self.sorted:.1f} J per brick" if self.sorted else ""
+        note = f"{e.joules:.0f} J over {e.seconds:.0f} s, {e.watts:.1f} W average, peak {e.max_c} C{per_brick}"
+        _log.info("energy: %s", note)
+        self._event("ENERGY", 0, outcome=f"{self.sorted} bricks", note=note)
+
+    def _run(self) -> None:
         try:
             if self.approach is not None:
                 self._drive_to_table()
@@ -398,7 +415,7 @@ def load_policy(export_dir: str, devices: list[str]):
     raise RuntimeError(f"no device could load {export_dir}: {errors}")
 
 
-def build_real(scripted: set[str], bricks: int, run_id: str) -> Cell:
+def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False) -> Cell:
     """Real station. Checks every config value first, so a missing one fails before anything moves."""
     from common.capture import OpenCVCamera
     from fallback.scripted import ScriptedMover, load_waypoints
@@ -451,12 +468,27 @@ def build_real(scripted: set[str], bricks: int, run_id: str) -> Cell:
     from robot.dance import dance
 
     cell.finale = lambda: dance(poses["home"])
+    if base:
+        use_base(cell, capture)
     cell.bowl_check = bowl_checker(scene)
     # Honesty guardrail: the screen and the log always say what moved the arm.
     cell.mode = "pick: {} | place: {}".format(
         *("scripted" if p in scripted else f"{needed[p]} on {loaded[p][1]}" for p in ("pick", "place")))
     _log.info(cell.mode)
     return cell
+
+
+def use_base(cell: Cell, capture) -> None:
+    """The box-room opening (D35): the arm strokes its wheeled board into the dock before the first brick.
+    Both the dock and the four stroke poses are checked here, so a missing one stops the run before anything moves."""
+    from robot import drive
+
+    try:
+        dock, stroke = drive.load_dock(CONFIG / "dock.yaml"), drive.load_stroke(CONFIG / "waypoints.yaml")
+    except ValueError as exc:
+        sys.exit(f"--base: {exc}")
+    cell.approach = lambda: drive.approach(lambda: capture.frame("top"), dock, stroke)
+    cell.approach_cm = drive.PLANNED_CM
 
 
 def bowl_checker(scene: dict) -> Callable[[str, object, object], bool] | None:
@@ -528,12 +560,15 @@ def main() -> None:
     ap.add_argument("--no-live", action="store_true", help="cached voice lines only: no ElevenLabs calls during the run")
     ap.add_argument("--no-listen", action="store_true", help="don't listen to the microphone (the H key still toggles the hat)")
     ap.add_argument("--drive", type=float, metavar="CM", help="--mock only: a stand-in base drives CM to the table first (rehearse the voice-over)")
+    ap.add_argument("--base", action="store_true", help="real runs: the arm drives its wheeled board into the dock first (needs config/dock.yaml and the drive stroke)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
 
     # Mock runs get their own log and a mock- run id, so stand-in data never mixes into the trial report.
     run_id = ("mock-" if args.mock else "") + time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
-    cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id)
+    if args.base and args.mock:
+        ap.error("--base drives the real board; rehearse the voice-over with --mock --drive CM")
+    cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id, args.base)
     cell.pause_on_help = not args.headless
     if args.drive and args.mock:
         cell.approach_cm = args.drive

@@ -12,7 +12,9 @@ puts on a cowboy persona when you hand it a hat, and sorts every brick with anom
 1. **Room:** matte white walls and floor, open top, lamp on and not moved since `make rebaseline`.
 2. **Robot** on its start side; **plates with the bricks** and the **purple (perfect) and orange (defective)
    bowls** on the far side, within reach of the parked spot (stop block in place).
-3. **Bricks on the plates:** one perfect, one defective, one planted borderline (a faint mark), spaced so the
+3. **Plates must be white** (or the bricks sit loose on the white card): the zone check finds objects by colour,
+   so a coloured plate reads as one big obstacle and nothing gets picked (critic, 01:20).
+   **Bricks on the plates:** one perfect, one defective, one planted borderline (a faint mark), spaced so the
    picker takes them in that order (it picks the most isolated brick first). Bricks numbered underneath; the
    trial operator has `truth.csv` ready.
 4. Lighting or table changed since the last run → `make rebaseline` (under 2 minutes).
@@ -21,7 +23,8 @@ puts on a cowboy persona when you hand it a hat, and sorts every brick with anom
    --drive 42` should log "live line ready" for most lines.
 6. **Microphone** plugged in and tested (`docs/station.md` step 2b); speak from where you will stand.
 7. Cowboy hat and one unfamiliar object (a mug) within reach, out of camera view.
-8. `make run`, or `python run.py --scripted pick,place` if a policy missed its gate. The screen header says
+8. `python run.py --base` (learned policies) or `python run.py --scripted pick,place --base` if a policy missed its
+   gate. If the drive failed its 05:40 go/no-go, run the same without `--base`, starting from the dock. The screen header says
    which mode moves the arm; say the same out loud.
 9. One person on the keyboard (**S**, **H**, **E**), one talking and handing over the hat.
 

@@ -346,3 +346,41 @@ def test_facts_for_pix_follow_the_run(make_cell):
     facts = cell.facts()
     assert facts["sorted"] == 1 and facts["decided"] == "defective" and facts["tally"]["defective"] == 1
     assert facts["signal"]["label"] == "defective" and facts["state"] == "DONE"
+
+
+def test_a_finished_run_logs_its_energy_per_brick(make_cell, tmp_path, monkeypatch):
+    from contextlib import contextmanager
+
+    from bench.power import Reading
+
+    @contextmanager
+    def fake_measure():
+        yield Reading(seconds=40.0, joules=1200.0, watts=30.0, max_c=71.0)
+
+    monkeypatch.setattr(run.power, "measure", fake_measure)
+    events = tmp_path / "events.jsonl"
+    telemetry.start(events)
+    cell, _ = make_cell(("perfect", "defective", "perfect"), bricks=3)
+    cell.run()
+    telemetry.stop()
+    rows = [json.loads(line) for line in events.read_text().splitlines()]
+    energy = [r for r in rows if r["state"] == "ENERGY"]
+    assert len(energy) == 1 and energy[0]["outcome"] == "3 bricks" and "400.0 J per brick" in energy[0]["note"]
+
+
+def test_no_energy_row_without_a_power_counter(make_cell, tmp_path, monkeypatch):
+    from contextlib import contextmanager
+
+    from bench.power import Reading
+
+    @contextmanager
+    def no_counter():  # Windows, macOS, or RAPL not readable: every reading stays None
+        yield Reading(seconds=5.0)
+
+    monkeypatch.setattr(run.power, "measure", no_counter)
+    events = tmp_path / "events.jsonl"
+    telemetry.start(events)
+    cell, _ = make_cell(("perfect",))
+    cell.run()
+    telemetry.stop()
+    assert "ENERGY" not in events.read_text() and cell.sorted == 1

@@ -103,3 +103,23 @@ def test_clicked_zone_switches_to_the_scene_check(station):
         assert isinstance(cell.locator, SceneLocator) and cell.finale is not None
     finally:
         cell.capture.stop()
+
+
+def test_base_without_a_taught_dock_stops_before_anything_moves(station):
+    with pytest.raises(SystemExit, match="dock"):
+        run.build_real({"pick", "place"}, 1, "t", base=True)
+
+
+def test_base_drives_into_the_dock_before_the_first_brick(station, monkeypatch):
+    from robot import drive
+
+    stroke = {name: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] for name in drive.STROKE}
+    station("waypoints.yaml", lambda d: d.update(stroke))
+    drive.save_dock(drive.TagPose(x_px=100.0, y_px=100.0, heading_deg=0.0, side_px=40.0), run.CONFIG / "dock.yaml")
+    seen = []
+    monkeypatch.setattr(drive, "approach", lambda top_frame, dock, poses: seen.append((dock, sorted(poses))) or 40.0)
+    cell = run.build_real({"pick", "place"}, 1, "t", base=True)
+    assert cell.approach_cm == drive.PLANNED_CM
+    cell.pause_on_help = False
+    cell.run()
+    assert seen and seen[0][1] == sorted(drive.STROKE) and cell.sorted == 1
