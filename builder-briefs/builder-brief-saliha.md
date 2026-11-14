@@ -1,0 +1,124 @@
+> **Status, 2026-11-14 00:10.** Nothing built yet. Block A (stand-in pipeline) starts 00:45. Docs on `context`, board on `main`.
+
+# Saliha: perception, AI/ML and OpenVINO + doc owner
+**GitHub:** `saliha006` · **Branch:** `perception-saliha` · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 00:10 by saliha
+**Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
+
+## 0. How the agent reads this brief (every task)
+1. `CLAUDE.md` is already loaded (don't re-read it); read this brief once. Follow both.
+2. Read `prd.md` sections 2, 4, 7 and 10 first. **Work `▶ Current tasks` top to bottom** (Block A, then Block B).
+3. **Want a different route, more features or another decision in your area? Go ahead.** Your Claude always asks first: "Have you told the team? Who agreed?" (CLAUDE.md §2c). Changes to another builder's path or a shared contract wait for that owner's yes.
+4. Before starting, read `progress.md`'s 📌 Open board (CLAUDE.md §2b). Rows To @saliha come first: tell the user, then resolve or schedule them.
+5. Ship each task with the CLAUDE.md §7 sequence (code → `no-slop` → test → push → merge if safe), then log it (CLAUDE.md §2b). Use the `debug` skill on every issue.
+6. Times are on the plan clock of PRD §10.
+
+**Task tags:** `[⚠ touches @name: what]` = changes someone else's area or a shared contract; get that owner's yes before merging (§2c). `[⏸ waits on @name: what]` = blocked until they deliver (a 📨 row on the Open board). `[🟠 your call]` = a design decision for the user (CLAUDE.md §1).
+
+---
+
+## 1. Ownership
+You own **R2, R3, R7, R8 (devices), R9, R13 (uncertainty band), F1, F2, F3 and F4**: about 40 points (criteria 2 and 4), the two criteria we weight highest after the loop.
+
+**Owns:**
+- `perception/`: capture, train, calibrate, export, inspector, rebaseline, re-inspection (F4)
+- `bench/`: benchmark harness, `bench/results.md`, `bench/plots/`
+- PRD, CLAUDE.md, briefs, skills, `progress.md` upkeep (doc owner)
+
+**Does NOT touch:**
+| Area / path | Owner | Why it's theirs |
+|---|---|---|
+| `robot/`, `policies/`, `train/` | @nate | robot I/O, ACT/SmolVLA, Modal training |
+| `run.py`, `common/` (incl. `interfaces.py`), `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | @harry | integration, contracts file, demo, side tracks |
+
+Exception: the one import line in `run.py`, agreed in `progress.md` (Block B 13:00).
+**Shared** (flag in `progress.md` ⚠️ Conflicts): `Makefile` (`rebaseline` target), `config/rules.yaml` semantics.
+
+## 2. Contract & Guardrails
+**Contract:** `Inspector.inspect(frame, view, brick_id) -> DefectSignal` (PRD 7.3).
+
+**Guardrails:**
+- ⛔ **Off-plan → CLAUDE.md §2c.**
+- Tonight is scaffolding only; every reported number comes from real bricks and a held-out set.
+- Static input shape 1×3×256×256, batch 1, for anything that targets the NPU.
+- Never commit datasets, checkpoints or keys.
+
+---
+
+## 3. ▶ Current tasks (2026-11-14 00:10)
+*Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
+
+### BLOCK A: tonight 00:45–02:30 (own laptop, no hardware)
+Goal: the whole pipeline runs end-to-end on **stand-in images**, so on Saturday you only swap in real brick photos. Stand-in data = your webcam plus about 40 identical small objects (coins, bottle caps, Lego if you have any). Make "defects" with a marker scribble, a sticker, or a chipped or turned item.
+
+| # | Status | Task | Est. | Done when |
+|---|---|---|---|---|
+| A1 | ⬜ | `python -m venv .venv && pip install "anomalib[openvino]==2.7.0"` (needs PyTorch ≥ 2.10) | 15 min | `import anomalib, openvino` works |
+| A2 | ⬜ | `perception/capture.py --out data/good --n 150 --cam <path>`: fixed square crop, saves PNGs. Reused on Saturday. | 15 min | Folders fill |
+| A3 | ⬜ | `perception/train.py`: Folder datamodule (`good/`, `defective/`, `val_good/`), PaDiM default, `--model patchcore\|efficientad` | 20 min | AUROC printed |
+| A4 | ⬜ | `perception/calibrate.py`: score histograms → `t_low` = 99th percentile of good, `t_high` = 5th percentile of defective → `perception/thresholds.yaml` plus `bench/plots/score_hist.png` and the confusion matrix | 15 min | yaml plus plots |
+| A5 | ⬜ | `perception/export.py`: OpenVINO FP16 and INT8_PTQ, static `input_size=(256,256)`, batch 1; assert a static input shape | 15 min | `.xml` files load |
+| A6 | ⬜ | `perception/inspector.py`: `OpenVINOInferencer`, device chain `NPU→GPU→CPU`, `CACHE_DIR`; returns a `DefectSignal` (bbox = largest blob of the thresholded anomaly map; heatmap PNG saved) | 20 min | Unit test passes on the CPU |
+| A7 | ⬜ | `python -m perception.rebaseline` (Harry wires it to `make rebaseline`): capture 60 good → retrain PaDiM → recalibrate, in under 2 minutes | 10 min | Timed |
+| A8 | ⬜ | `bench/benchmark.py`: N=100 warm runs per (model × precision × device); p50/p95; model size; first vs cached compile; writes `bench/results.md` | 15 min | CPU rows filled |
+| A9 | ⬜ | Commit; post status in `progress.md` | 5 min | — |
+
+### BLOCK B: Saturday 08:00 → Sunday 09:00 (Intel laptop and robot; follow the slot table in PRD 10)
+| Time | Status | Task | Done when |
+|---|---|---|---|
+| 08:00–09:30 | ⬜ | Install on the Intel laptop; `ov.Core().available_devices` → CPU, GPU, NPU; run the Block A pipeline on the stand-in data there | NPU compiles, or the reason it fails is logged |
+| 10:00–10:30 (robot slot) | ⬜ | Capture **real bricks at the inspection pose** (Harry's waypoint holds the brick): ~150 good, ~40 defective, ~30 held-out good; same lamp and crop | Data saved |
+| 10:30–12:00 | ⬜ | Train PaDiM, PatchCore, EfficientAd → choose by AUROC and latency; calibrate; export; NPU parity check `[🟠 your call: which model]` | Held-out AUROC ≥ 0.90 |
+| 12:00–13:00 | ⬜ | **Intel workshop**. Ask: NPU and policy export, best Anomalib model on the NPU, what judges want in the optimization table | Notes in `progress.md` |
+| 13:00–14:00 | ⬜ | Wire `inspect()` into `run.py` (Harry's state machine calls it; you don't edit `run.py` except the import line agreed in `progress.md`) `[⚠ touches @harry: run.py import line]` | Live verdict on screen |
+| **15:30 gate** | ⬜ | With Harry: scripted full loop with real Anomalib, 5 bricks, no human | Pass |
+| 15:30–17:00 | ⬜ | Anomalib benchmark across all devices and precisions; uncertainty band live | Table rows |
+| 17:00–19:00 | ⬜ | **F4 re-inspection logic (no robot needed):** if uncertain → score the RealSense colour view → max score → still uncertain = defective. Add the wrist-roll call (Nate's `reinspect(±90)`) behind a flag. | Unit test on saved borderline images |
+| 19:00–21:00 | ⬜ | **20:30: live F4 test in the integration slot** (borderline brick works 3 times in a row). Before that, optimizations, each with a number: `AsyncInferQueue` so inference overlaps arm motion; resize and normalize moved into the graph with `PrePostProcessor`; compile `CACHE_DIR`; `PERFORMANCE_HINT` LATENCY vs THROUGHPUT | Cycle time drop measured |
+| 21:00–22:00 (GPU slot) | ⬜ | Benchmark Nate's ACT/SmolVLA IR on CPU and GPU (PyTorch vs OV FP16/INT8); end-to-end cycle before and after; bricks per minute `[⏸ waits on @nate: IR files]` | `bench/results.md` complete |
+| 23:00 | ⬜ | **Freeze.** Sleep 00:00–05:00 | — |
+| 06:00–09:00 | ⬜ | `make rebaseline` on the **demo table**; final numbers and plots into the README; check the submission | Done by 09:00 |
+
+**Seams** (the same note is in the other two briefs):
+- @harry: `run.py` calls `Inspector.inspect(frame, view, brick_id)` and turns `DefectSignal.label` into the instruction via `config/rules.yaml` (F1); mission control draws `heatmap_path`, `bbox`, `score`; telemetry logs `label`, `score`, `device`, `latency_ms`; `make rebaseline` → `python -m perception.rebaseline`.
+- @nate: F4 wrist roll calls Nate's `Mover.reinspect(angle_deg)`; Nate's ACT/SmolVLA OpenVINO IR files come to `bench/` for the 21:00 GPU-slot benchmark.
+
+## 4. Done log (newest first)
+- *(empty)*
+
+## 5. Working-style notes for the agent
+- Verbosity Level 0: options + a recommendation, no teaching notes. Flag scope creep at once. Spell out abbreviations once.
+- Hackathon pace: the smallest thing that passes its *Done when*.
+
+## 6. Open blanks (fill when the chat or repo answers them, CLAUDE.md 🔁)
+- Stand-in objects and webcam path for Block A: {{objects}} · {{cam path}}
+- Which Anomalib model ships (Block B 10:30): {{model}}
+- Plan clock vs Espoo time for the Sunday 10:00 deadline: {{timezone}}
+
+## 6a. Reference
+### Minimal code (check names against the 2.7.0 docs)
+```python
+from anomalib.data import Folder; from anomalib.models import Padim; from anomalib.engine import Engine
+from anomalib.deploy import ExportType, CompressionType, OpenVINOInferencer
+dm = Folder(name="lego", root="data", normal_dir="good", abnormal_dir="defective")
+m, e = Padim(), Engine(); e.fit(model=m, datamodule=dm)
+e.export(model=m, export_type=ExportType.OPENVINO, compression_type=CompressionType.INT8_PTQ,
+         datamodule=dm, input_size=(256, 256))
+inf = OpenVINOInferencer(path=".../openvino/model.xml", device="NPU"); p = inf.predict(img)
+```
+
+### Pitfalls
+- A previous team's Anomalib was "bring-up evidence, not a LEGO detector". Tonight is scaffolding only; your score comes from real bricks.
+- The NPU accepts static shapes only. PatchCore can export with batch 2 (#3883), so check it. Prefer PaDiM or EfficientAd on the NPU.
+- Scores are distances, not probabilities, so set thresholds from data.
+- Benchmark only in your GPU slot (21:00), unless the measurement under load is intended.
+
+### Links
+- Anomalib: https://github.com/open-edge-platform/anomalib · Deploy: https://anomalib.readthedocs.io/en/latest/markdown/guides/reference/deploy/ · https://pypi.org/project/anomalib/2.7.0/
+- PaDiM about 30× faster to train than PatchCore: https://datature.io/blog/visual-anomaly-detection-with-anomalib-a-hands-on-guide-2026
+- NPU limits: https://docs.openvino.ai/2025/openvino-workflow/running-inference/inference-devices-and-modes/npu-device.html
+- Band and parity reference (ideas only): https://github.com/ohong/intel-robotics
+- Latency benchmark class: https://github.com/openvinotoolkit/physicalai
+
+---
+── Archived (superseded — do NOT action) ──
+- *(none yet)*
