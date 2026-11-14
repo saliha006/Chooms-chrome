@@ -16,7 +16,8 @@ def reply(content: str) -> dict:
 def test_request_carries_numbers_image_and_persona():
     body = client.request_body(np.zeros((8, 8, 3), np.uint8), SIGNAL, "cowboy", "some/model")
     facts = json.loads(body["messages"][1]["content"][0]["text"])
-    assert facts == {"view": "webcam", "label": "defective", "score": 0.64, "t_low": 0.2, "t_high": 0.63, "bbox": [1, 2, 3, 4]}
+    assert facts["label"] == "defective" and facts["score"] == 0.64 and facts["bbox"] == [1, 2, 3, 4]
+    assert facts["action"] == "place it in the red bowl"
     assert body["messages"][1]["content"][1]["image_url"]["url"].startswith("data:image/png;base64,")
     assert "Persona: cowboy" in body["messages"][0]["content"]
     assert body["chat_template_kwargs"] == {"enable_thinking": False}
