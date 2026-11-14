@@ -105,6 +105,14 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 17:15 — test — SmolVLA export matches LeRobot's own policy (parity) — @nate [conflicts: none]
+- **Where:** `robotics-policies-nate` · merged to `main`: yes
+- **Did:** `train/parity.py` runs identical inputs (random images and state, the real task's tokens, zero starting noise) through LeRobot's `SmolVLAPolicy` and the OpenVINO IR: max difference 2.6e-6 on actions up to 2.36; the exported tokenizer gives LeRobot's exact token ids. The export is deterministic (Studio traces it with zero starting noise; LeRobot samples random noise by default).
+- **Touched:** `train/parity.py`, `train/runs.md`
+- **Brief task:** A3 (SmolVLA half complete; ACT next)
+- **⚠️ Conflicts:** none
+- **Status:** n/a
+
 ### 2026-11-14 17:15 — feat — Nemotron's line spoken after each verdict; test-name clash fixed — @harry [conflicts: @saliha]
 - **Where:** `systems-voice-harry` → `main` @ `d6fbc81` · merged to `main`: yes
 - **Did:** `run.py` hands every inspection frame and signal to Saliha's `reasoner.live.LiveLine`; a grounded line comes back through `narrator.say(text=...)` and is spoken live after the template line (real runs only, and only with `NVIDIA_API_KEY` + `NEMOTRON_MODEL` set; `--no-live` turns both off). Renamed `narrator/tests/test_live.py` → `test_live_voice.py`: it clashed with `reasoner/tests/test_live.py` (pytest collection error on `main` for a few minutes, now fixed). 171 tests pass. Not yet heard end to end: Nemotron + voice on a real brick.
