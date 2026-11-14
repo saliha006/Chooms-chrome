@@ -141,12 +141,12 @@
 
 ## E. Data and cloud
 
-### D14 · Streaming · Aiven Kafka for live events, PostgreSQL for the record — Status: Planned · Owner: @harry · Updated: 2026-11-14 01:30
+### D14 · Streaming · Aiven Kafka for live events, PostgreSQL for the record — Status: Built (PostgreSQL record, verified live) / Planned (Kafka stream, drift alarm) · Owner: @harry · Updated: 2026-11-14 12:28
 - **Decision:** the telemetry thread produces every event to an Aiven for Apache Kafka topic; a consumer runs a drift check (recent perfect-brick scores creeping toward `t_low` → "lighting changed, rebaseline" alert, spoken) and writes rows to Aiven PostgreSQL for the trial report. If Kafka is not on our plan, PostgreSQL `LISTEN/NOTIFY` does the same job.
 - **Why:** Aiven's rubric rewards meaningful use of its services; streaming lets other parts of the system react to the cell live, and the drift alarm changes what the robot does. It is not on the control path, so it does not add latency to the arm; honest framing: a cloud hop never makes the robot itself faster.
 - **Alternatives rejected:** a plain log table only (low meaningful use).
 - **Trade-off / risk:** offline → JSONL buffer, synced later.
-- **Evidence:** TBD (events streamed, alert fired in the trial run).
+- **Evidence:** live on Aiven's free PostgreSQL plan (18.7): a mock run's 37 events all landed, re-sending them all left 37 (duplicate-free), connect ~0.4 s warm, 5.3 s cold; the robot never waits on it (a separate sync thread reads the local JSONL buffer). Both Aiven services we need have free plans with no card. TBD (Kafka events streamed, drift alert fired in the trial run).
 - **Pitch line:** "Aiven carries the cell's live event stream and raises the alarm when lighting drifts."
 
 ### D15 · Training · Modal for training and logs only, no frontend — Status: Built · Owner: @nate · Updated: 2026-11-14 06:12
