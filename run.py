@@ -30,6 +30,7 @@ from common.locate import CountLocator
 
 CONFIG = Path(__file__).parent / "config"
 GRASP_ATTEMPTS = 2  # PRD §6: retry once, then ask for help
+SETTLE_S = 0.3  # TUNE: let the held brick stop swinging before a frame is scored (decisions.md D22)
 _log = logging.getLogger("run")
 
 
@@ -76,7 +77,7 @@ class Cell:
             raise
         except Exception as exc:
             _log.exception("run stopped")
-            narrator.say("help", reason=type(exc).__name__)
+            narrator.say("help", reason=str(exc) if isinstance(exc, HelpNeeded) else "something unexpected went wrong")
             self.state = "HOME"
             self.picker.home()
             self.state = "STOPPED"
@@ -84,8 +85,7 @@ class Cell:
 
     def sort_one(self, brick_id: int) -> None:
         self._pick(brick_id)
-        arm_still = time.monotonic()
-        signal = self._inspect(brick_id, "inspect", newer_than=arm_still)
+        signal = self._inspect(brick_id, "inspect", newer_than=self._settle())
         narrator.say(signal.label, score=signal.score, bbox=signal.bbox)
 
         with self._stage("DECIDE", brick_id, signal) as row:
@@ -125,23 +125,31 @@ class Cell:
         return signal
 
     def _resolve_uncertain(self, brick_id: int) -> str:
-        """PRD §6 / F4: second view (free) → each reinspect motion → the rules' fallback label."""
+        """PRD §0 v2.5 / D7: look again (fresh frame, no motion) → each reinspect motion → the rules' fallback label.
+
+        Every score uses a frame grabbed after the arm settled: re-scoring the frame we already judged
+        uncertain would just repeat the verdict."""
         chain = self.rules["uncertain"]
-        signal = self._inspect(brick_id, chain["second_view"])
+        signal = self._inspect(brick_id, chain["second_view"], newer_than=self._settle())
         if signal.label != "uncertain":
-            narrator.say(signal.label, score=signal.score, bbox=signal.bbox, after="second view")
+            narrator.say(signal.label, score=signal.score, bbox=signal.bbox, after="looked again")
             return signal.label
         for angle in chain["reinspect_angles"]:
             with self._stage("REINSPECT", brick_id, note=f"angle {angle}") as row:
                 if not self.picker.reinspect(angle):
                     raise HelpNeeded(f"reinspect {angle} lost the brick")
                 row["outcome"] = "back at inspection pose"
-            signal = self._inspect(brick_id, "inspect", newer_than=time.monotonic())
+            signal = self._inspect(brick_id, "inspect", newer_than=self._settle())
             if signal.label != "uncertain":
                 narrator.say(signal.label, score=signal.score, bbox=signal.bbox, after=f"reinspect {angle}")
                 return signal.label
         narrator.say("still_uncertain", label=chain["then"])
         return chain["then"]
+
+    @staticmethod
+    def _settle() -> float:
+        time.sleep(SETTLE_S)
+        return time.monotonic()
 
     @contextmanager
     def _stage(self, state: str, brick_id: int, signal: DefectSignal | None = None, **extra):

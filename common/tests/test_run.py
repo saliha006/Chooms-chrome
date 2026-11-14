@@ -55,11 +55,38 @@ def test_second_view_settles_uncertain_without_motion(make_cell):
     assert not any(c[0] == "reinspect" for c in mover.calls)
 
 
-def test_still_uncertain_after_reinspect_goes_to_red_bowl(make_cell):
+def test_still_uncertain_rolls_then_regrasps_then_red_bowl(make_cell):
     cell, mover = make_cell(("uncertain",))
     cell.run()
-    assert ("reinspect", 0) in mover.calls
+    assert [c for c in mover.calls if c[0] == "reinspect"] == [("reinspect", 90), ("reinspect", 0)]
     assert places(mover) == [RULES["defective"]]
+
+
+def test_look_again_scores_a_fresh_frame_from_the_inspection_camera(make_cell):
+    class Recording(MockInspector):
+        def __init__(self):
+            super().__init__(("uncertain", "perfect"))
+            self.seen = []
+
+        def inspect(self, frame, view, brick_id):
+            self.seen.append((view, frame))
+            return super().inspect(frame, view, brick_id)
+
+    cell, _ = make_cell(("uncertain", "perfect"))
+    cell.inspector = Recording()
+    cell.run()
+    (view1, frame1), (view2, frame2) = cell.inspector.seen
+    assert view1 == view2 == VIEWS["inspect"]
+    assert frame2 is not frame1
+
+
+def test_help_line_says_why(make_cell, monkeypatch):
+    said = []
+    monkeypatch.setattr(run.narrator, "say", lambda event, **kw: said.append((event, kw)))
+    cell, _ = make_cell(("perfect",), mover=MockMover(pick_failures=2))
+    with pytest.raises(run.HelpNeeded):
+        cell.run()
+    assert ("help", {"reason": "grasp failed twice"}) in said
 
 
 def test_grasp_retried_once(make_cell):

@@ -2,6 +2,6 @@
 perfect: place the brick in the blue bowl
 defective: place the brick in the red bowl
 uncertain:
-  second_view: top        # camera role that also sees the held brick: free, no motion (confirm Sat 08:00)
-  reinspect_angles: [0]   # 0 = put down and pick again, ±90 = wrist roll (decisions.md D7)
-  then: defective         # still uncertain after the reinspects -> treat as defective, said aloud
+  second_view: inspect    # look again with a fresh frame: the model only knows the inspection camera (PRD v2.5)
+  reinspect_angles: [90, 0]   # in order: roll the wrist 90, then put down and pick again (decisions.md D7)
+  then: defective             # still uncertain after all that -> defective and flagged, said aloud
