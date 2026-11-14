@@ -20,7 +20,7 @@ import numpy as np
 from common.interfaces import DefectSignal
 
 BASE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-ACTIONS = {"perfect": "place it in the blue bowl", "defective": "place it in the red bowl", "uncertain": "take a second look"}
+ACTIONS = {"perfect": "place it in the purple bowl", "defective": "place it in the orange bowl", "uncertain": "take a second look"}
 BAND = "score below t_low means perfect, above t_high means defective, in between means uncertain"
 SYSTEM = (
     "You are a brick-sorting robot thinking aloud while you work. In one or two short sentences (at most 30 words), "
