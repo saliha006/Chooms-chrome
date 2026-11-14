@@ -1,6 +1,7 @@
 """Read the follower's joints with its motors loose, for the gripper readings (N8) and pose checks. Never moves it.
 
     python -m robot.readings --seconds 40 --window 8   # median of every joint per 8 s window, in normalized units
+    python -m robot.readings --seconds 50 --live        # also print the gripper twice a second while it records
 
 Close any Studio page that uses the follower first: one program per serial port.
 """
@@ -30,6 +31,7 @@ def main() -> None:
     ap.add_argument("--seconds", type=float, default=40.0)
     ap.add_argument("--window", type=float, default=8.0)
     ap.add_argument("--calibration", default=str(CONFIG / "so101_follower.json"))
+    ap.add_argument("--live", action="store_true", help="print the elapsed time and gripper value every 0.5 s")
     ap.add_argument("--mock", action="store_true")
     args = ap.parse_args()
     io.connect(port=yaml.safe_load((CONFIG / "robot.yaml").read_text())["port"], calibration=args.calibration, mock=args.mock)
@@ -38,9 +40,13 @@ def main() -> None:
         print(f"motors loose; recording {args.seconds:.0f} s", flush=True)
         stamps, samples = [], []
         end = time.monotonic() + args.seconds
+        next_print = time.monotonic()
         while time.monotonic() < end:
             samples.append(io.observe())
             stamps.append(time.monotonic())
+            if args.live and stamps[-1] >= next_print:
+                print(f"{stamps[-1] - stamps[0]:5.1f}s  gripper {samples[-1][io.GRIPPER]:5.1f}", flush=True)
+                next_print += 0.5
             time.sleep(1 / io.CONTROL_HZ)
     finally:
         io.disconnect()
