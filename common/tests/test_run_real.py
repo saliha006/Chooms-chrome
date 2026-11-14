@@ -42,7 +42,9 @@ def station(tmp_path, monkeypatch):
 
     edit("cameras.yaml", lambda d: [cam.update(path=f"/dev/fake-{role}") for role, cam in d.items()])
     edit("robot.yaml", lambda d: d.update(port="/dev/fake-arm"))
-    edit("waypoints.yaml", lambda d: d.update(POSES))
+    # Station data in the real config (taught slots, clicked bowls) must not leak in: the fake camera cannot show bowls.
+    edit("waypoints.yaml", lambda d: (d.clear(), d.update(POSES)))
+    edit("scene.yaml", lambda d: d.update({name: None for name in d}))
 
     monkeypatch.setattr(capture, "OpenCVCamera", lambda path, fourcc=None: MockCamera(size=(8, 8), fps=200))
     fake_perception = types.ModuleType("perception.inspector")
