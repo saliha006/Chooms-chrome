@@ -1,25 +1,27 @@
 """Run one exported policy for up to a fixed number of control steps through robot.io.
 
-Observation keys follow LeRobot's naming; check them against the export's manifest on the
-station (InferenceModel orders cameras and applies the manifest's preprocessors).
+Observation keys are the export manifest's, not LeRobot's dataset keys (checked through InferenceModel on the
+SmolVLA export, 2026-11-14). Cameras keep the order of `frames`, which SmolVLA's runtime fills into camera1..3.
 """
 
 import threading
 import time
 from collections.abc import Callable
 
+import cv2
 import numpy as np
 
 from robot import io
 
-STATE_KEY = "observation.state"
-IMAGE_KEY = "observation.images.{}"
+STATE_KEY = "state"
+IMAGE_KEY = "images.{}"
 TASK_KEY = "task"
 
 
 def observation(frames: dict[str, np.ndarray], task: str | None = None) -> dict:
     obs = {STATE_KEY: io.observe().astype(np.float32)[None]}
-    obs |= {IMAGE_KEY.format(name): frame for name, frame in frames.items()}
+    # OpenCV grabs BGR; LeRobot recorded the training frames as RGB
+    obs |= {IMAGE_KEY.format(name): cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)[None] for name, frame in frames.items()}
     if task is not None:
         obs[TASK_KEY] = [task]  # SmolVLA needs the task string or export bug #1169 bites (KeyError: 'task')
     return obs
