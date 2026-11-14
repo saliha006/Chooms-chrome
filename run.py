@@ -90,6 +90,7 @@ class Cell:
                 try:
                     self.sort_one(brick_id)
                     self.sorted += 1
+                    narrator.brick_done()
                 except Exception as exc:
                     self._ask_for_help(brick_id, exc)
             narrator.say("quit" if self.quit.is_set() else "empty", n=self.sorted)
@@ -234,6 +235,8 @@ class Cell:
             row["note"] = f"{len(obstacles)} non-brick object(s) in the zone, skipped"
             if not self.obstacle_seen:
                 narrator.trigger("obstacle")
+        elif not self.hold.is_set():
+            narrator.clear("obstacle")
         self.obstacle_seen = bool(obstacles)
 
     def _home(self) -> None:

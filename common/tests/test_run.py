@@ -225,3 +225,27 @@ def test_bowl_checker_looks_only_at_the_named_bowl():
     after[:, 0:10] = 255  # a brick appears in the red-role bowl only
     assert check(RULES["defective"], before, after)  # orange bowl = bowl_red
     assert not check(RULES["perfect"], before, after)  # purple bowl = bowl_blue, unchanged
+
+
+def test_cowboy_returns_to_calm_once_the_obstacle_has_gone_and_a_brick_is_done(make_cell, monkeypatch):
+    from narrator.persona import Persona
+
+    said = []
+    persona = Persona(lambda event, persona=None, **kw: said.append((persona, event)))
+    monkeypatch.setattr(run.narrator, "trigger", persona.trigger)
+    monkeypatch.setattr(run.narrator, "clear", persona.clear)
+    monkeypatch.setattr(run.narrator, "brick_done", persona.brick_done)
+
+    class HandThenGone(CountLocator):
+        looks = 0
+
+        @property
+        def obstacles(self):
+            self.looks += 1
+            return ["hand"] if self.looks == 1 else []
+
+    cell, _ = make_cell(("perfect",), bricks=3)
+    cell.locator = HandThenGone(3)
+    cell.run()
+    assert said == [("cowboy", "obstacle"), ("calm", "halfway")]
+    assert persona.current == "calm"
