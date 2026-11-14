@@ -25,6 +25,18 @@ def observation(frames: dict[str, np.ndarray], task: str | None = None) -> dict:
     return obs
 
 
+def sustained(predicate: Callable[[], bool], ticks: int) -> Callable[[], bool]:
+    """True once `predicate` has held for `ticks` calls in a row, so a pose passed through on the way does not end an episode."""
+    run = 0
+
+    def check() -> bool:
+        nonlocal run
+        run = run + 1 if predicate() else 0
+        return run >= ticks
+
+    return check
+
+
 def run_episode(model, frames: Callable[[], dict[str, np.ndarray]], steps: int, task: str | None = None, hz: float = io.CONTROL_HZ,
                 stop: Callable[[], bool] | None = None, abort_event: threading.Event | None = None) -> np.ndarray:
     """Return the joints at the end. `model` is a physicalai InferenceModel or anything with reset/select_action.

@@ -32,6 +32,8 @@ MAX_STEP_DEG = 5.0  # speed cap: largest change per joint per act() call (150 de
 # Shared by the learned and scripted movers, so a tune on the arm changes one place. TUNE (PRD v2.5 N8).
 POSE_TOLERANCE_DEG = 8.0  # how close counts as "at the inspection pose"
 GRIPPER_EMPTY_BELOW = 5.0  # F5: a fully closed gripper (0-100) means nothing is in it
+GRIPPER_HOLD_MAX = 45.0  # above this the gripper is open, not holding: a dropped or never-closed grip. TUNE from the N8 readings
+GRIPPER_SETTLE_S = 0.3  # a held brick stops swinging after this long; read the band only then (decisions.md D22)
 GRIPPER_OPEN = 60.0  # opening used to release a brick
 CONTROL_HZ = 30
 
@@ -94,6 +96,11 @@ def robot():
 
 def observe() -> np.ndarray:
     return np.asarray(robot().get_observation().joint_positions, float)
+
+
+def holding() -> bool:
+    """A brick is in the gripper: closed on something, not on nothing and not open."""
+    return bool(GRIPPER_EMPTY_BELOW <= observe()[GRIPPER] <= GRIPPER_HOLD_MAX)
 
 
 def clamp_step(current: np.ndarray, target: np.ndarray) -> np.ndarray:

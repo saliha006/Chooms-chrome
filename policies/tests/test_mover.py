@@ -108,3 +108,51 @@ def test_estop_and_home(mover):
     assert np.allclose(io.observe(), HOME, atol=2)
     mover.estop()
     assert not io.robot().torque
+
+
+@pytest.mark.parametrize(("gripper", "held"), [(4.0, False), (io.GRIPPER_EMPTY_BELOW, True), (30.0, True),
+                                               (io.GRIPPER_HOLD_MAX, True), (io.GRIPPER_HOLD_MAX + 1, False)])
+def test_holding_is_a_band_not_just_not_closed(mover, gripper, held):
+    joints = io.observe()
+    joints[io.GRIPPER] = gripper
+    io.robot().joints = joints
+    assert io.holding() is held and mover.gripper_empty() is (not held)
+
+
+def test_an_open_gripper_at_the_pose_is_not_a_grasp(mover):
+    mover.picker.target = np.array([*INSPECT[:5], io.GRIPPER_HOLD_MAX + 20])
+    assert not mover.pick_and_present()
+
+
+def test_pick_ends_early_once_held_at_the_pose(mover):
+    assert mover.pick_and_present()
+    assert mover.picker.calls < mover.pick_steps
+
+
+def test_place_ends_early_once_the_gripper_is_open(mover):
+    assert mover.place("place the brick in the red bowl")
+    assert mover.placer.calls < mover.place_steps
+
+
+def test_place_rolls_the_wrist_back_before_the_policy_starts(mover):
+    first_state = []
+
+    class Recording(FakePolicy):
+        def select_action(self, obs):
+            first_state.append(obs["observation.state"][0].copy())
+            return super().select_action(obs)
+
+    mover.placer = Recording(mover.placer.target)
+    mover.pick_and_present()
+    assert mover.reinspect(90)
+    assert mover.place("place the brick in the red bowl")
+    assert first_state[0][io.WRIST_ROLL] == pytest.approx(INSPECT[io.WRIST_ROLL], abs=io.POSE_TOLERANCE_DEG)
+
+
+@pytest.mark.parametrize("landed", [True, False])
+def test_bowl_check_decides_a_place_when_given(mover, landed):
+    seen = []
+    mover.frames = lambda: {"top": np.zeros((4, 4, 3), np.uint8), "wrist": np.zeros((4, 4, 3), np.uint8)}
+    mover.bowl_check = lambda instruction, before, after: seen.append((instruction, before.shape, after.shape)) or landed
+    assert mover.place("place the brick in the red bowl") is landed
+    assert seen == [("place the brick in the red bowl", (4, 4, 3), (4, 4, 3))]
