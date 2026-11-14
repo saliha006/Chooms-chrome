@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
 
-from perception.capture import parse_box, square_crop
+from pathlib import Path
+
+from perception.capture import brick_id, parse_box, square_crop
 from perception.synth import generate
 
 
@@ -39,4 +41,14 @@ def test_generate_writes_three_folders(tmp_path):
 def test_generate_is_reproducible(tmp_path):
     generate(tmp_path / "a", ["red"], 2, 1, 1, seed=3)
     generate(tmp_path / "b", ["red"], 2, 1, 1, seed=3)
-    assert (tmp_path / "a/defective/0000.png").read_bytes() == (tmp_path / "b/defective/0000.png").read_bytes()
+    assert (tmp_path / "a/defective/b00_0000.png").read_bytes() == (tmp_path / "b/defective/b00_0000.png").read_bytes()
+
+
+def test_brick_id_from_filename():
+    assert brick_id(Path("b07_0012.png")) == "b07"
+    assert brick_id(Path("0012.png")) == "0012"
+
+
+def test_synthetic_images_are_grouped_by_brick(tmp_path):
+    generate(tmp_path, ["red"], n_good=8, n_defective=1, n_val_good=1)
+    assert {brick_id(p) for p in (tmp_path / "good").glob("*.png")} == {"b00", "b01"}

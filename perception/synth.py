@@ -43,13 +43,19 @@ def brick(rng: np.random.Generator, colour: tuple[int, int, int], defective: boo
     return np.clip(img.astype(np.float32) * gain, 0, 255).astype(np.uint8)
 
 
+GRASPS_PER_BRICK = 4  # each synthetic brick is "shown" this many times, like real re-grasps
+
+
 def generate(root: Path, colours: list[str], n_good: int = 150, n_defective: int = 40, n_val_good: int = 30, seed: int = 0) -> None:
+    """Files are named b<brick>_<image>.png so evaluation can split by whole brick (perception.capture.brick_id)."""
     rng = np.random.default_rng(seed)
     for folder, n, defective in (("good", n_good, False), ("defective", n_defective, True), ("val_good", n_val_good, False)):
         out = root / folder
         out.mkdir(parents=True, exist_ok=True)
         for i in range(n):
-            cv2.imwrite(str(out / f"{i:04d}.png"), brick(rng, COLOURS[colours[i % len(colours)]], defective))
+            brick_no = i // GRASPS_PER_BRICK
+            colour = COLOURS[colours[brick_no % len(colours)]]
+            cv2.imwrite(str(out / f"b{brick_no:02d}_{i:04d}.png"), brick(rng, colour, defective))
 
 
 def main() -> None:

@@ -1,12 +1,14 @@
 """Capture a folder of square, fixed-crop PNGs from a camera.
 
-    python -m perception.capture --out data/good --n 150 --cam 0
-    python -m perception.capture --out data/defective --n 40 --cam /dev/v4l/by-id/... --crop 400,120,480
+    python -m perception.capture --out data/good --brick 3 --n 12 --cam 0
+    python -m perception.capture --out data/defective --brick 7 --n 12 --cam /dev/v4l/by-id/... --crop 400,120,480
 
 The same crop must be used for every folder (and on the demo table), or the model learns the crop.
+--brick tags every image with the physical brick it shows, so evaluation can hold out whole bricks.
 """
 
 import argparse
+import re
 import time
 from pathlib import Path
 
@@ -29,6 +31,12 @@ def square_crop(frame: np.ndarray, box: tuple[int, int, int] | None = None, size
     return cv2.resize(frame[y : y + side, x : x + side], (size, size), interpolation=cv2.INTER_AREA)
 
 
+def brick_id(path: Path) -> str:
+    """The physical brick an image shows: 'b07' for b07_0012.png; an untagged image counts as its own brick."""
+    match = re.match(r"(b\d+)_", path.name)
+    return match.group(1) if match else path.stem
+
+
 def open_camera(cam: str) -> cv2.VideoCapture:
     cap = cv2.VideoCapture(int(cam) if cam.isdigit() else cam)
     if not cap.isOpened():
@@ -36,7 +44,7 @@ def open_camera(cam: str) -> cv2.VideoCapture:
     return cap
 
 
-def capture(out: Path, n: int, cam: str, box: tuple[int, int, int] | None, interval_s: float) -> list[Path]:
+def capture(out: Path, n: int, cam: str, box: tuple[int, int, int] | None, interval_s: float, brick: int | None = None) -> list[Path]:
     out.mkdir(parents=True, exist_ok=True)
     start = len(list(out.glob("*.png")))
     cap = open_camera(cam)
@@ -48,7 +56,8 @@ def capture(out: Path, n: int, cam: str, box: tuple[int, int, int] | None, inter
             ok, frame = cap.read()
             if not ok:
                 raise RuntimeError("camera stopped returning frames")
-            path = out / f"{start + len(saved):04d}.png"
+            index = start + len(saved)
+            path = out / (f"b{brick:02d}_{index:04d}.png" if brick is not None else f"{index:04d}.png")
             cv2.imwrite(str(path), square_crop(frame, box))
             saved.append(path)
             time.sleep(interval_s)
@@ -71,8 +80,9 @@ def main() -> None:
     ap.add_argument("--cam", default="0", help="camera index or /dev/v4l/by-id path")
     ap.add_argument("--crop", help="x,y,side in pixels; default = centred square")
     ap.add_argument("--interval", type=float, default=0.3, help="seconds between shots (move or swap the object)")
+    ap.add_argument("--brick", type=int, help="physical brick number shown in these images (for brick-level evaluation)")
     args = ap.parse_args()
-    saved = capture(args.out, args.n, args.cam, parse_box(args.crop), args.interval)
+    saved = capture(args.out, args.n, args.cam, parse_box(args.crop), args.interval, args.brick)
     print(f"saved {len(saved)} images to {args.out}")
 
 
