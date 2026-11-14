@@ -88,6 +88,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 6. Read your brief's `▶ Current tasks`, then the 📌 Open board above.
 
 ## 📊 Latest (volatile facts live only here)
+- **tests (2026-11-14 15:35):** `main` @ `16614ca`: 202 pass (`pytest common perception bench reasoner robot policies train fallback narrator ui telemetry -m "not slow"`, 1 skipped); N3 grasp band and the image audit landed, not yet on the arm or real bricks.
 - **perception/bench (2026-11-14 12:40):** `main` @ `4c96ef0`: 175 pass (`pytest common perception bench reasoner robot policies train fallback narrator ui telemetry -m "not slow"`, 1 skipped); in-graph preprocessing FP16 CPU p50 44.5 → 38.5 ms (this laptop, stand-in bricks). Not yet run on the Intel laptop or real bricks.
 - **Plan (2026-11-14 05:47):** PRD v2.5, `context` @ `5da0552`.
 - **robot/policies/train (2026-11-14 06:20):** `main` @ `442d39c`: 82 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped); mock loop sorts 5 bricks.
