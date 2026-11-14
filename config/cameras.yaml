@@ -2,11 +2,11 @@
 # path: /dev/v4l/by-id/... on the Intel laptop (`ls /dev/v4l/by-id/`), or an index for local tests.
 # view: the DefectSignal.view name for frames from this camera.
 top:
-  path: null       # set at the station, Sat 08:00
-  view: webcam
-inspect:
-  path: null       # which of top/inspect is the RealSense D415: confirm at the station
+  path: null       # the RealSense D415 colour stream, looking down: its depth sees tall things in the zone (F9, F18)
   view: realsense
+inspect:
+  path: null       # the webcam at the inspection mark
+  view: webcam
 wrist:
   path: null
   view: wrist
