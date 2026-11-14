@@ -58,6 +58,8 @@
 
 ## B. Perception ML (Anomalib)
 
+> **08:50 measured (stand-in data, Saliha's laptop):** with Anomalib's default post-processor every good brick scored exactly **0.0** after export, so t_low was set on a pile of zeros; with `PostProcessor(enable_normalization=False)` the same model exports raw distances (good ≈ 41–54, defective ≈ 198–289). Shipped in `perception/train.py`; the region box now uses a measured `pixel_threshold`. `python -m perception.evaluate` implements the brick-level protocol below (`main` @ `882232a`). On this laptop's CPU the OpenVINO FP16 detector ran in 49 ms vs 157 ms for PyTorch (not Intel-laptop numbers).
+
 > **07:10 update to D5–D7 (research pass):** evaluation uses our own brick-level splits, raw (unclamped) scores, out-of-fold `t_low` and intervals (bootstrap by brick for AUROC, Clopper-Pearson for false alarms): Anomalib's `Folder` default silently moves half the test set into validation, and the exported score is clamped to [0, 1]. With ~150 good normals the honest claim is about 2% false alarms at 95% confidence (299 needed for 1%; Deng 2026). The AUROC target is now the lower end of the interval. Recovery chain order (D7): fresh same-camera look → wrist roll 90° → re-grasp → defective and flagged; a second camera can't be scored by a model trained on the inspection camera. EfficientAd dropped; AnomalyDINO only if PaDiM's lower interval < 0.90.
 
 ### D5 · Detector · Anomaly detection trained on good bricks, not a defect classifier — Status: Built · Owner: @saliha · Updated: 2026-11-14 03:55
@@ -220,7 +222,7 @@
 - **Evidence:** TBD (swap test, 19:00 gate).
 - **Pitch line:** "We prove the robot listens: swap the words, the brick goes to the other bowl."
 
-### D24 · Deployment · Device placement measured, no overlap claims — Status: Planned · Owner: @saliha · Updated: 2026-11-14 07:10
+### D24 · Deployment · Device placement measured, no overlap claims — Status: Built (harness) / Planned (Intel laptop runs) · Owner: @saliha · Updated: 2026-11-14 07:10
 - **Decision:** detector on the NPU (GPU, CPU fallback); ACT on the GPU with a 30-minute NPU compile probe (a failed compile is a reported result); SmolVLA on the GPU via OpenVINO if its export works, otherwise PyTorch, and the table says which. Device table from OpenVINO `benchmark_app` plus a PyTorch baseline row; efficiency = idle baseline, 1 Hz power and thermal series, NPU busy time, joules per brick net of idle. No AsyncInferQueue headline, no cross-device "overlap" (the loop is sequential), no HETERO/MULTI/NPU_TURBO.
 - **Why:** the rubric asks for appropriate NPU/GPU/CPU use and efficiency evidence; OpenVINO's own hints guide says async only helps with several requests in flight.
 - **Evidence:** TBD (Saturday 21:00 GPU slot).
@@ -236,6 +238,21 @@
 - **Why:** the SmolVLA export is the biggest unknown; finding it at 09:00 beats finding it at 19:00.
 - **Evidence:** SmolVLA 200 steps on the red-lego set: AV1 video decodes, cameras `top,gripper,left` mapped onto `smolvla_base`'s `camera1..3`, loss 0.287 at step 200, 1.8 min on an A100 (`train/runs.md`). It also caught two real problems before robot time: a missing `lerobot[training]` extra and the camera-name mismatch.
 - **Pitch line:** "We proved the whole train-export-deploy chain before the robot moved."
+
+### D27 · Perception · "Is it a brick?" check before inspection (Nate's key-system idea) — Status: Built · Owner: @saliha · Updated: 2026-11-14 08:50
+- **Decision:** before picking, the top camera classifies every saturated blob in the zone as brick or not-brick by rule: footprint 2×2 to 2×4 Duplo (±40%, TUNE), aspect ≤ 2.5, solidity ≥ 0.8. Bricks go to the most-isolated pick; anything else is an obstacle (skipped, and it can trigger the cowboy persona). No learned classifier.
+- **Why:** the slides' defects are defective *bricks*; a non-brick object must never reach the defect detector or the gripper. The colour-blob step already exists, so the rule costs ~0.5 h, where a trained classifier would need data we don't have.
+- **Alternatives rejected:** a learned brick/not-brick classifier; fiducial markers (research graded ArUco evidence weak).
+- **Trade-off / risk:** unsaturated objects (grey, skin) are invisible to colour; depth (`tall_object`) covers anything taller than a brick.
+- **Evidence:** `perception/scene.py`, 9 tests on synthetic top views; on-station thresholds TUNE.
+- **Pitch line:** "It checks it's holding a brick before it judges the brick."
+
+### D28 · Personality · End-of-run dance — Status: Built (code) · Owner: @saliha (code in Nate's `robot/`) · Updated: 2026-11-14 08:50
+- **Decision:** when the zone is empty after the last place, the arm dances: base sways ±25° for 3 cycles while the head bows 10° and tilts 10° towards each side, ~6 s, then home. Pure `robot.io` motion.
+- **Why:** a memorable, safe sign-off for the demo and video that costs no robot time to build; it reuses the joint limits, 5°/step speed cap and e-stop (D19, D21).
+- **Trade-off / risk:** joint sign conventions are TUNE (a move may go the wrong way the first time); never runs while holding a brick (run.py calls it only after the final place).
+- **Evidence:** `robot/dance.py`, 5 tests on the mock arm (speed cap, limits, e-stop, ends at home).
+- **Pitch line:** "And when the job's done, it celebrates."
 
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |

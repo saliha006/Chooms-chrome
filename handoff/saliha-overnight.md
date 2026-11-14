@@ -1,5 +1,7 @@
 # Saliha overnight / unattended task list (hardware-free only)
 
+> **2026-11-14 08:50: O1–O6 all done** (see the Saliha brief §4 Done log). Correction applied in O1: the dance does not test the gripper reading (an open, empty gripper also reads > 5); run.py calls it only after the final place.
+
 Written 2026-11-14 ~07:40 Espoo. For a `/goal` or unattended session on Saliha's laptop. **Do exactly O1–O6, in this order: O4, O2, O3, O5, O1, O6
 (Saliha's own tasks first; O1 last because it lives in Nate's folder), then stop.** Nothing here needs the Intel laptop or the arm; anything that would need them is out of scope.
 Every decision below is already made by Saliha (the doc owner); do not re-open them. If something is genuinely
