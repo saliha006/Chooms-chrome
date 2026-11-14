@@ -44,7 +44,7 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 ---
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
-### 🆕 2026-11-14 15:08 BOWL COLOURS: our bowls are purple (perfect) and orange (defective); do all of this in ONE commit before Nate records SmolVLA
+### ✅ *(15:15, `main` `d6aa2ed`)* 🆕 2026-11-14 15:08 BOWL COLOURS: our bowls are purple (perfect) and orange (defective); do all of this in ONE commit before Nate records SmolVLA
 1. `config/rules.yaml`: `perfect: the brick is perfect, place it in the purple bowl`, `defective: the brick is defective, place it in the orange bowl`.
 2. `fallback/scripted.py` `_bowl_for`: map the colour in the text to the pose: purple -> `bowl_blue`, orange -> `bowl_red` (keep accepting red/blue). The pose, mask and `config/*.yaml` names stay `bowl_blue`/`bowl_red` (roles).
 3. `narrator/lines.py`: "Blue bowl" -> "Purple bowl", "Red bowl" -> "Orange bowl" in both personas, then regenerate only those clips (`python -m narrator.cache`, your key); `common/tests/test_mocks.py` asserts the colours in `rules.yaml`: update it. Optional: `ui/click_regions.py` outline colours purple and orange.
@@ -114,6 +114,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 15:15 · BOWL COLOURS · purple/orange strings, scripted colour map, six lines + clips regenerated, click outlines; merged to `main` (`d6aa2ed`), 131 tests pass
 - 2026-11-14 14:40 · DO FIRST 1 · VLA strings carry the verdict in `config/rules.yaml`; `config/models.yaml` policy cameras `[top, wrist, inspect]` (Nate 11:53); merged to `main` (`5e99561`), 118 tests pass, mock sorts 5
 - 2026-11-14 12:35 · A6 (part) · cached clips play on a player thread (newest wins, help/e-stop kept, winsound/aplay, no new package); merged to `main` (`bb177c4`), 107 tests pass. Left: live streaming line (add-on)
 - 2026-11-14 12:28 · A5 (part) · event log → Aiven PostgreSQL (`telemetry/sync.py`, offline-safe, duplicate-free), `check_aiven`, `report.sql`; verified live (37/37 rows, re-send stays 37, ~0.4 s connect); merged to `main` (`992a89b`). Left: Kafka service + stream, drift alarm
