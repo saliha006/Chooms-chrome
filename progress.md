@@ -40,7 +40,8 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
-| 2026-11-14 06:04 | @harry | @nate | ⚠️ conflict | **Joint unit must match between recording and runtime** (H6): physicalai's `SO101` defaults to `unit="normalized"` ([-100, 100]) and the Intel tutorial passes no unit; `robot/io.py` runs in `"degrees"` (its limits and 5°/step cap are degrees); LeRobot's current SO follower records degrees (`use_degrees=True`). Please confirm which unit your recordings and the red-lego smoke-test set use, and record with the same one `io.py` runs. Also: camera names in the dataset must be `top` / `wrist` (`config/models.yaml`) | 2026-11-14 06:04 |
+| 2026-11-14 06:10 | @nate | @harry | 📨 waiting on | **Thresholds now live in `robot/io.py`** (`eb79301`, your offer, Nate's call): `io.POSE_TOLERANCE_DEG`, `io.GRIPPER_EMPTY_BELOW`, `io.GRIPPER_OPEN`. Please point `fallback/scripted.py` at them and drop your copies, so a tune on the arm (N8) changes one place | 2026-11-14 06:10 |
+| 2026-11-14 06:04 | @harry | @nate | ⚠️ conflict | **Joint unit must match between recording and runtime** (H6): physicalai's `SO101` defaults to `unit="normalized"` ([-100, 100]) and the Intel tutorial passes no unit; `robot/io.py` runs in `"degrees"` (its limits and 5°/step cap are degrees); LeRobot's current SO follower records degrees (`use_degrees=True`). Please confirm which unit your recordings and the red-lego smoke-test set use, and record with the same one `io.py` runs. Also: camera names in the dataset must be `top` / `wrist` (`config/models.yaml`). **@nate 06:10:** red-lego looks **normalized** (every joint within ±100; `elbow_flex` max 99.7 is past `io.py`'s 97° limit), harmless for the smoke test since it never drives our arm. Our recording unit and camera keys: Nate is deciding now, answer on this row next | 2026-11-14 06:04 |
 | 2026-11-14 07:15 | @saliha | @all | 🔀 scope proposal | **PRD v2.5 on `context` (`5da0552`), re-sync.** A research pass (6 research agents + design + critic) put an ordered 🆕 v2.5 block at the top of each brief's ▶ Current tasks. Same vision. Highlights: no RL (D1, numbers in), every stage verified with reason codes/deadlines (D22), recovery order look-again → roll → re-grasp (D7), two fixed VLA strings + language-swap test + single-colour ACT hedge (D23), device/efficiency measured (D24), Nemotron advisory only (D25), **red-lego smoke test first** (D26). Bugs listed per person. Say no on this row to anything in your block. **@harry 05:41: yes** to the whole block, and yes to `run.py` calling `perception/scene.py` (zone gate + bowl-region check). **@nate 05:54: yes** to the whole block; N1's ACT export goes through Studio's Python API or runs on Modal (the `physicalai` CLI crashes on Windows: `fcntl`) | 2026-11-14 07:15 |
 | 2026-11-14 05:32 | @harry | @saliha | 📨 waiting on | **`opencv-python` instead of `opencv-python-headless`** in `perception/requirements.txt`: mission control (F6) needs a window, the headless build has none, and the two can't be installed together. Same library and API; perception code is unaffected | 2026-11-14 05:32 |
 | 2026-11-14 05:12 | @nate | @all | 🔀 scope proposal | **Training stack and F14 positions changed in my area** (`main` @ `8bc38a6`, `decisions.md` D20): ACT now trains with **Physical AI Studio's trainer** (`physicalai fit`), so it exports straight into the `physicalai` runtime; SmolVLA stays on LeRobot (Studio's SmolVLA loader is unfinished). ACT demos: **all 9 positions × 6, recorded in rounds**. @harry: F14's "new positions" trials use only the off-grid spots. Say no on this row if you object | 2026-11-14 05:12 |
@@ -89,6 +90,16 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 06:10 — decision — Gripper and pose thresholds live in `robot/io.py`; Modal keeps its default CPU — @nate [conflicts: @harry]
+- **Where:** `robotics-policies-nate` @ `eb79301` · merged to `main`: yes
+- **Did:** Moved `POSE_TOLERANCE_DEG`, `GRIPPER_EMPTY_BELOW` and `GRIPPER_OPEN` from `policies/mover.py` into `robot/io.py`, so the learned and scripted movers read one set of numbers. Kept Modal's default CPU for training: SmolVLA's loader needed 0.07 s per step against a 0.2 s update; only Studio's one-off quantile pass is slow, and only on datasets without q01/q99 statistics. 82 tests pass.
+- **Touched:** `robot/io.py`, `policies/mover.py`, `policies/tests/test_mover.py`
+- **Brief task:** prep for N3 and N8
+- **⚠️ Conflicts:** @harry: switch `fallback/scripted.py` to the `io.` thresholds (board row 06:10)
+- **📨 Needs:** @harry: the switch above
+- **Agreed by:** @nate (constants: your offer at 04:38)
+- **Status:** open
 
 ### 2026-11-14 06:09 — merge — H7: reasoning panel on mission control; each policy's real device on screen — @harry [conflicts: @saliha]
 - **Where:** `systems-voice-harry` @ `ffdf8e4` · merged to `main`: yes
