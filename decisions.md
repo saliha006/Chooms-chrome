@@ -117,16 +117,16 @@
 - **Evidence:** TBD (20-frame eval: label agreement, region correct, hat accuracy, latency; one measured prompt revision. This table is the NVIDIA "how we improved its outputs" text).
 - **Pitch line:** "The model explains what it sees using our measured scores, so it can't make things up."
 
-### D12 · Voice · Live reasoning through ElevenLabs, calm voice by default — Status: Planned · Owner: @harry · Updated: 2026-11-14 01:30
-- **Decision:** explanations are spoken through the laptop speakers while the arm works. Live lines use a low-latency ElevenLabs model (`eleven_flash_v2_5`) with streaming and a 1.5 s timeout; exclamations and fallback phrases are pre-generated with the more expressive model and cached as audio. Stale lines are dropped so speech never lags the arm.
+### D12 · Voice · Live reasoning through ElevenLabs, calm voice by default — Status: Planned · Owner: @harry · Updated: 2026-11-14 03:45
+- **Decision:** explanations are spoken through the laptop speakers while the arm works. The robot talks through its thought process in a conversational way, like a person thinking aloud (what it sees, what the score means, what it will do and why), so the judges hear the reasoning behind each move. Live lines use a low-latency ElevenLabs model (`eleven_flash_v2_5`) with streaming and a 1.5 s timeout; exclamations and fallback phrases are pre-generated with the more expressive model and cached as audio. Stale lines are dropped so speech never lags the arm.
 - **Why:** the ElevenLabs track rewards natural, emotionally expressive, fully autonomous audio; spoken reasoning makes the system's decisions legible to judges in real time.
 - **Alternatives rejected:** a pre-recorded script (not live, not grounded); local text-to-speech only (kept as a stretch offline fallback).
 - **Trade-off / risk:** network latency and quota; the cached clips cover it.
 - **Evidence:** TBD (time from verdict to first audio).
 - **Pitch line:** "You can hear it think, with the real numbers."
 
-### D13 · Personality · Cowboy persona on obstacle or hat, instant in, gradual out — Status: Planned · Owner: @harry @saliha · Updated: 2026-11-14 01:30
-- **Decision:** a persona state machine (CALM ↔ COWBOY). Triggers: an obstacle (local RealSense depth: taller than a brick or not brick-shaped; the arm skips it, never picks it) or the cowboy hat (Nemotron on the top view, plus an H-key backup). Switching in is instant with a cached "Holy smokes!"; switching out waits until the trigger has cleared and one brick is done, then one half-way line, then calm.
+### D13 · Personality · Cowboy persona on obstacle or hat, instant in, gradual out — Status: Planned · Owner: @harry @saliha · Updated: 2026-11-14 03:45
+- **Decision:** a persona state machine (CALM ↔ COWBOY). The cowboy voice is **David, deep southern cowboy**, from the ElevenLabs Voice Library (chosen by @harry 2026-11-14 03:45). Triggers: an obstacle (local RealSense depth: taller than a brick or not brick-shaped; the arm skips it, never picks it) or the cowboy hat (Nemotron on the top view, plus an H-key backup). Switching in is instant with a cached "Holy smokes!"; switching out waits until the trigger has cleared and one brick is done, then one half-way line, then calm.
 - **Why:** it makes the robot memorable and shows the voice layer reacting to the physical world, without touching the control path. The obstacle trigger uses local depth so it works offline.
 - **Alternatives rejected:** a persona picked by the operator only (not reactive).
 - **Trade-off / risk:** the personality layer is cut before any task gate slips; a hat in the workspace must be allowed under the safety rules (asked at the mentor session).

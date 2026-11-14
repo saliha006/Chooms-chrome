@@ -1,7 +1,7 @@
 > **Status, 2026-11-14 01:30.** Branch renamed by discipline; `decisions.md` is the team's pitch record (agents update it as you build). PRD v2.3: you own the personality layer: live reasoning voice and the cowboy switch (ElevenLabs), plus Aiven streaming. F16 dashboard dropped: no frontend. Repo exists (`saliha006/Chooms-chrome`; `main` has `README.md` + `progress.md`). The rest of Block A starts 00:45. Docs on `context`.
 
 # Harry: systems and integration (orchestration, ElevenLabs voice, Aiven streaming, demo) + submission
-**GitHub:** `{{github}}` · **Branch:** `systems-voice-harry` (one branch for all your work) · **Tool:** {{Claude Code / Codex}} · **Brief last updated:** 2026-11-14 01:30 by saliha
+**GitHub:** `Harryt3nn` · **Branch:** `systems-voice-harry` (one branch for all your work) · **Tool:** Claude Code · **Brief last updated:** 2026-11-14 01:30 by saliha
 **Spec:** `prd.md` (on `context`). A bare § means the PRD; CLAUDE.md and this brief's own sections are always named.
 
 ## 0. How the agent reads this brief (every task)
@@ -59,7 +59,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 | A3 | ⬜ | `run.py` state machine `IDLE→LOCATE→PICK→VERIFY_GRASP→INSPECT→DECIDE→[REINSPECT]→PLACE→LOG→next`; every exception → `HOME` plus a spoken message; flags `--mock`, `--scripted pick,place`. Build it on the `physicalai` runtime pieces (`InferenceModel`, `RobotRuntime`) where they fit (R5). | 30 min | Mock run sorts 5 fake bricks |
 | A4 | ⬜ | `ui/mission_control.py`: one OpenCV window (feed, heatmap overlay, label and score, state, per-stage latency, bricks done); keys S/P/E/Q on the control thread | 20 min | Readable at 2 m |
 | A5 | ⬜ | **Aiven:** 🆕 **Aiven for Apache Kafka** topic `sortsense.events` (+ `sortsense.alerts`) for live streaming, plus free-tier PostgreSQL ($50 credits on sign-up; no Kafka on our plan → PostgreSQL `LISTEN/NOTIFY` instead); producer on the telemetry thread, a consumer that writes rows and runs the drift rule (PRD F15); table `events` (PRD 7.3) 🆕 plus `inspections`, `benchmarks`, `models` (PRD F15); `telemetry/writer.py`: `queue.Queue` → `runs/events.jsonl` → batch insert; offline = JSONL only, sync later; `telemetry/report.sql` (success rate, latency per stage and device) | 20 min | Rows in Aiven from a mock run |
-| A6 | ⬜ | **ElevenLabs:** API key (MLH code: https://mlh.link/junction-26); 🆕 pick 2 voices: **calm** (cool, collected) and **cowboy** (Voice Library western voice, or Voice Design); `narrator/cache.py` pre-generates the template phrases below **in both personas** plus the exclamations ("Holy smokes!", "Well I'll be", "Yeehaw") with the most expressive model → WAV; `narrator/say.py` plays on a thread; live lines (from Saliha's reasoner, or templates with the numbers) via `eleven_flash_v2_5` streaming with a 1.5 s timeout, falling back to the cached phrase; a queue that drops stale lines | 30 min | Narration never blocks a state transition |
+| A6 | 🟡 | **ElevenLabs:** ~~API key~~ *(2026-11-14 03:33: key in Harry's `.env` as `ELEVENLABS_API_KEY`, 130k credits)* (MLH code: https://mlh.link/junction-26); 🆕 pick 2 voices: **calm** (cool, collected) and **cowboy** (Voice Library western voice, or Voice Design) *(2026-11-14 03:45, Harry: cowboy = **David, deep southern cowboy** (Voice Library), voice ID {{david voice id}}; calm voice {{calm voice: David too, or another?}}. Every spoken line is **conversational**: the robot talks through its thought process like a person thinking aloud, so the judges hear why it does each thing)*; `narrator/cache.py` pre-generates the template phrases below **in both personas** plus the exclamations ("Holy smokes!", "Well I'll be", "Yeehaw") with the most expressive model → WAV; `narrator/say.py` plays on a thread; live lines (from Saliha's reasoner, or templates with the numbers) via `eleven_flash_v2_5` streaming with a 1.5 s timeout, falling back to the cached phrase; a queue that drops stale lines | 30 min | Narration never blocks a state transition |
 | A6b 🆕 | ⬜ | **F18 persona state machine** `narrator/persona.py`: CALM → COWBOY on `narrator.trigger("obstacle"\|"hat")` (instant, cached exclamation); back after the trigger has cleared and one brick is done, through one half-way line; H key = hat trigger for the demo. Mock test: trigger → cowboy lines → cool-down → calm | 15 min | Mock run switches and returns |
 | A7 | ⬜ | `fallback/scripted.py` skeleton: replays named joint waypoints from `config/waypoints.yaml` via Nate's `robot/io.py` (use his `MockRobot` once pushed around 02:00; until then a local stub with the same 4 methods) `[⏸ waits on @nate: MockRobot]` | 10 min | Works against the mock |
 | A8 | ⬜ | README skeleton and architecture diagram (from PRD 7.1) | 10 min | Committed |
@@ -93,8 +93,8 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - Hackathon pace: the smallest thing that passes its *Done when*.
 
 ## 6. Open blanks (fill when the chat or repo answers them, CLAUDE.md 🔁)
-- GitHub handle and agent tool: {{github}} · {{tool}}
-- Camera by-id paths: {{paths}} · ElevenLabs voice IDs: {{voices}} · Aiven service name and env var: {{aiven}}
+- GitHub handle and agent tool: `Harryt3nn` · Claude Code
+- Camera by-id paths: {{paths}} · ElevenLabs voice IDs: cowboy = David (deep southern cowboy) {{david voice id}}, calm {{calm voice}} · Aiven service name and env var: {{aiven}}
 
 ## 6a. Reference
 ### Narrator templates (deterministic fallback when the reasoner is late; no LLM)
