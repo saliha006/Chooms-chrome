@@ -15,6 +15,7 @@ handoff/
 .env
 .env.*
 !.env.example
+certs/
 
 # Local only
 .claude/
