@@ -57,6 +57,7 @@
 - Which Intel rubric is used (slides or Junction page)?
 - Is a cowboy hat (soft, light) in the workspace OK under the printed safety rules?
 - Aiven for Apache Kafka: free plan, or does it come out of the $50 credits? Fallback: PostgreSQL `LISTEN/NOTIFY` streaming on the free PostgreSQL plan.
+- **Parked add-on, not decided (Saliha, 2026-11-14):** a **wheeled Lego platform** after everything above is done: (a) the brick tray on wheels, pushed by the follower into a stop block in the pick zone; (b) the follower itself on a wheeled base, scraping itself forward. Both were non-goals (§3) from when we assumed two moving arms. Only if the 23:00 freeze has passed, the 20 trials are logged, the README and video are safe and there is a free robot slot; it needs Nate's and Harry's yes first. Nothing is built or measured.
 - Side-track criteria: Aiven = meaningful use 40, technical 30, impact 20, creativity 10 · NVIDIA = meaningful Nemotron use 25, execution 25, output quality 25, creativity 25 · Modal = effective use 40, ambition 25, impact 20, deployed-app demo 15 (we accept losing that 15) · ElevenLabs (MLH) = no rubric published.
 
 **Gates:** Sat 15:30 scripted full loop · 17:00 ACT ≥ 6/10 · 19:00 SmolVLA (Nate's brief) · 23:00 freeze · Sun 09:00 submit.
