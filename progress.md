@@ -58,7 +58,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A code on `main` (written by Saliha's agent); next: Modal login + smoke run, export test |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A3 done (`python run.py --mock` sorts 5 bricks); next A6 voice, A6b persona, A7 scripted fallback |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A3, A7 done (scripted fallback + teach tool); next real-hardware mode in `run.py`, A4 mission control, A5 Aiven |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -84,6 +84,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 04:38 — merge — A7: scripted fallback mover + waypoint teaching tool — @harry [conflicts: @nate]
+- **Where:** `systems-voice-harry` @ `b7c2f6e` · merged to `main`: yes
+- **Did:** `fallback/scripted.py` `ScriptedMover` (implements `Mover`): pick_above → pick → close → pick_above → inspect; place reads the bowl colour from the `rules.yaml` instruction; `reinspect(0)` puts down at `pick_drop` and picks again, `±90` rolls the wrist; `estop` = torque off. It keeps commanding the gripper closed while carrying (a position servo told "stay here" relaxes its grip), so arrival checks leave the gripper out. `fallback/teach.py`: torque off, hand-guide, Enter saves each pose into `config/waypoints.yaml` (comments kept; `--mock` to rehearse). `config/waypoints.yaml` with the 7 poses, null until taught; the mover refuses to start and names any untaught pose. 11 new tests against a `MockRobot` that closes on a brick; with Nate's tests 44 pass.
+- **Touched:** `fallback/`, `config/waypoints.yaml` (also read by Nate's `LearnedMover`: same names `home`, `inspect`, `pick_drop`)
+- **Brief task:** A7 → ✅ done
+- **⚠️ Conflicts:** @nate: `GRIPPER_EMPTY_BELOW`, `GRIPPER_OPEN` and the inspection-pose tolerance are copied from `policies/mover.py` so the fallback never depends on the policy stack; if you would rather both read them from `robot/io.py`, say so and I will switch. Waypoints are taught Sat 09:30 with `python -m fallback.teach home pick_above pick pick_drop inspect bowl_red bowl_blue`
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 04:30 — merge — A2b shared capture + A3 `run.py` state machine: mock run sorts 5 bricks — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` @ `c3deb81` · merged to `main`: yes
