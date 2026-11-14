@@ -4,6 +4,11 @@
     modal run train/export.py --job <job> --policy smolvla    # LeRobot SmolVLA: the latest pretrained_model/
     modal volume get sortsense-runs <job>/openvino ./exports/<job>/   # then copy to the Intel laptop
 
+The check loads the export with Studio's `InferenceModel` on CPU, the call path the laptop uses, gives it a zero
+observation (SmolVLA also gets the exact `perfect` task string from config/rules.yaml, or --task) and reports whether
+the action chunk is finite. A job is exported once and later runs only re-check it, so delete <job>/openvino on the
+Volume to export a newer checkpoint.
+
 Runs on Modal's Linux because the `physicalai` CLI does not start on Windows. The IR is device-independent; the
 Intel laptop compiles it for CPU, GPU or NPU. Back up the checkpoint first (Studio PR #1403 could delete one).
 """
@@ -33,39 +38,46 @@ def checkpoint_for(policy: str, job_dir: Path) -> Path:
 
 
 @app.function(image=image, volumes={"/runs": volume}, cpu=4.0, memory=16384, timeout=1800)
-def export(job: str, policy: str) -> str:
+def export(job: str, policy: str, task: str) -> str:
     import numpy as np
-    import openvino as ov
+    from physicalai.inference import InferenceModel
 
     job_dir = Path("/runs") / job
-    checkpoint = checkpoint_for(policy, job_dir)
-    if policy == "act":
-        from physicalai.policies import ACT
-
-        model = ACT.load_from_checkpoint(str(checkpoint), map_location="cpu")
-    else:
-        from physicalai.policies.smolvla import SmolVLA
-
-        model = SmolVLA(pretrained_name_or_path=str(checkpoint), dtype="float32")  # f32: the CPU NaN bug (#1414)
     out = job_dir / "openvino"
-    model.export(str(out), backend="openvino")
-    volume.commit()
+    report = []
+    if not any(out.rglob("*.xml")):
+        checkpoint = checkpoint_for(policy, job_dir)
+        if policy == "act":
+            from physicalai.policies import ACT
 
-    report = [f"exported {checkpoint.relative_to(job_dir)} -> {out.relative_to(job_dir)}"]
+            model = ACT.load_from_checkpoint(str(checkpoint), map_location="cpu")
+        else:
+            from physicalai.policies.smolvla import SmolVLA
+
+            model = SmolVLA(pretrained_name_or_path=str(checkpoint), dtype="float32")  # f32: the CPU NaN bug (#1414)
+        model.export(str(out), backend="openvino")
+        volume.commit()
+        report.append(f"exported {checkpoint.relative_to(job_dir)} -> openvino")
+    else:
+        report.append("existing export, re-checked only")
     report += [f"  {p.relative_to(out)} ({p.stat().st_size / 1e6:.1f} MB)" for p in sorted(out.rglob("*")) if p.is_file()]
-    for xml in sorted(out.rglob("*.xml")):
-        compiled = ov.Core().compile_model(str(xml), "CPU")
-        inputs = {port.any_name: np.zeros([d if d > 0 else 1 for d in port.partial_shape.get_min_shape()],
-                                          dtype=port.element_type.to_dtype()) for port in compiled.inputs}
-        start = time.monotonic()
-        outputs = compiled(inputs)
-        report.append(f"{xml.name}: CPU inference on zeros in {(time.monotonic() - start) * 1000:.0f} ms; "
-                      f"inputs {[(k, v.shape) for k, v in inputs.items()]}; outputs {[o.shape for o in outputs.values()]}")
+
+    # The laptop's call path: the manifest's own preprocessing (resize, newline, normalise, tokenise) and denormalising
+    runtime = InferenceModel(str(out), device="CPU")
+    observation = {f.name: [task] if f.ftype == "LANGUAGE" else np.zeros((1, *f.shape), np.float32)
+                   for f in runtime.input_features}
+    start = time.monotonic()
+    chunk = runtime.predict_action_chunk(observation)
+    report.append(f"InferenceModel on CPU, first call: {', '.join(observation)} -> action chunk {chunk.shape} in "
+                  f"{(time.monotonic() - start) * 1000:.0f} ms; all finite: {bool(np.isfinite(chunk).all())}")
     return "\n".join(report)
 
 
 @app.local_entrypoint()
-def main(job: str, policy: str = "act"):
+def main(job: str, policy: str = "act", task: str = ""):
+    import yaml
+
     if policy not in ("act", "smolvla"):
         raise SystemExit("--policy must be act or smolvla")
-    print(export.remote(job, policy))
+    rules = yaml.safe_load((Path(__file__).resolve().parents[1] / "config" / "rules.yaml").read_text())
+    print(export.remote(job, policy, task or rules["perfect"]))

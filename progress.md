@@ -103,6 +103,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 17:05 — feat — Live Nemotron line: `reasoner/live.py`, off the control thread — @saliha [conflicts: @harry]
+- **Where:** `aiml-perception-saliha` @ `74b19ae` · merged to `main`: yes
+- **Did:** `LiveLine(narrator.say).submit(crop, signal)` returns at once; a worker asks Nemotron (4 s timeout), keeps only the newest request, drops a late or failed answer, and throws away a line that names the wrong bowl or quotes a number we did not give it. Real API check on a stand-in image, 6 calls: 6 of 6 grounded, 1.9-2.7 s each. Not yet measured on real bricks.
+- **Touched:** `reasoner/live.py`, `reasoner/tests/test_live.py` (6 new tests, 254 pass)
+- **Brief task:** live Nemotron line → 🟡 built, not wired
+- **⚠️ Conflicts:** @harry: wiring is yours in `run.py` after DECIDE, for any label (not only uncertain): `live.submit(crop, signal, persona)`; `narrator.say(label, text=line)` already accepts the spoken text.
+- **📨 Needs:** @harry: your yes to wire it; blocks the NVIDIA eval on real bricks.
+- **Status:** open
+
 ### 2026-11-14 16:50 — docs — Submission draft, station cheat sheet, trials slide on bench.trials — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
 - **Did:** `docs/submission.md`: Junction Platform text per track (Intel, ElevenLabs, Aiven filled from facts, every unmeasured number TBD; NVIDIA and Modal left as headings). `docs/station.md`: every command from a fresh Intel laptop to the scripted gate, in order. `docs/trials-slide.md` now reads its numbers from `bench.trials` + `truth.csv`. Checked on the Intel laptop: `main` pulls, 220 tests pass, the mock loop sorts 5, OpenVINO lists CPU + GPU (NPU packages still not installed: Harry runs the apt line in `docs/station.md` step 0 when the laptop is free).
