@@ -58,6 +58,7 @@ class Cell:
         self.run_id = run_id
         self.state = "IDLE"
         self.sorted = 0
+        self.tally = {"perfect": 0, "defective": 0, "rechecked": 0}  # for the spoken run summary
         self.next_brick = 1
         self.mode = "mock"
         self.pause_on_help = True  # False without a window (--headless): nobody can press P, so stop instead
@@ -95,7 +96,7 @@ class Cell:
                     narrator.brick_done()
                 except Exception as exc:
                     self._ask_for_help(brick_id, exc)
-            narrator.say("quit" if self.quit.is_set() else "empty", n=self.sorted)
+            narrator.say("quit" if self.quit.is_set() else "empty", n=self.sorted, **self.tally)
             if self.finale is not None and not self.quit.is_set():
                 self.state = "DANCE"
                 narrator.say("dance")
@@ -133,6 +134,8 @@ class Cell:
         final = self.last_signal  # the look that settled it, after any recovery
         with self._stage("LOG", brick_id, final, label=label) as row:
             row["outcome"] = "sorted"
+            self.tally[label] += 1
+            self.tally["rechecked"] += bool(self.steps)  # any look beyond the first
             row["note"] = ReasonTrace.from_signal(final, label, self.steps).note()
 
     def _verify_place(self, brick_id: int, instruction: str, before) -> None:
