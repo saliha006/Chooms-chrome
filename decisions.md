@@ -100,12 +100,12 @@
 - **Evidence:** TBD (`bench/results.md`, success-vs-demos curve).
 - **Pitch line:** "We report joules per brick and how few demos it takes, not just speed."
 
-### D10 · Efficiency · One camera grab shared by the policy and the inspector — Status: Planned · Owner: @harry · Updated: 2026-11-14 01:30
+### D10 · Efficiency · One camera grab shared by the policy and the inspector — Status: Built · Owner: @harry · Updated: 2026-11-14 04:30
 - **Decision:** each camera is read once per tick and the same frame goes to the policy and the inspector.
 - **Why:** Intel lists "sharing cameras between policy and inspection" among the ideas it wants to see; it saves a USB stream and latency.
 - **Alternatives rejected:** separate capture per consumer.
 - **Trade-off / risk:** which physical camera is the RealSense is confirmed at the station.
-- **Evidence:** TBD.
+- **Evidence:** built in `common/capture.py` (one grab thread per camera; consumers read the same frame and wait for one taken after the arm stopped); tested with mock cameras (two reads between frames return the same array, one grab). TBD (USB streams and latency saved, measured on the Intel laptop).
 - **Pitch line:** "One camera feed, two jobs."
 
 ## D. Reasoning, voice and personality
