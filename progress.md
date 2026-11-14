@@ -105,6 +105,14 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 17:20 — feat — Nemotron line check for the NVIDIA table: `reasoner/evaluate.py` — @saliha [conflicts: none]
+- **Where:** `aiml-perception-saliha` → `main` · merged to `main`: yes
+- **Did:** `python -m reasoner.evaluate cases.csv --persona calm|cowboy` sends each real inspection (image, label, score, thresholds, box) through the robot's own call and checker and prints lines consistent with the verdict with a 95% interval, failures, time to a line and every contradicting line. A failed request never counts as consistent. 6 tests with a fake model; not yet run on real bricks.
+- **Touched:** `reasoner/evaluate.py`, `reasoner/tests/test_evaluate.py`
+- **Brief task:** NVIDIA 20-frame eval (D11) → 🟡 harness done, needs real inspections
+- **⚠️ Conflicts:** none
+- **📨 Needs:** none
+
 ### 2026-11-14 17:15 — test — SmolVLA export matches LeRobot's own policy (parity) — @nate [conflicts: none]
 - **Where:** `robotics-policies-nate` · merged to `main`: yes
 - **Did:** `train/parity.py` runs identical inputs (random images and state, the real task's tokens, zero starting noise) through LeRobot's `SmolVLAPolicy` and the OpenVINO IR: max difference 2.6e-6 on actions up to 2.36; the exported tokenizer gives LeRobot's exact token ids. The export is deterministic (Studio traces it with zero starting noise; LeRobot samples random noise by default).
