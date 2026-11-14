@@ -302,6 +302,14 @@
 - **Evidence:** TBD.
 - **Pitch line:** "It can leave its station and come back to exactly where it learned."
 
+### D34 · Voice · The robot is Pix: it answers to its name, from facts it already has — Status: Built (heard end to end with generated speech; the station microphone TBD) · Owner: @harry · Updated: 2026-11-14 23:20
+- **Decision:** the robot is called Pix and acts only on sentences that name it ("Hey Pix, …"), hat commands included (Harry: "hey pix for everything"). It answers what it sees, how many it has sorted, why it chose that bowl, what it is doing and who it is, worded from the cell's own facts (stage, last score and thresholds, defect position, tally).
+- **Why:** naming it means the crowd and the team talking nearby never trigger it, and the operator can talk to it naturally on stage. Answers from its own facts are instant, offline and always true, which matters more on stage than a free-form reply.
+- **Alternatives rejected:** acting on any sentence (too many false triggers in a hackathon hall); a language model writing every answer (slower, needs the network, can say something untrue); hat commands without the name (Harry chose one rule for everything; H stays the backup).
+- **Trade-off / risk:** speech-to-text can mishear the name ("picks", "pics" are accepted; "Pix" is a key term); a question outside the five gets a hint, not an answer.
+- **Evidence:** generated speech through the real listener: "Hey Pix, what do you see now?" heard in 750 ms and answered with the stage, score and threshold; "Hey Pix, why that bowl?" answered in the cowboy voice while the hat was on; a hat command without the name was ignored. Full suite 340 passed.
+- **Pitch line:** "Ask Pix what it sees, and it tells you, with the numbers behind its decision."
+
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
 |---|---|---|
