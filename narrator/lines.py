@@ -14,6 +14,10 @@ LINES: dict[str, dict[str, str]] = {
         "uncertain": "I'm not sure about this one. Let me take another look.",
         "still_uncertain": "Still can't tell, so I'll play it safe. Orange bowl.",
         "grasp_fail": "Missed it. Let me try that again.",
+        "first": "First brick. Let's see what we've got.",
+        "next": "On to the next one.",
+        "roll": "Rolling it for a better look.",
+        "regrasp": "Setting it down to pick it up fresh.",
         "empty": "That's the last one. All done.",
         "quit": "Stopping here and heading home.",
         "dance": "That's the zone empty. Time for a little victory dance.",
@@ -39,6 +43,10 @@ LINES: dict[str, dict[str, str]] = {
         "uncertain": "Hold your horses, lemme take another look.",
         "still_uncertain": "Can't rightly tell, so I'm playin' it safe. Orange bowl.",
         "grasp_fail": "Dang, slipped right outta my hand. One more go.",
+        "first": "First critter of the day. Let's see what we got.",
+        "next": "Next one, partner.",
+        "roll": "Turnin' it over for a better look.",
+        "regrasp": "Settin' it down to grab it fresh.",
         "empty": "That's the whole herd. All done.",
         "quit": "Callin' it a day, partner. Headin' home.",
         "dance": "That's the whole herd sorted. Time for a little two-step!",
@@ -62,7 +70,7 @@ LINES: dict[str, dict[str, str]] = {
 }
 
 # Every event run.py says out loud; tests check each has a line in both personas.
-EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance", "drift", "drive", "arrived",
+EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance", "drift", "drive", "arrived", "first", "next", "roll", "regrasp",
           *(f"help.{reason.value}" for reason in Reason))
 
 

@@ -77,25 +77,23 @@ def test_a_late_line_is_dropped_for_the_cached_clip(tmp_path):
     assert spy.played == [(clip, b"RIFF-cached")]
 
 
-def test_a_newer_line_replaces_one_not_started_yet():
-    spoken, gate = [], threading.Event()
+def test_a_line_does_not_wait_behind_a_slow_one():
+    """At real pace a line arrives every ~3 s; a single queue made each wait for the last one and time out."""
+    spy, release = Spy(), threading.Event()
 
     def synth(text, persona):
-        gate.wait(2)
-        spoken.append(text)
-        return b"RIFF"
+        if text == "slow":
+            release.wait(2)
+        return text.encode()
 
-    spy = Spy()
-    live = Live(synth, spy, timeout_s=5)
-    live.speak("first", "calm", fallback=None)
-    time.sleep(0.05)  # "first" is now being synthesised
-    live.speak("stale", "calm", fallback=None)
-    live.speak("newest", "calm", fallback=None)
-    gate.set()
-    deadline = time.monotonic() + 2
-    while len(spoken) < 2 and time.monotonic() < deadline:
-        time.sleep(0.01)
-    assert spoken == ["first", "newest"]
+    live = Live(synth, spy, timeout_s=1.0)
+    live.speak("slow", "calm", fallback=None)
+    time.sleep(0.05)
+    live.speak("quick", "calm", fallback=None)
+    assert spy.done.wait(1) and spy.played[0][1] == b"quick"
+    release.set()
+    assert live.wait_idle(3)
+    assert [audio for _, audio in spy.played] == [b"quick"]  # "slow" finished after a newer line: dropped
 
 
 @pytest.fixture
@@ -196,7 +194,18 @@ def test_past_the_run_budget_the_cached_clip_plays(tmp_path):
         return b"RIFF-live"
 
     live = Live(synth, spy, budget_chars=12)
-    live._say("ten chars.", "calm", clip, False, time.monotonic())  # 10 of 12
-    live._say("five!", "calm", clip, False, time.monotonic())  # would make 15: over budget
+    live.speak("ten chars.", "calm", clip)  # 10 of 12
+    assert live.wait_idle(2)
+    live.speak("five!", "calm", clip)  # would make 15: over budget
+    assert live.wait_idle(2)
     assert synthesised == ["ten chars."]
     assert spy.played[-1] == (clip, b"RIFF-cached")
+
+
+def test_step_lines_carry_the_tally_and_the_borderline_score():
+    assert compose("calm", "next", n=3, perfect=2, defective=1) == \
+        "That's 3 sorted so far: 2 perfect, 1 defective. On to the next one."
+    assert compose("cowboy", "roll", score=0.271) == \
+        "Still 0.27, smack between my lines. Turnin' it ninety degrees for a better look."
+    assert compose("calm", "regrasp", score=0.26).startswith("Still undecided at 0.26.")
+    assert compose("calm", "next", n=0) is None and compose("calm", "roll") is None  # the cached line covers it

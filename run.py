@@ -1,5 +1,5 @@
 """SortSense cell: one brick at a time through the PRD 7.1 state machine.
-
+`   1`  123w`1q2` pp
     python run.py --mock                    # whole loop with stand-ins, no hardware
     python run.py --mock --headless         # same, no window (tests, SSH without a display)
     python run.py --scripted pick,place     # real station, scripted motion (the 15:30 gate)
@@ -134,6 +134,10 @@ class Cell:
         narrator.say("arrived", cm=travelled, seconds=time.monotonic() - started)
 
     def sort_one(self, brick_id: int) -> None:
+        if self.sorted:
+            narrator.say("next", n=self.sorted, **self.tally)
+        else:
+            narrator.say("first")
         # The arm is home here (start, or after the last place), so the bowls are in clear view.
         bowls_before = self._top_frame() if self.bowl_check else None
         self._pick(brick_id)
@@ -227,6 +231,7 @@ class Cell:
             narrator.say(signal.label, **spoken_numbers(signal), after="looked again")
             return signal.label
         for angle in chain["reinspect_angles"]:
+            narrator.say("roll" if angle else "regrasp", score=signal.score)
             with self._stage("REINSPECT", brick_id, note=f"angle {angle}") as row:
                 back = self.picker.reinspect(angle)
                 timed_out = deadline.expired()
