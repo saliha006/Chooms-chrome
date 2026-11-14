@@ -40,6 +40,8 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 14:50 | @saliha | @nate | ⚠️ conflict | **Your coding-heavy tasks N3, N4, N5 move to Saliha's agent** (Saliha's standing instruction; briefs top, D32): grasp band + settle, early exit, wrist roll back before place, bowl check (`policies/mover.py`, `policies/episode.py`), the SmolVLA recipe (`train/commands.py`), the colour hedge (`train/`), plus a robot-episode audit `train/audit.py`. They land on `main` with tests on `MockRobot` for your review; you keep N6-N9 and all robot time. **If you already started any of them, reply here and I stop that one.** Data quality first: the N6 tips come before episode 1, and run the audit after each round once it lands | 2026-11-14 14:50 |
+| 2026-11-14 14:50 | @saliha | @all | 🔀 scope proposal | **Data quality first, hyperparameters second (second mentor; decisions.md D32, PRD §0 and F21, `context`, re-sync).** Every dataset is audited by code before it trains anything (images: `perception/audit.py`; episodes: `train/audit.py`); no hyperparameter sweep before the audit passes, then one small Modal sweep; ACT stays at lr 1e-5 until a sweep beats it. Say no on this row to anything you object to | 2026-11-14 14:50 |
 | 2026-11-14 14:30 | @saliha | @nate | 📨 for you | **Do first, before the first recorded episode** (briefs top, decisions.md D23/D31): (1) record SmolVLA with exactly `"the brick is perfect, place it in the blue bowl"` and `"the brick is defective, place it in the red bowl"` (they carry the verdict; nothing is recorded yet, so it is free); (2) rehearse every stage by leader-follower teleop, about 15 min folded into your 6 practice runs, nothing recorded: 9 start dots, inspection hold + wrist roll ±90° in view, both bowls, gripper numbers (N8), unit check (D29), one e-stop press. A failure moves the tape or a bowl, not the policy. Reply here if you disagree | 2026-11-14 14:30 |
 | 2026-11-14 14:19 | @saliha | @all | 🔀 scope proposal | **Mentor guidance, PRD §0 + decisions.md D31 on `context`, re-sync.** Anomalib is the only anomaly detector; the VLA (built in Studio) does the integration, translating perception results and the task instruction into robot actions; test a move with the leader first, then fine-tune. Applied: Nemotron's "second opinion" on uncertain bricks is dropped (D25, it only explains); the PRD judging table names perception, reasoning, planning, manipulation. **Not applied, awaiting Saliha's yes, then @nate's:** (a) the verdict inside the VLA's two strings, chosen before the first SmolVLA recording; (b) a 15-minute leader-teleop rehearsal of every stage before the first recorded episode. **Open question for the mentors:** SmolVLA is fine-tuned with LeRobot (D20): acceptable for the 20-point Studio criterion? Say no on this row to anything you object to. **2026-11-14 14:30: (a) and (b) are both adopted, see the two rows above.** | 2026-11-14 14:19 |
 | 2026-11-14 12:40 | @saliha | @harry | 📨 for you | **Drift rule ready** (`main` `4c96ef0`): `perception.drift.drift(perfect_scores, good_mean, t_low)` returns `Drift(fraction, alert, bricks)`; feed it the `score` of INSPECT rows labelled `perfect` (first look only, oldest first); `perception.drift.baseline(thresholds_path)` reads `good_mean`, written by `python -m perception.evaluate` (exists after the real-brick run). `opencv-python` now replaces the headless pin (your 05:32 ask, resolved). **Offer, only on your yes:** Saliha's agent builds `narrator/persona.py` (A6b) in your folder if you are short of time before 15:30. Reply on this row | 2026-11-14 12:40 |
@@ -94,6 +96,14 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 14:50 — scope — Data quality first (D32); Nate's coding-heavy tasks move to Saliha's agent — @saliha [conflicts: @nate]
+- **Where:** `context` (D32, PRD §0/R20/F21, three briefs) · merged to `main`: n/a (docs)
+- **Did:** second-mentor guidance recorded; F21 data-quality audit added; N3, N4, N5 and the episode audit switched to Saliha's agent per her standing instruction (Nate reviews, keeps robot time)
+- **Touched:** `decisions.md`, `prd.md`, the three briefs
+- **⚠️ Conflicts:** @nate: N3/N4/N5 and `train/audit.py` are now coded by Saliha's agent in `policies/` and `train/`; reply to stop any he has started
+- **Agreed by:** @saliha (switch); @nate has not replied yet
+- **Status:** open
 
 ### 2026-11-14 14:40 — feat — VLA strings carry the verdict; policies get the inspect camera — @harry [conflicts: @nate]
 - **Where:** `systems-voice-harry` → `main` @ `5e99561` · merged to `main`: yes
