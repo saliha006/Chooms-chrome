@@ -1,0 +1,43 @@
+# Reliability slide (n = 20): draft for H8
+
+Fill from the 20 logged trials (Saturday 23:00–01:00) with `telemetry/report.sql` on the Aiven `events` table.
+Real runs only; mock runs are excluded by their `mock-` run id.
+
+## The slide
+
+**SortSense sorted k of 20 bricks without a human (95% CI lo–hi%).**
+
+| | Result | Source (`report.sql`) |
+|---|---|---|
+| Sorted without help | k / 20 (95% CI from the table below) | query 1, `sorted` and `help_pauses` |
+| Why it asked for help | reason codes and counts | query 2 |
+| Needed a second look | n bricks, all resolved / flagged | query 4 |
+| Inspection latency (p50 / p95) and device | ms on the NPU | query 3, `INSPECT` row |
+| Cycle time | s per brick (bricks per minute) | query 3, sum of stage means |
+| Mode | which policy or scripted mover ran each stage | run header in the log |
+
+Say "k of 20 with a 95% interval of lo–hi%": twenty trials can't support a single precise percentage, and
+judges trust a stated interval more than a bare one.
+
+## 95% intervals for k of 20 (exact Clopper–Pearson)
+
+| Successes | Rate | 95% interval |
+|---|---|---|
+| 20/20 | 100% | 83–100% |
+| 19/20 | 95% | 75–100% |
+| 18/20 | 90% | 68–99% |
+| 17/20 | 85% | 62–97% |
+| 16/20 | 80% | 56–94% |
+| 15/20 | 75% | 51–91% |
+| 14/20 | 70% | 46–88% |
+| 13/20 | 65% | 41–85% |
+| 12/20 | 60% | 36–81% |
+| 11/20 | 55% | 32–77% |
+| 10/20 | 50% | 27–73% |
+
+## Open before the trials
+
+- **Was each verdict right?** The `events` table records what the robot decided, not the brick's true label.
+  To report sorting accuracy (not just "sorted without help"), the trial operator has to note each brick's
+  true label. Agree how with Nate before 23:00 (owner of the trials: Nate + Harry).
+- Which bricks and positions: the F14 shifted / pile trials use the off-grid spots only (Nate, D20).
