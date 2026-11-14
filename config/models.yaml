@@ -7,4 +7,4 @@ policies:
   act: null        # ACT export dir, once it passes the 17:00 gate
   smolvla: null    # SmolVLA export dir, once it passes the 19:00 gate
   devices: [GPU, CPU]   # PRD 7.2: GPU first, CPU fallback
-  cameras: [top, wrist] # roles the policies were recorded with (train/RECORDING.md)
+  cameras: [top, wrist, inspect]  # recorded roles; SmolVLA maps them to camera1..3 in this order
