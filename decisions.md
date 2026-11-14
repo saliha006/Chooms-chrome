@@ -149,8 +149,8 @@
 - **Evidence:** live on Aiven's free PostgreSQL plan (18.7): a mock run's 37 events all landed, re-sending them all left 37 (duplicate-free), connect ~0.4 s warm, 5.3 s cold; the robot never waits on it (a separate sync thread reads the local JSONL buffer). Both Aiven services we need have free plans with no card. TBD (Kafka events streamed, drift alert fired in the trial run). **Drift alarm (16:10, `main` `ce9a437`):** after each batch the sync thread asks PostgreSQL for this run's first-look perfect scores and runs `perception.drift`; an alert is spoken once and shown as a banner, the arm never stops (Harry 16:00: speak + banner only). A failed drift query sits in a savepoint, so the events still land. Off until `good_mean` is saved and on mock runs. Live query against Aiven: TBD.
 - **Pitch line:** "Aiven carries the cell's live event stream and raises the alarm when lighting drifts."
 
-### D15 · Training · Modal for training and logs only, no frontend — Status: Built · Owner: @nate · Updated: 2026-11-14 06:12
-- **Decision:** ACT and SmolVLA train on Modal GPUs from a reproducible script, with GPU type, time and cost logged. No dashboard or web app (the planned live dashboard was dropped).
+### D15 · Training · Modal for training and logs only, no frontend — Status: Built · Owner: @nate · Updated: 2026-11-14 16:15
+- **Decision:** ACT and SmolVLA train on Modal GPUs from a reproducible script, with GPU type, time and cost logged. No dashboard or web app (the planned live dashboard was dropped). Real runs are started on the deployed app (`modal deploy`, then `python -m train.launch` spawns each job), not from a client that waits: twice on 2026-11-14 the laptop's network dropped and Modal cancelled the training call it was waiting on.
 - **Why:** Intel provides Modal GPUs for training; Modal's own page scores a deployed app (15%), but a frontend is out of scope for the team, so we accept losing those points rather than risk the main track.
 - **Alternatives rejected:** a Modal-hosted dashboard (dropped); training on the laptop.
 - **Trade-off / risk:** if Modal's prize needs a web app, we drop Modal. Training containers keep Modal's default CPU: on it, SmolVLA's loader took 0.07 s per step against a 0.2 s update, so the GPU was not starved; revisit if a dataset lacks q01/q99 statistics (Studio then spends ~40 s per episode on a one-off pass).
@@ -286,6 +286,14 @@
 - **Trade-off / risk:** the thresholds in the audit (hesitation, blur) are TUNE until real data exists; an audit can flag good episodes, so it flags and a person decides.
 - **Evidence:** `perception/audit.py` and `train/audit.py` built (2026-11-14 15:25, 204 tests pass); on the public SO-101 red-lego dataset (50 episodes) the episode audit reproduces what the smoke run found by hand: no q01/q99 statistics, normalized units, one 2 s hesitation, no failures. TBD (first report on our own episodes).
 - **Pitch line:** "We checked every demonstration by code before we trusted it."
+
+### D33 · Process · Base docked for recording; a base move waits until after the freeze — Status: Planned · Owner: @nate · Updated: 2026-11-14 16:15
+- **Decision:** the follower's base sits in a dock (taped outline and a stop block behind it) and stays clamped there for every recorded episode and every run. Moving the base (the parked wheeled-platform idea, option b in PRD §0) happens only after the 23:00 freeze, on the parked item's conditions, and always re-docks before any learned policy runs. The mentors said unclamping is allowed (Nate asked, 2026-11-14).
+- **Why:** every learned policy, taught waypoint and camera view assumes the base never moves; the dock makes its position repeatable, so a later move costs no recorded data. Moving it before the gates would take robot time while nothing is recorded.
+- **Alternatives rejected:** building the move before recording (robot time, gate risk); dropping it (loses a distinctive demo moment).
+- **Trade-off / risk:** the arm's mass sits high and forward when it reaches, so an unclamped base can tip; E turns the torque off and the arm drops. Any move is rehearsed clamped first, with someone holding the cables. Needs Harry's yes (board row 16:15).
+- **Evidence:** TBD.
+- **Pitch line:** "It can leave its station and come back to exactly where it learned."
 
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
