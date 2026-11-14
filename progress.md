@@ -128,6 +128,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 23:30 — feat — Trigger C built: a cowboy exclamation on every calm defective verdict; freeze lifted — @harry [conflicts: @saliha @nate]
+- **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
+- **Did:** Saliha's 21:35 trigger C (D13): every defective verdict said in the calm voice gets one cached cowboy exclamation first ("Holy smokes!", "Well I'll be!", "Yeehaw!", rotating), then the calm explanation with the score; with the hat on nothing extra plays (the whole line is already the cowboy's). Heard on Harry's laptop: three defective verdicts, three different exclamations, each followed by its calm line. 342 tests pass. **Freeze:** Harry says the 23:00 feature freeze no longer applies (Nate called it flexible at 19:30); work continues on features where it helps the demo.
+- **Touched:** `narrator/__init__.py`, tests
+- **⚠️ Conflicts:** @saliha: D13 trigger C is now Built
+- **📨 Needs:** none
+- **Agreed by:** @saliha (decided 21:35), @harry (yes 23:25)
+- **Status:** open
+
 ### 2026-11-14 23:20 — feat — The robot is Pix: "Hey Pix, …" questions and hat by voice (post-freeze, freeze flexible per Nate) — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
 - **Did:** the listener acts only on sentences that name Pix (Harry: "hey pix for everything"; sound-alikes like "picks" count; "Pix" is a speech-to-text key term). Questions answered from the cell's own facts (`Cell.facts()`, `narrator/answers.py`): what it sees, how many sorted, why that bowl, what it's doing, who it is; anything else gets a hint. End to end with generated speech: "Hey Pix, what do you see now?" heard in 750 ms and answered with the stage, last score and threshold; "Hey Pix, why that bowl?" answered in the cowboy voice while the hat was on; "I'm taking the hat off" without the name was ignored. Demo script and README updated. Full suite 335 passed, 4 skipped (after installing `physicalai[so101]` locally, see the board row).
