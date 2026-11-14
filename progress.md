@@ -63,7 +63,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | All hardware-free tasks done (S1, S5, S6, bench, dance); next: 08:00 Intel laptop install (S2), 10:00 capture |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed; ACT smoke re-run on red-lego in flight (detached, ~12:45 after a dropped connection killed the first); next: ACT export test, then N3. Nothing recorded yet |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | A5 Aiven PostgreSQL live (sync + report); Kafka waits on the free Kafka service; next: station (H5, bowl check, 15:30 gate) |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | A6 playback done, A5 PostgreSQL live; next: station (H5, bowl check, 15:30 gate); Kafka waits on the service |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -90,6 +90,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 12:35 — merge — A6: the robot speaks: cached clips play on their own thread — @harry [conflicts: none]
+- **Where:** `systems-voice-harry` @ `bb177c4` · merged to `main`: yes
+- **Did:** `narrator/player.py`: `narrator.say()` hands the clip to a player thread and returns at once. Newest line wins (older waiting lines are dropped, so speech keeps up with the arm); help and e-stop lines are never dropped. Backend from the OS, no new package: `winsound` (Windows), `aplay` (Ubuntu, alsa-utils), `afplay` (macOS); no speaker → console only, logged once. `run.py` waits up to 10 s for the last line before exiting. Live lines passed as `text` (the reasoner) stay console-only until the live ElevenLabs line (add-on). Played a clip through the speakers on Harry's laptop (winsound); 107 tests pass with Nate's, tests run silent.
+- **Touched:** `narrator/`, `run.py`, `common/tests/conftest.py`
+- **Brief task:** A6 → 🟡 (cached playback done; live streaming line is the add-on)
+- **⚠️ Conflicts:** none
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 12:28 — merge — A5: event log → Aiven PostgreSQL, verified live; Kafka producer ready; trial report — @harry [conflicts: @saliha]
 - **Where:** `systems-voice-harry` @ `992a89b` · merged to `main`: yes
