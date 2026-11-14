@@ -21,7 +21,7 @@ SLOT_POSES = tuple(f"{kind}_{n}" for n in range(2, 6) for kind in ("pick_above",
 # Gripper thresholds and the inspection-pose tolerance live in robot/io.py, shared with LearnedMover,
 # so a tune on the arm (Nate's N8) changes one place.
 GRIPPER_CLOSED = 0.0
-ARRIVE_TOLERANCE_DEG = 2.0  # a scripted move is done; matches robot.io.move_to
+ARRIVE_TOLERANCE_DEG = 4.0  # a scripted move is done: the loaded shoulder settles up to 3.5° short (dry run, 2026-11-15 01:35)
 MOVE_SECONDS = 3.0  # TUNE: longest single move before it counts as blocked
 
 
