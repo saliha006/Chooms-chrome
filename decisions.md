@@ -92,8 +92,8 @@
 - **Evidence:** PaDiM IR size INT8 47 MB vs FP16 88 MB (file sizes). On Saliha's own laptop (not the Intel laptop, stand-in model): the compile cache cut GPU compile from ~10 s to ~1.5 s. Intel-laptop latency, NPU and energy table: TBD (Saturday 21:00 GPU slot, `bench/results.md`).
 - **Pitch line:** "Each model runs on the chip it suits, and we have the numbers for every choice."
 
-### D9 · Efficiency · Energy, thermal and demo-count measurements — Status: Built (energy/thermal harness, `bench/power.py`) / Planned (demo-count sweep) · Owner: @saliha @nate · Updated: 2026-11-14 01:30
-- **Decision:** measure energy per inference and watts with Intel RAPL counters, peak temperature during the 20 trials, and success vs number of demonstrations (ACT trained on 18 / 36 / 54 episodes in parallel on Modal).
+### D9 · Efficiency · Energy, thermal and demo-count measurements — Status: Built (energy/thermal harness, `bench/power.py`; demo-count sweep, `train/modal_train.py --sweep`) · Owner: @saliha @nate · Updated: 2026-11-14 05:11
+- **Decision:** measure energy per inference and watts with Intel RAPL counters, peak temperature during the 20 trials, and success vs number of demonstrations (ACT trained on 18 / 36 / 54 episodes in parallel on Modal). ACT demos are recorded in rounds (one episode per start position per round), so the first 18 / 36 / 54 episodes are exactly 2 / 4 / 6 per position; the "new positions" test uses off-grid spots that are never recorded.
 - **Why:** the Junction page scores inference latency, thermal headroom and power (20%), and Intel's challenge text asks "how few demonstrations are enough".
 - **Alternatives rejected:** latency-only benchmarking.
 - **Trade-off / risk:** RAPL and thermal readings exist only on the Intel Linux laptop; the sampler returns nothing elsewhere.
@@ -144,12 +144,12 @@
 - **Evidence:** TBD (events streamed, alert fired in the trial run).
 - **Pitch line:** "Aiven carries the cell's live event stream and raises the alarm when lighting drifts."
 
-### D15 · Training · Modal for training and logs only, no frontend — Status: Planned · Owner: @nate · Updated: 2026-11-14 01:30
+### D15 · Training · Modal for training and logs only, no frontend — Status: Built · Owner: @nate · Updated: 2026-11-14 05:11
 - **Decision:** ACT and SmolVLA train on Modal GPUs from a reproducible script, with GPU type, time and cost logged. No dashboard or web app (the planned live dashboard was dropped).
 - **Why:** Intel provides Modal GPUs for training; Modal's own page scores a deployed app (15%), but a frontend is out of scope for the team, so we accept losing those points rather than risk the main track.
 - **Alternatives rejected:** a Modal-hosted dashboard (dropped); training on the laptop.
 - **Trade-off / risk:** if Modal's prize needs a web app, we drop Modal.
-- **Evidence:** TBD (`train/runs.md`).
+- **Evidence:** TBD (`train/runs.md`; script built, first run pending).
 - **Pitch line:** "Training scales out in the cloud, inference stays on the device."
 
 ## F. Team and process
@@ -185,6 +185,14 @@
 - **Trade-off / risk:** the cap slows big moves; tuned on the station with the arm watched.
 - **Evidence:** unit tests (`robot/tests/test_io.py`); on-arm value TBD.
 - **Pitch line:** "Whatever the AI says, the arm stays inside safe limits."
+
+### D20 · Training · Studio's trainer for ACT, LeRobot for SmolVLA — Status: Built · Owner: @nate · Updated: 2026-11-14 05:11
+- **Decision:** `train/modal_train.py` trains ACT with Physical AI Studio's own trainer (`physicalai fit`, `physicalai-train` 0.3.0) and fine-tunes SmolVLA from `lerobot/smolvla_base` with LeRobot 0.7.0, each in its own Modal image on an A100.
+- **Why:** the runtime on the laptop (`physicalai` `InferenceModel`) loads policies exported by Studio, and Studio's ACT exports to OpenVINO with one documented call, so the pick policy needs no conversion step; it also makes Studio visibly part of training (criterion 3). Studio's SmolVLA weight loader is marked "intentionally incomplete" in its source, so SmolVLA stays on LeRobot, where fine-tuning `smolvla_base` is the standard path.
+- **Alternatives rejected:** LeRobot for both (no documented route from its checkpoints into the `physicalai` export); Studio for both (SmolVLA could not start from `smolvla_base`).
+- **Trade-off / risk:** two dependency stacks to keep working; SmolVLA's export route is proven only by the A3 test, with the PRD's fallback of running SmolVLA in PyTorch.
+- **Evidence:** a unit test parses the ACT command with Studio's own `fit` parser; first Modal runs TBD (`train/runs.md`).
+- **Pitch line:** "The pick policy is trained in Intel's Physical AI Studio and exported straight to OpenVINO."
 
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
