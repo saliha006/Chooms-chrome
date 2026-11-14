@@ -186,7 +186,7 @@ Each decision in force is mirrored as one line in PRD §0 NOW; one that changes 
 - **Control never waits on the network, TTS, Nemotron or the database.** Inference stays off the control thread. Narration and telemetry are non-blocking and work offline.
 - **Stubs first, real later:** correct-shaped mocks (`MockCamera`, `MockInspector`, `MockMover`, `MockRobot`) so others can integrate, then replace them.
 - **Scripted loop is the insurance:** it must pass by the Sat 15:30 gate; learned policies swap in behind `Mover` and never remove `--scripted`.
-- **Back up checkpoints before any export** (Studio PR #1403 can delete them). NPU = static shapes only; check the exported input shape.
+- **Back up checkpoints before any export** (cheap insurance; the crash that deleted them was fixed by Studio PR #1403). NPU = static shapes only; check the exported input shape.
 - **Thresholds from data:** anomaly scores are distances, not probabilities; `t_low`/`t_high` come from histograms (PRD §6). Stand-in images are scaffolding only; every reported number comes from real bricks and a held-out set.
 - **Every optimization claim carries a number** (p50/p95, model size, compile time, bricks per minute) in `bench/results.md`.
 - **Honesty:** a scripted placement is never presented as SmolVLA; say which mode ran.
