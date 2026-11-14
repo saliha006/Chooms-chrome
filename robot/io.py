@@ -9,12 +9,16 @@
 
 Uses the physicalai SO-101 driver (OpenVINO Physical AI runtime, R5). Only the follower is ever
 connected here; the leader is teleop only and never driven (PRD §0).
+Once the E key has requested a stop (`common.estop`, D21), `act()` turns the torque off and raises
+`EStopped`, so no motion path, learned or scripted, runs past it.
 """
 
 import time
 from dataclasses import dataclass
 
 import numpy as np
+
+from common import estop
 
 JOINTS = ("shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper")
 WRIST_ROLL = JOINTS.index("wrist_roll")
@@ -95,6 +99,9 @@ def clamp_step(current: np.ndarray, target: np.ndarray) -> np.ndarray:
 
 def act(target: np.ndarray) -> np.ndarray:
     """Send one capped step toward target; returns the command actually sent."""
+    if estop.requested():
+        torque_off()
+        raise estop.EStopped()
     command = clamp_step(observe(), target)
     robot().send_action(command, goal_time=1 / CONTROL_HZ)
     return command

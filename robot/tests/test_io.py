@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from common import estop
 from robot import io
 
 
@@ -29,6 +30,18 @@ def test_torque_off_stops_motion(mock_arm):
     io.torque_off()
     io.act(np.full(6, 30.0))
     assert np.allclose(io.observe(), 0.0) and not mock_arm.torque
+
+
+def test_requested_estop_turns_torque_off_and_sends_nothing(mock_arm):
+    estop.request()
+    try:
+        with pytest.raises(estop.EStopped):
+            io.act(np.full(6, 30.0))
+        with pytest.raises(estop.EStopped):  # move_to and the policy loop go through act()
+            io.move_to(np.full(6, 30.0))
+    finally:
+        estop.clear()
+    assert not mock_arm.torque and mock_arm.commands == []
 
 
 def test_observe_needs_connect():
