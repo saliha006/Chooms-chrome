@@ -40,6 +40,8 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 08:50 | @saliha | @harry | 📨 for you | **Ready to wire into `run.py`** (on `main` @ `487ddf5`; details in your brief's v2.5 block): `perception.scene.SceneLocator` (drop-in for `CountLocator`), `scene.tall_object` → `hold`, `scene.brick_in_bowl` → place success, `perception.reason_trace.ReasonTrace` → `note`/panel, and a `DANCE` step after the zone is empty (`robot.dance.dance(home)`) + a narrator line. Inspector scores are now raw (use `t_low`/`t_high`) | 2026-11-14 08:50 |
+| 2026-11-14 08:50 | @saliha | @nate | ⚠️ conflict | Saliha's agent added `robot/dance.py` + `robot/tests/test_dance.py` on your branch at Saliha's request (end-of-run dance, D28): only `robot.io.move_to`, so your limits, speed cap and e-stop apply. Joint signs are TUNE on the arm. `git pull` before your next push | 2026-11-14 08:50 |
 | 2026-11-14 06:10 | @nate | @harry | 📨 waiting on | **Thresholds now live in `robot/io.py`** (`eb79301`, your offer, Nate's call): `io.POSE_TOLERANCE_DEG`, `io.GRIPPER_EMPTY_BELOW`, `io.GRIPPER_OPEN`. Please point `fallback/scripted.py` at them and drop your copies, so a tune on the arm (N8) changes one place | 2026-11-14 06:10 |
 | 2026-11-14 06:04 | @harry | @nate | ⚠️ conflict | **Joint unit must match between recording and runtime** (H6): physicalai's `SO101` defaults to `unit="normalized"` ([-100, 100]) and the Intel tutorial passes no unit; `robot/io.py` runs in `"degrees"` (its limits and 5°/step cap are degrees); LeRobot's current SO follower records degrees (`use_degrees=True`). Please confirm which unit your recordings and the red-lego smoke-test set use, and record with the same one `io.py` runs. Also: camera names in the dataset must be `top` / `wrist` (`config/models.yaml`). **@nate 06:10:** red-lego looks **normalized** (every joint within ±100; `elbow_flex` max 99.7 is past `io.py`'s 97° limit), harmless for the smoke test since it never drives our arm. Our recording unit and camera keys: Nate is deciding now, answer on this row next | 2026-11-14 06:04 |
 | 2026-11-14 07:15 | @saliha | @all | 🔀 scope proposal | **PRD v2.5 on `context` (`5da0552`), re-sync.** A research pass (6 research agents + design + critic) put an ordered 🆕 v2.5 block at the top of each brief's ▶ Current tasks. Same vision. Highlights: no RL (D1, numbers in), every stage verified with reason codes/deadlines (D22), recovery order look-again → roll → re-grasp (D7), two fixed VLA strings + language-swap test + single-colour ACT hedge (D23), device/efficiency measured (D24), Nemotron advisory only (D25), **red-lego smoke test first** (D26). Bugs listed per person. Say no on this row to anything in your block. **@harry 05:41: yes** to the whole block, and yes to `run.py` calling `perception/scene.py` (zone gate + bowl-region check). **@nate 05:54: yes** to the whole block; N1's ACT export goes through Studio's Python API or runs on Modal (the `physicalai` CLI crashes on Windows: `fcntl`) | 2026-11-14 07:15 |
@@ -61,7 +63,7 @@ own **Now** cell whenever you log an entry.
 
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
-| Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
+| Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | All hardware-free tasks done (S1, S5, S6, bench, dance); next: 08:00 Intel laptop install (S2), 10:00 capture |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed; ACT smoke crash found and fixed (no forked loader workers), re-run on red-lego in flight (~07:15); next: ACT export test, then N3 |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4, H6, H7 panel done (H3 clips not generated yet); next 08:00 H5 cameras + waypoints |
 
@@ -90,6 +92,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 08:50 — feat — S5 scene check (incl. brick-or-not key), S6 ReasonTrace, bench fixes, end-of-run dance — @saliha [conflicts: @harry @nate]
+- **Where:** `aiml-perception-saliha` @ `b67eff4`, `robotics-policies-nate` @ `487ddf5` · merged to `main`: yes
+- **Did:** `perception/scene.py`: zone homography, "is it a brick?" rule (D27, Nate's key idea), most-isolated brick, `tall_object` from depth, `brick_in_bowl`, `SceneLocator`. `perception/reason_trace.py`: score, margin, 3×3 defect region, recovery steps, decision, one-line note. Bench: any IR layout incl. multi-input policies, PyTorch baseline row (on this laptop: PaDiM 157 ms PyTorch vs 49 ms OpenVINO FP16, not Intel numbers), 1 Hz thermal, energy net of idle. `robot/dance.py` (D28). 143 tests pass across packages. All hardware-free tasks on Saliha's list are done.
+- **Touched:** `perception/scene.py`, `perception/reason_trace.py`, `bench/`, `robot/dance.py` (Nate's folder, doc-owner request)
+- **Brief task:** S1, S5, S6 → ✅ · S7 → 🟡 (harness ready; runs on the Intel laptop)
+- **⚠️ Conflicts:** @harry: wiring asks on the board; @nate: new file in `robot/`
+- **📨 Needs:** @harry: the run.py wiring above
+- **Status:** open
 
 ### 2026-11-14 08:20 — feat — S1: brick-level detector evaluation and raw anomaly scores — @saliha [conflicts: @harry]
 - **Where:** `aiml-perception-saliha` @ `882232a` · merged to `main`: yes
