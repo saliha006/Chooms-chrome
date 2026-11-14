@@ -41,6 +41,10 @@ def save(path: Path, t_low: float, t_high: float, **extra) -> None:
     path.write_text(yaml.safe_dump({"t_low": t_low, "t_high": t_high, **extra}, sort_keys=False))
 
 
+def load_all(path: Path) -> dict:
+    return yaml.safe_load(path.read_text())
+
+
 def load(path: Path) -> tuple[float, float]:
-    data = yaml.safe_load(path.read_text())
+    data = load_all(path)
     return float(data["t_low"]), float(data["t_high"])

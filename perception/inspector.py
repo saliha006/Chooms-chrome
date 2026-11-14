@@ -17,7 +17,7 @@ from common.interfaces import DefectSignal
 
 DEVICE_CHAIN = ("NPU", "GPU", "CPU")
 INPUT_SIDE = 256
-MAP_THRESHOLD = 0.5  # the exported post-processor maps its pixel threshold to 0.5
+NORMALISED_PIXEL_THRESHOLD = 0.5  # only for old IRs exported with normalisation; raw-score IRs carry pixel_threshold in thresholds.yaml
 
 
 def to_input(frame_bgr: np.ndarray) -> np.ndarray:
@@ -25,9 +25,9 @@ def to_input(frame_bgr: np.ndarray) -> np.ndarray:
     return (rgb.astype(np.float32) / 255.0).transpose(2, 0, 1)[None]
 
 
-def largest_blob(anomaly_map: np.ndarray) -> tuple[int, int, int, int] | None:
+def largest_blob(anomaly_map: np.ndarray, threshold: float) -> tuple[int, int, int, int] | None:
     """(x, y, w, h) of the biggest region above the pixel threshold, in input-image pixels."""
-    mask = (anomaly_map >= MAP_THRESHOLD).astype(np.uint8)
+    mask = (anomaly_map >= threshold).astype(np.uint8)
     count, _, stats, _ = cv2.connectedComponentsWithStats(mask)
     if count < 2:
         return None
@@ -40,7 +40,6 @@ class Scorer:
     def __init__(self, xml: Path, devices: tuple[str, ...] = DEVICE_CHAIN, cache_dir: Path = Path("runs/ov_cache")):
         core = ov.Core()
         cache_dir.mkdir(parents=True, exist_ok=True)
-        core.set_property({"CACHE_DIR": str(cache_dir)})
         model = core.read_model(xml)
         self.skipped: list[tuple[str, str]] = []  # (device, reason) for each device that failed to compile
         for device in devices:
@@ -48,7 +47,9 @@ class Scorer:
                 self.skipped.append((device, "not available"))
                 continue
             try:
-                self.compiled = core.compile_model(model, device)
+                # Per-compile cache for CPU/GPU only: a core-wide CACHE_DIR would replace the NPU driver's own cache.
+                config = {} if device == "NPU" else {"CACHE_DIR": str(cache_dir)}
+                self.compiled = core.compile_model(model, device, config)
             except RuntimeError as err:
                 self.skipped.append((device, str(err).splitlines()[0]))
                 continue
@@ -69,6 +70,7 @@ class Inspector:
     def __init__(self, xml: Path, thresholds_path: Path, model_name: str, heatmap_dir: Path = Path("runs/heatmaps"), **scorer_kwargs):
         self.scorer = Scorer(xml, **scorer_kwargs)
         self.t_low, self.t_high = thresholds.load(thresholds_path)
+        self.pixel_threshold = thresholds.load_all(thresholds_path).get("pixel_threshold", NORMALISED_PIXEL_THRESHOLD)
         self.model_name = model_name
         self.heatmap_dir = heatmap_dir
         heatmap_dir.mkdir(parents=True, exist_ok=True)
@@ -77,7 +79,7 @@ class Inspector:
         score, anomaly_map, latency_ms = self.scorer.score(frame)
         label = thresholds.classify(score, self.t_low, self.t_high)
         heatmap = self.heatmap_dir / f"brick{brick_id:04d}_{view}.png"
-        self._save_heatmap(frame, anomaly_map, heatmap)
+        self._save_heatmap(frame, anomaly_map / (2 * self.pixel_threshold), heatmap)  # threshold sits mid-scale
         return DefectSignal(
             brick_id=brick_id,
             view=view,
@@ -85,7 +87,7 @@ class Inspector:
             score=score,
             t_low=self.t_low,
             t_high=self.t_high,
-            bbox=None if label == "perfect" else largest_blob(anomaly_map),
+            bbox=None if label == "perfect" else largest_blob(anomaly_map, self.pixel_threshold),
             heatmap_path=str(heatmap),
             model=self.model_name,
             device=self.scorer.device,

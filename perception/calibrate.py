@@ -21,11 +21,13 @@ from perception.inspector import Scorer
 PLOTS = Path("bench/plots")
 
 
-def score_folder(scorer: Scorer, folder: Path) -> np.ndarray:
+def score_folder(scorer: Scorer, folder: Path) -> tuple[np.ndarray, np.ndarray]:
+    """(score, peak anomaly-map pixel) per image."""
     paths = sorted(folder.glob("*.png"))
     if not paths:
         raise FileNotFoundError(f"no PNGs in {folder}")
-    return np.array([scorer.score(cv2.imread(str(p)))[0] for p in paths])
+    results = [scorer.score(cv2.imread(str(p)))[:2] for p in paths]
+    return np.array([s for s, _ in results]), np.array([float(m.max()) for _, m in results])
 
 
 def plot(good: np.ndarray, defective: np.ndarray, t_low: float, t_high: float, plots: Path) -> None:
@@ -58,9 +60,10 @@ def plot(good: np.ndarray, defective: np.ndarray, t_low: float, t_high: float, p
 
 def calibrate(xml: Path, root: Path, out: Path, plots: Path = PLOTS) -> tuple[float, float]:
     scorer = Scorer(xml, devices=("CPU",))  # calibration scores must not depend on which accelerator is free
-    good, defective = score_folder(scorer, root / "val_good"), score_folder(scorer, root / "defective")
+    (good, good_peaks), (defective, _) = score_folder(scorer, root / "val_good"), score_folder(scorer, root / "defective")
     t_low, t_high = thresholds.band(good, defective)
-    thresholds.save(out, t_low, t_high, model_xml=str(xml), n_good=len(good), n_defective=len(defective))
+    pixel = float(np.percentile(good_peaks, 99))  # region threshold on the raw map: above almost every good image's peak
+    thresholds.save(out, t_low, t_high, pixel_threshold=pixel, model_xml=str(xml), n_good=len(good), n_defective=len(defective))
     plot(good, defective, t_low, t_high, plots)
     return t_low, t_high
 

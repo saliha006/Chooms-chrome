@@ -3,7 +3,7 @@
 NVIDIA Build is OpenAI-compatible; stdlib HTTP keeps the dependency list unchanged.
 Needs NVIDIA_API_KEY and NEMOTRON_MODEL (nvidia/nemotron-3.5-super-vl-120b-a12b) in the environment. Never call this from the control loop (decisions.md D4, D11).
 
-    python -m reasoner.client data/defective/0000.png
+    python -m reasoner.client data/defective/b00_0000.png
 """
 
 import base64

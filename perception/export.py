@@ -12,7 +12,7 @@ import openvino as ov
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.engine import Engine
 
-from perception.train import MODELS, datamodule
+from perception.train import MODELS, build_model, datamodule
 
 INPUT_SIZE = (256, 256)
 STATIC_INPUT = (1, 3, *INPUT_SIZE)
@@ -28,12 +28,12 @@ def ensure_static(xml: Path) -> None:
 def export(ckpt: Path, model_name: str, root: Path, out: Path, precision: str) -> Path:
     engine = Engine(logger=False)
     xml = engine.export(
-        model=MODELS[model_name](),
+        model=build_model(model_name),
         export_type=ExportType.OPENVINO,
         export_root=out / model_name / precision,
         input_size=INPUT_SIZE,
         compression_type=PRECISIONS[precision],
-        datamodule=datamodule(root, model_name, batch_size=1),  # INT8 calibration feeds the static batch-1 input
+        datamodule=datamodule(root, batch_size=1),  # INT8 calibration feeds the static batch-1 input
         ckpt_path=str(ckpt),
         ov_kwargs={"input": [STATIC_INPUT]},  # Anomalib leaves the batch dynamic by default
     )

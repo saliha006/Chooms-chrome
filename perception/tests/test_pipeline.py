@@ -43,7 +43,7 @@ def test_export_is_static_and_calibration_writes_plots(pipeline):
 def test_inspector_returns_a_defect_signal(pipeline):
     data, xml, thresholds, _, tmp = pipeline
     inspector = Inspector(xml, thresholds, "padim-fp16", heatmap_dir=tmp / "heatmaps", devices=("CPU",))
-    signal = inspector.inspect(cv2.imread(str(data / "defective/0000.png")), "webcam", 7)
+    signal = inspector.inspect(cv2.imread(str(sorted((data / "defective").glob("*.png"))[0])), "webcam", 7)
     assert signal.label in {"perfect", "uncertain", "defective"}
     assert signal.device == "CPU" and signal.latency_ms > 0
     assert signal.t_low <= signal.t_high

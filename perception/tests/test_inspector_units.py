@@ -15,8 +15,14 @@ def test_largest_blob_picks_the_biggest_region():
     amap = np.zeros((256, 256), np.float32)
     amap[10:14, 10:14] = 0.9
     amap[100:140, 50:70] = 0.8
-    assert largest_blob(amap) == (50, 100, 20, 40)
+    assert largest_blob(amap, 0.5) == (50, 100, 20, 40)
 
 
 def test_largest_blob_none_below_threshold():
-    assert largest_blob(np.full((256, 256), 0.3, np.float32)) is None
+    assert largest_blob(np.full((256, 256), 0.3, np.float32), 0.5) is None
+
+
+def test_largest_blob_uses_raw_scale_threshold():
+    amap = np.full((256, 256), 40.0, np.float32)
+    amap[0:10, 0:10] = 250.0
+    assert largest_blob(amap, 120.0) == (0, 0, 10, 10)
