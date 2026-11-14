@@ -7,6 +7,7 @@ The voice follows the persona (narrator/persona.py): trigger() flips to the cowb
 bring it back.
 """
 
+import itertools
 import logging
 import os
 import time
@@ -22,6 +23,9 @@ _log = logging.getLogger("narrator")
 PRIORITY = {"estop", "help", *EXCLAIM.values()}  # never dropped as stale
 _player = Player(system_player())
 _live: Live | None = None
+# Trigger C (Saliha 21:35, Harry yes 23:30): every defective verdict in the calm voice gets one short cowboy
+# exclamation first, rotating so it never repeats twice in a row; the explanation stays calm.
+_defect_exclaims = itertools.cycle(("obstacle", "well_ill_be", "yeehaw"))  # "Holy smokes!", "Well I'll be!", "Yeehaw!"
 _last: tuple[str, str, float] | None = None  # (line, persona, when) for the on-screen subtitle
 SUBTITLE_S = 6.0
 
@@ -29,6 +33,8 @@ SUBTITLE_S = 6.0
 def say(event: str, text: str | None = None, persona: str | None = None, **kw) -> None:
     persona = persona or _persona.current
     reason = kw.get("reason")
+    if event == "defective" and persona == "calm" and text is None:
+        _exclaim()
     clip = clip_path(persona, key_for(event, reason))
     priority = event in PRIORITY
     spoken = text or (compose(persona, event, **kw) if _live is not None and event in LIVE_EVENTS else None)
@@ -40,6 +46,14 @@ def say(event: str, text: str | None = None, persona: str | None = None, **kw) -
         _live.speak(spoken, persona, fallback=None if text else clip, priority=priority)
     elif text is None and clip.exists():
         _player.submit(clip, priority=priority)
+
+
+def _exclaim() -> None:
+    key = next(_defect_exclaims)
+    _log.info("[cowboy] %s", line_for("cowboy", key))
+    exclaim = clip_path("cowboy", key)
+    if exclaim.exists():
+        _player.submit(exclaim, priority=True)  # played before the calm explanation that follows it
 
 
 _persona = Persona(say)

@@ -209,3 +209,23 @@ def test_step_lines_carry_the_tally_and_the_borderline_score():
         "Still 0.27, smack between my lines. Turnin' it ninety degrees for a better look."
     assert compose("calm", "regrasp", score=0.26).startswith("Still undecided at 0.26.")
     assert compose("calm", "next", n=0) is None and compose("calm", "roll") is None  # the cached line covers it
+
+
+def test_a_calm_defective_verdict_gets_a_rotating_cowboy_exclamation_first(fake_live, monkeypatch):
+    submitted = []
+    monkeypatch.setattr(narrator._player, "submit", lambda clip, priority=False: submitted.append((clip.parent.name, clip.stem, priority)))
+    for _ in range(3):
+        narrator.say("defective", **NUMBERS)
+    # the rotation is shared by the whole program, so only the order-free part is fixed: three in a row, all different
+    assert {s[:2] for s in submitted} == {("cowboy", "obstacle"), ("cowboy", "well_ill_be"), ("cowboy", "yeehaw")}
+    assert all(priority for _, _, priority in submitted)
+    assert len(fake_live) == 3  # each explanation still goes out, in the calm voice
+    assert all(persona == "calm" for _, persona, _ in fake_live)
+
+
+def test_no_extra_exclamation_when_already_the_cowboy_or_for_other_verdicts(fake_live, monkeypatch):
+    submitted = []
+    monkeypatch.setattr(narrator._player, "submit", lambda clip, priority=False: submitted.append(clip.stem))
+    narrator.say("defective", persona="cowboy", **NUMBERS)
+    narrator.say("perfect", **NUMBERS)
+    assert submitted == []
