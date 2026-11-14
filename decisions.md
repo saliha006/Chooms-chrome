@@ -205,12 +205,12 @@
 - **Evidence:** tests: a scripted move stops part way within 0.5 s of E with torque off; E mid-run never homes; Q finishes the brick and homes; P holds at a stage boundary; with E requested, `io.act` and `io.move_to` raise with torque off and no command sent (`robot/tests/test_io.py`). TBD (stop latency on the real arm).
 - **Pitch line:** "The stop button never fights the robot for the wire: one thread drives the motors, and it checks for the stop every step."
 
-### D22 · Reliability · Every stage verified: grasp band, bowl-region check, early exit, reason codes — Status: Planned · Owner: @nate @harry @saliha · Updated: 2026-11-14 07:10
+### D22 · Reliability · Every stage verified: grasp band, bowl-region check, early exit, reason codes — Status: Built (reasons, deadlines, PAUSE_HUMAN in `run.py`) / Planned (grasp band, bowl check, early exit) · Owner: @nate @harry @saliha · Updated: 2026-11-14 05:53
 - **Decision:** grasp = gripper position inside a band (not just "not fully closed") after a 0.3 s settle; place = the bowl region on the top camera changes and the gripper is open; policies stop early when their stage succeeds; every failure gets a reason code, a deadline and a retry budget, ending in "I need help" (PAUSE_HUMAN) rather than a crash.
 - **Why:** "correct bowl" can't be counted automatically otherwise, and fixed 12 s episodes made 24 s per brick a floor against a 25 s target. A gripper watchdog paper (arXiv 2604.07395) detected 43/50 empty grasps with 5/50 false alarms; a 2026 SO-101 benchmark (arXiv 2606.08881) measured learned recovery at 3–6%, so recovery belongs in the state machine.
 - **Alternatives rejected:** servo-current grasp detection (no source for the STS3215; saved); a behaviour tree (more machinery for a short controlled task).
 - **Trade-off / risk:** thresholds are TUNE on the arm; bowl-region check needs a lit, fixed top camera.
-- **Evidence:** TBD (20-trial log with per-stage reasons).
+- **Evidence:** `run.py` (@harry): seven reason codes in every `events` outcome, deadlines on PICK/REINSPECT/PLACE/HOME that stop the scripted motion loop, PAUSE_HUMAN with P/Q, a hold flag; tested on mocks (stuck pick → timeout in < 2 s, no retry; bug → paused, not crashed). TBD (20-trial log with per-stage reasons).
 - **Pitch line:** "Every step proves it worked before the next one starts."
 
 ### D23 · VLA · Two fixed instructions, a language-swap test, and a colour hedge — Status: Planned · Owner: @nate · Updated: 2026-11-14 07:10

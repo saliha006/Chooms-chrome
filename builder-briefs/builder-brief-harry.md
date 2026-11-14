@@ -48,7 +48,7 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 *Must exist by 15:30: real-wired `run.py` with the scripted mover, shared capture on real cameras, real Inspector, localisation zone gate, grasp band and bowl-region checks, reason codes and deadlines, the recovery chain, JSONL telemetry, cached lines.*
 | # | Status | Task | Hours | Done when |
 |---|---|---|---|---|
-| H1 | ⬜ | `run.py`: `HelpNeeded` with a **reason enum**, per-state deadlines and retry budget, `PAUSE_HUMAN` instead of exit-after-home, hold flag checked at stage boundaries (depth/blob "something tall"), `abort_event` into episodes, recovery chain `[look again, roll 90, re-grasp]` | 4 | Mock run shows reasons per stage |
+| H1 | ✅ | `run.py`: `HelpNeeded` with a **reason enum**, per-state deadlines and retry budget, `PAUSE_HUMAN` instead of exit-after-home, hold flag checked at stage boundaries (depth/blob "something tall"), `abort_event` into episodes, recovery chain `[look again, roll 90, re-grasp]` | 4 | Mock run shows reasons per stage |
 | H2 | ✅ | Bug fixes: `_resolve_uncertain` re-scores a stale frame (pass `newer_than=time.monotonic()` after a settle); `config/rules.yaml` `second_view: inspect` (not `top`) and add the roll to `reinspect_angles`; the help line speaks a reason, not an exception class name | 0.5 | Tests |
 | H3 | ⬜ | Cached-WAV table keyed by reason (calm + cowboy) | 1 | Every reason has a line |
 | H4 | ✅ | JSONL telemetry writer (Aiven later, after the gate) | 1 | Rows per stage |
@@ -102,6 +102,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 05:52 · H1 · `Reason` codes in every `events` outcome, stage deadlines (`common/deadline.py`), PAUSE_HUMAN (P go on, Q stop), hold flag; merged to `main` (`18ae0d7`), 68 tests pass. Waiting: @nate `abort_event=deadline.abort` in `LearnedMover`
 - 2026-11-14 05:42 · H2 · fresh frame after a 0.3 s settle for every inspection, `second_view: inspect`, `reinspect_angles: [90, 0]`, help line says the reason; merged to `main` (`4bd8cb2`), 57 tests pass · H4 was already built in A3 (`telemetry/` → `runs/events.jsonl`)
 - 2026-11-14 05:32 · A4 · `ui/mission_control.py` (feed, heatmap, verdict, stage times, mover mode; S/P/E/Q/H) + e-stop path B (D21: keys set flags, control thread acts); merged to `main` (`4d28398`), 55 tests pass. Waiting: @nate `io.act` e-stop check, @saliha `opencv-python`
 - 2026-11-14 05:18 · A3 real-station half (R5) · `run.py` without `--mock`: real cameras, Saliha's inspector via `config/models.yaml`, scripted or learned mover per part (`--scripted`), config checked before anything moves, Ctrl+C = e-stop; merged to `main` (`de5fe0a`), 48 tests pass
