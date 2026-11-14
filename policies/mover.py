@@ -9,6 +9,7 @@ from collections.abc import Callable
 
 import numpy as np
 
+from common import deadline
 from policies.episode import run_episode
 from robot import io
 
@@ -33,13 +34,14 @@ class LearnedMover:
             diff[io.WRIST_ROLL] = 0.0
         return bool(diff.max() <= POSE_TOLERANCE_DEG)
 
+    # A fired stage deadline (run.py arms it) returns False, which run.py reports as a TIMEOUT.
     def pick_and_present(self) -> bool:
-        run_episode(self.picker, self.frames, self.pick_steps)
-        return self._at_inspect() and not self.gripper_empty()
+        run_episode(self.picker, self.frames, self.pick_steps, abort_event=deadline.abort)
+        return not deadline.expired() and self._at_inspect() and not self.gripper_empty()
 
     def place(self, instruction: str) -> bool:
-        joints = run_episode(self.placer, self.frames, self.place_steps, task=instruction)
-        return bool(joints[io.GRIPPER] >= GRIPPER_OPEN)
+        joints = run_episode(self.placer, self.frames, self.place_steps, task=instruction, abort_event=deadline.abort)
+        return not deadline.expired() and bool(joints[io.GRIPPER] >= GRIPPER_OPEN)
 
     def reinspect(self, angle_deg: int) -> bool:
         if angle_deg == 0:

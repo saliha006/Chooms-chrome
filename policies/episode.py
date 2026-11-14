@@ -1,9 +1,10 @@
-"""Run one exported policy for a fixed number of control steps through robot.io.
+"""Run one exported policy for up to a fixed number of control steps through robot.io.
 
 Observation keys follow LeRobot's naming; check them against the export's manifest on the
 station (InferenceModel orders cameras and applies the manifest's preprocessors).
 """
 
+import threading
 import time
 from collections.abc import Callable
 
@@ -24,10 +25,17 @@ def observation(frames: dict[str, np.ndarray], task: str | None = None) -> dict:
     return obs
 
 
-def run_episode(model, frames: Callable[[], dict[str, np.ndarray]], steps: int, task: str | None = None, hz: float = io.CONTROL_HZ) -> np.ndarray:
-    """Return the joints at the end. `model` is a physicalai InferenceModel or anything with reset/select_action."""
+def run_episode(model, frames: Callable[[], dict[str, np.ndarray]], steps: int, task: str | None = None, hz: float = io.CONTROL_HZ,
+                stop: Callable[[], bool] | None = None, abort_event: threading.Event | None = None) -> np.ndarray:
+    """Return the joints at the end. `model` is a physicalai InferenceModel or anything with reset/select_action.
+
+    Ends early once `stop()` says the stage has succeeded, or when `abort_event` is set (the stage deadline);
+    the caller tells the two apart with `abort_event.is_set()`.
+    """
     model.reset()
     for _ in range(steps):
+        if (abort_event is not None and abort_event.is_set()) or (stop is not None and stop()):
+            break
         tick = time.monotonic()
         io.act(np.asarray(model.select_action(observation(frames(), task)), float).ravel())
         time.sleep(max(0.0, 1 / hz - (time.monotonic() - tick)))

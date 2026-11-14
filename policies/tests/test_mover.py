@@ -1,6 +1,9 @@
+import threading
+
 import numpy as np
 import pytest
 
+from common import deadline
 from common.interfaces import Mover
 from policies import episode
 from policies.mover import GRIPPER_OPEN, LearnedMover
@@ -15,13 +18,14 @@ class FakePolicy:
     """Stands in for an exported InferenceModel: always heads to one target."""
 
     def __init__(self, target):
-        self.target, self.resets, self.last_obs = np.asarray(target, float), 0, None
+        self.target, self.resets, self.calls, self.last_obs = np.asarray(target, float), 0, 0, None
 
     def reset(self):
         self.resets += 1
 
     def select_action(self, obs):
         self.last_obs = obs
+        self.calls += 1
         return self.target
 
 
@@ -67,6 +71,35 @@ def test_empty_gripper_fails_the_pick(mover):
     mover.picker.target = np.array([*INSPECT[:5], 0.0])  # closes fully: nothing grasped
     assert not mover.pick_and_present()
     assert mover.gripper_empty()
+
+
+def test_episode_ends_early_once_the_stage_succeeds(mover):
+    policy = FakePolicy(INSPECT)
+    episode.run_episode(policy, mover.frames, steps=40, stop=lambda: policy.calls >= 3)
+    assert policy.calls == 3
+
+
+def test_episode_stops_when_the_deadline_fires(mover):
+    abort = threading.Event()
+
+    class FiresDuringStepTwo(FakePolicy):
+        def select_action(self, obs):
+            if self.calls == 1:
+                abort.set()
+            return super().select_action(obs)
+
+    policy = FiresDuringStepTwo(INSPECT)
+    episode.run_episode(policy, mover.frames, steps=40, abort_event=abort)
+    assert policy.calls == 2
+
+
+def test_a_fired_stage_deadline_fails_the_pick(mover):
+    deadline.abort.set()
+    try:
+        assert not mover.pick_and_present()
+        assert mover.picker.calls == 0  # no step was sent
+    finally:
+        deadline.abort.clear()
 
 
 def test_estop_and_home(mover):
