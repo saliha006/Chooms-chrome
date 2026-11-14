@@ -17,7 +17,7 @@
 - **All plan times and board stamps are Espoo local time (EET, UTC+2)**, the event's clock: Sunday 10:00 deadline, 09:00 internal submit, 23:00 freeze. Board stamps before 2026-11-14 04:30 were written in UK time (UTC); treat them as 2 hours earlier than Espoo.
 - **`reinspect` agreed by all three (2026-11-14 04:16):** `reinspect(0)` = put the brick down in the pick zone and pick it again (the F4 re-grasp); `reinspect(±90)` = wrist roll in place; both return `True` only when the brick is back at the inspection pose. Signature unchanged.
 - Only the follower arm moves; the leader is teleop only (Intel slides).
-- **Mentor guidance (2026-11-14 13:10, relayed by Saliha; decisions.md D31):** Anomalib is the only anomaly detector (the VLA never detects defects); the VLA layer built in Physical AI Studio does the integration: it translates perception results and the task instruction into robot actions. Test a move by teleoperating with the leader arm first, then fine-tune from the recorded demonstrations. Dropped on this basis: Nemotron's logged "second opinion" on uncertain bricks (it only explains). **Proposed, awaiting Saliha's yes:** the verdict inside the VLA's two strings; a 15-minute leader-teleop rehearsal before the first recorded episode.
+- **Mentor guidance (2026-11-14 14:19, relayed by Saliha; decisions.md D31):** Anomalib is the only anomaly detector (the VLA never detects defects); the VLA layer built in Physical AI Studio does the integration: it translates perception results and the task instruction into robot actions. Test a move by teleoperating with the leader arm first, then fine-tune from the recorded demonstrations. Dropped on this basis: Nemotron's logged "second opinion" on uncertain bricks (it only explains). **Decided 2026-11-14 14:30:** the VLA's two strings carry the verdict (`"the brick is perfect, place it in the blue bowl"`, `"the brick is defective, place it in the red bowl"`; D23); a rehearsal of every stage by leader-follower teleop comes before the first recorded episode (D31).
 - Contracts in §7.3 frozen at 01:00 Sat; changes need all three and a `progress.md` decision entry.
 - Docs: `CLAUDE.md`, `prd.md`, `builder-briefs/`, `skills/` live on the `context` branch; `progress.md` and code on `main` (a `.gitignore` keeps everything else local). **One branch per person:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`.
 - v2.1 fixes (2026-11-14 00:10): ACT = **54** episodes (9 start positions × 6); SmolVLA 19:00 gate follows Nate's brief (keep at ≥ 4/10 unless scripted placement is clearly better); Modal added to §13 Q5; Saliha's §10 slots aligned with Saliha's brief. Where §10 and a brief still differ on times, **the brief wins**.
@@ -127,7 +127,7 @@ Every criterion must be covered, but effort follows **points × how much we cont
 | R1 | Install **Physical AI Studio** and **Anomalib v2.7.0** (HW/SW) | 2, 3 | Nate / Saliha | `pip show anomalib` = 2.7.0; Studio UI opens |
 | R2 | Capture workspace images; Anomalib flags defects, **trained on our real bricks** (Expectation 1) | 2 | Saliha | Held-out AUROC and confusion matrix |
 | R3 | Defect output downstream as a **structured signal, label, score or localized region** (Expectation 1) | 2, 1 | Saliha | `DefectSignal` logged for every brick |
-| R4 | **VLA via Physical AI Studio** interprets the task instruction plus the perception result → action intent (Expectation 2). Stated plainly: perception selects one of two fixed instructions; SmolVLA turns it into motion (D23) | 3 | Nate | Instruction built from the verdict drives SmolVLA; language-swap test at 19:00 |
+| R4 | **VLA via Physical AI Studio** interprets the task instruction plus the perception result → action intent (Expectation 2). Stated plainly: perception selects one of two fixed instructions that carry its verdict; SmolVLA turns it into motion (D23) | 3 | Nate | Instruction built from the verdict drives SmolVLA; language-swap test at 19:00 |
 | R5 | **Studio stack builds the application flow** ("perception, task reasoning, robot control, orchestration"): `run.py` uses the Studio runtime (`physicalai` `InferenceModel` / `RobotRuntime`) | 3 | Harry + Nate | Shown on the architecture slide; code uses the runtime |
 | R6 | Action → SO-101 motion, grasp, sort (Expectation 3) | 1, 5 | Nate | Brick in the correct bowl |
 | R7 | OpenVINO: conversion, precision, graph optimization, **pre/post-processing**, device selection (Expectation 4) | 4 | Saliha | Benchmark table (section 7.4) |
@@ -229,7 +229,7 @@ class Mover(Protocol):                   # policies/ (Nate) and fallback/ (Harry
 # reasoner.explain(signal: DefectSignal, crop, persona) -> None  # async; hands narrator a grounded line or nothing (Saliha)
 # reasoner.hat_seen(top_frame) -> bool | None  # async, None = no answer in time (Saliha)
 ```
-`rules.yaml`: `perfect → "place the brick in the blue bowl"`, `defective → "place the brick in the red bowl"`, `uncertain → reinspect once, then defective`.
+`rules.yaml`: `perfect → "the brick is perfect, place it in the blue bowl"`, `defective → "the brick is defective, place it in the red bowl"`, `uncertain → reinspect once, then defective`.
 Telemetry table `events`: `run_id, brick_id, ts, state, label, score, device, stage, latency_ms, outcome, note`.
 
 ### 7.4 Benchmark table (Saliha; goes in the README)
@@ -307,6 +307,7 @@ Plus p50/p95, model size (MB) FP32 vs INT8, first-compile vs cached-compile time
 | 09:00–09:30 | **Nate** | Port pipeline; device check | 5 test episodes → Modal smoke | Configs on the real laptop |
 | 09:30–10:00 | **Harry** | — | — | Teach waypoints (pick, inspect pose, bowls, home) |
 | 10:00–10:30 | **Saliha** | Capture about 150 good, 40 defective, 30 held-out images at the inspection pose | Prep recording | Hold the inspect pose via waypoints |
+| Before the first recorded episode | **Nate** | — | Rehearsal by leader-follower teleop, about 15 min folded into the practice runs (D31): 9 start dots, inspection hold + wrist roll, both bowls, gripper readings, unit check, one e-stop press | Resets; re-click the zone and re-teach waypoints if the layout moved |
 | 10:30–12:30 | **Nate** | Train, thresholds, export, NPU (until 12:00) | Record 54 ACT episodes | Resets |
 | 12:00–13:00 | — | **Intel workshop** (Hardware Lab) | — | — |
 | 12:30 | — | — | **Launch ACT training** | — |

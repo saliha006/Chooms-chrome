@@ -44,6 +44,9 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 ---
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 2026-11-14 14:30 from Saliha (decisions.md D23, D31)
+1. **`config/rules.yaml` strings:** `perfect: the brick is perfect, place it in the blue bowl` and `defective: the brick is defective, place it in the red bowl` (they carry the verdict; the VLA is recorded with exactly these). Tests that pass other strings keep working; `fallback/scripted.py` still reads "red bowl" / "blue bowl" from the text. Do it before Nate records SmolVLA.
+2. **Layout:** Nate rehearses every stage by teleop before recording; if a tape dot or bowl moves, re-click the zone and bowls (`ui/click_regions.py`) and re-teach the waypoints that moved.
 ### 🆕 v2.5 research pass (2026-11-14 07:10): do these first, in order (same vision; PRD §0 v2.5, decisions.md D1, D7, D22–D26)
 *Must exist by 15:30: real-wired `run.py` with the scripted mover, shared capture on real cameras, real Inspector, localisation zone gate, grasp band and bowl-region checks, reason codes and deadlines, the recovery chain, JSONL telemetry, cached lines.*
 | # | Status | Task | Hours | Done when |
