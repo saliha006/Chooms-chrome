@@ -142,6 +142,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **Agreed by:** @harry (3 s timeout + warm-up; live voice emphasised for ElevenLabs)
 - **Status:** open
 
+### 2026-11-14 17:40 — feat — N5 colour hedge: `train/hedge.py` and `--episode-ids` on the Modal ACT launch — @saliha [conflicts: @nate]
+- **Where:** `aiml-perception-saliha` → `main` · merged to `main`: yes
+- **Did:** `python -m train.hedge <dataset root> --repo-id <hf id> --steps N` finds which episodes carry each fixed string and prints one `modal run … --policy act --tag purple|orange --episode-ids …` line per colour. `commands.act(episode_ids=…)` and `job_name(tag=…)` back it. Tested on a synthetic LeRobot v3.0 dataset (8 new tests, 271 pass). **The Modal entrypoint path itself is untested** (needs a Modal run); `launch.py` was not changed.
+- **Touched:** `train/hedge.py`, `train/commands.py`, `train/modal_train.py`, `train/tests/test_hedge.py`
+- **Brief task:** N5 → ✅ code, launch is a human step
+- **⚠️ Conflicts:** @nate: `act()` and `train_act` gained an optional trailing argument, existing calls and your tests are unchanged. Use it only if SmolVLA is under 6/10 at the gate.
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 17:05 — feat — Live Nemotron line: `reasoner/live.py`, off the control thread — @saliha [conflicts: @harry]
 - **Where:** `aiml-perception-saliha` @ `74b19ae` · merged to `main`: yes
 - **Did:** `LiveLine(narrator.say).submit(crop, signal)` returns at once; a worker asks Nemotron (4 s timeout), keeps only the newest request, drops a late or failed answer, and throws away a line that names the wrong bowl or quotes a number we did not give it. Real API check on a stand-in image, 6 calls: 6 of 6 grounded, 1.9-2.7 s each. Not yet measured on real bricks.
