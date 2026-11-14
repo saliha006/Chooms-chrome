@@ -5,9 +5,8 @@ pick it again (the F4 re-grasp); ±90 = roll the wrist in place. True only when 
 at the inspection pose.
 """
 
-from collections.abc import Callable
-
 import time
+from collections.abc import Callable
 
 import numpy as np
 
@@ -20,16 +19,14 @@ SETTLE_TICKS = round(io.GRIPPER_SETTLE_S * io.CONTROL_HZ)
 
 class LearnedMover:
     def __init__(self, picker, placer, poses: dict[str, np.ndarray], frames: Callable[[], dict[str, np.ndarray]],
-                 pick_steps: int = 360, place_steps: int = 360,
-                 bowl_check: Callable[[str, np.ndarray, np.ndarray], bool] | None = None):
+                 pick_steps: int = 360, place_steps: int = 360):
         """poses needs "home", "inspect" and "pick_drop" (joint vectors from config/waypoints.yaml).
-        Default steps = 12 s at 30 Hz, the episode length in train/RECORDING.md.
-        bowl_check(instruction, top_before, top_after) says the brick landed in the right bowl (scene.brick_in_bowl);
-        without it a place counts once the gripper has opened."""
+        Steps cap an episode at 12 s at 30 Hz; it ends earlier once the stage succeeds.
+        A place counts once the gripper has opened; run.py then checks the bowl from home, where the arm
+        no longer hides it from the top camera."""
         self.picker, self.placer, self.frames = picker, placer, frames
         self.poses = {k: np.asarray(v, float) for k, v in poses.items()}
         self.pick_steps, self.place_steps = pick_steps, place_steps
-        self.bowl_check = bowl_check
 
     def _at_inspect(self, ignore_wrist_roll: bool = False) -> bool:
         diff = np.abs(io.observe() - self.poses["inspect"])
@@ -49,12 +46,9 @@ class LearnedMover:
     def place(self, instruction: str) -> bool:
         if not self._roll_back_to_inspect():
             return False
-        before = self.frames()["top"] if self.bowl_check else None  # KeyError beats handing the check a None frame
         opened = sustained(lambda: io.observe()[io.GRIPPER] >= io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG, SETTLE_TICKS)
         joints = run_episode(self.placer, self.frames, self.place_steps, task=instruction, stop=opened, abort_event=deadline.abort)
-        if deadline.expired() or joints[io.GRIPPER] < io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG:
-            return False
-        return self.bowl_check is None or bool(self.bowl_check(instruction, before, self.frames()["top"]))
+        return not deadline.expired() and bool(joints[io.GRIPPER] >= io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG)
 
     def _roll_back_to_inspect(self) -> bool:
         """SmolVLA's place demos all start at the inspection pose, so undo a wrist roll from reinspect first."""
