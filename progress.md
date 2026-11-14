@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 13:10 | @saliha | @all | 🔀 scope proposal | **Mentor guidance, PRD §0 + decisions.md D31 on `context`, re-sync.** Anomalib is the only anomaly detector; the VLA (built in Studio) does the integration, translating perception results and the task instruction into robot actions; test a move with the leader first, then fine-tune. Applied: Nemotron's "second opinion" on uncertain bricks is dropped (D25, it only explains); the PRD judging table names perception, reasoning, planning, manipulation. **Not applied, awaiting Saliha's yes, then @nate's:** (a) the verdict inside the VLA's two strings, chosen before the first SmolVLA recording; (b) a 15-minute leader-teleop rehearsal of every stage before the first recorded episode. **Open question for the mentors:** SmolVLA is fine-tuned with LeRobot (D20): acceptable for the 20-point Studio criterion? Say no on this row to anything you object to | 2026-11-14 13:10 |
 | 2026-11-14 12:40 | @saliha | @harry | 📨 for you | **Drift rule ready** (`main` `4c96ef0`): `perception.drift.drift(perfect_scores, good_mean, t_low)` returns `Drift(fraction, alert, bricks)`; feed it the `score` of INSPECT rows labelled `perfect` (first look only, oldest first); `perception.drift.baseline(thresholds_path)` reads `good_mean`, written by `python -m perception.evaluate` (exists after the real-brick run). `opencv-python` now replaces the headless pin (your 05:32 ask, resolved). **Offer, only on your yes:** Saliha's agent builds `narrator/persona.py` (A6b) in your folder if you are short of time before 15:30. Reply on this row | 2026-11-14 12:40 |
 | 2026-11-14 12:40 | @saliha | @nate | 📨 for you | **Offer, only on your yes:** Saliha's agent takes **N3** (gripper band + settle, early exit, roll the wrist back before `place`, place success from `scene.brick_in_bowl`) and **N4** (SmolVLA recipe) in a worktree off your branch, tested on `MockRobot`, handed back for your review. Nothing starts without your yes. Your first real recording is the critical path for the 17:00 gate. Reply on this row | 2026-11-14 12:40 |
 | 2026-11-14 12:40 | @saliha | @all | 🔀 scope proposal | **PrePostProcessor leaves the cut order** (it is built, `main` `4c96ef0`, decisions.md D30): CLAUDE.md item 7 is removed and PRD F2 / §10 now say built. The detector can also be exported with preprocessing inside the graph (`model_ppp.xml` beside `model.xml`); the benchmark reports both rows plus an operator-support table. Say no on this row if you object; the plain IR stays the default until the measured numbers pick | 2026-11-14 12:40 |
@@ -93,6 +94,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 13:10 — docs — Mentor guidance applied: Anomalib only detects, the VLA integrates; second opinion dropped — @saliha [conflicts: @nate]
+- **Where:** `context` (D31, D25, PRD §0 and judging table) · merged to `main`: n/a (docs)
+- **Did:** read the six judging-slide screenshots again against the plan. The pipeline already matches the End Goal slide (ACT picks, Anomalib inspects, SmolVLA places) and the VLA never detects defects. Dropped Nemotron's logged "second opinion" on uncertain bricks (doc only, no code existed). Added the four-layer mapping (perception, reasoning, planning, manipulation) to the PRD judging evidence and the mentor guidance to PRD §0. Two proposals are written up but not applied: the verdict inside the VLA strings (a data choice for @nate before recording) and a leader-teleop rehearsal gate.
+- **Touched:** `decisions.md` (D25, D31), `prd.md` (§0, §5, Pending)
+- **Brief task:** none
+- **⚠️ Conflicts:** @nate: the proposals (a) and (b) would touch D23's strings and the recording order if Saliha says yes; nothing changes for you until then
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 12:40 — feat — Drift rule, in-graph preprocessing, operator-support table; opencv-python — @saliha [conflicts: @harry]
 - **Where:** `aiml-perception-saliha` → `main` @ `4c96ef0` · merged to `main`: yes
