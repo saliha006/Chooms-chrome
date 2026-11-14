@@ -16,6 +16,7 @@ import sys
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -23,12 +24,14 @@ import yaml
 
 import narrator
 import telemetry
+from telemetry import sync as telemetry_sync
 from common import estop
 from common.capture import SharedCapture
 from common.interfaces import DefectSignal, Inspector, Mover
 from common import deadline
 from common.locate import CountLocator
 from common.reasons import HelpNeeded, Reason
+from perception.reason_trace import ReasonTrace, region
 
 CONFIG = Path(__file__).parent / "config"
 GRASP_ATTEMPTS = 2  # PRD §6: retry once, then ask for help
@@ -61,6 +64,9 @@ class Cell:
         self.help_reason: Reason | None = None
         self.last_signal: DefectSignal | None = None
         self.trace: list[str] = []  # this brick's reasoning, one line per step (H7 panel)
+        self.steps: list[tuple[str, float]] = []  # recovery steps and the score after each (ReasonTrace)
+        self.finale: Callable[[], object] | None = None  # the end-of-run dance on the real arm (D28)
+        self.obstacle_seen = False
         self.stage_ms: dict[str, float] = {}
         self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
         self.quit = threading.Event()  # Q: finish this brick, then home and stop
@@ -73,16 +79,22 @@ class Cell:
                 with self._stage("LOCATE", brick_id) as row:
                     present = self.locator.next_brick()
                     row["outcome"] = "brick" if present else "empty"
+                    self._notice_obstacles(row)
                 if not present:
                     break
                 self.next_brick += 1
                 self.trace = []  # a new list, not clear(): the window may be drawing the old one
+                self.steps = []
                 try:
                     self.sort_one(brick_id)
                     self.sorted += 1
                 except Exception as exc:
                     self._ask_for_help(brick_id, exc)
             narrator.say("quit" if self.quit.is_set() else "empty", n=self.sorted)
+            if self.finale is not None and not self.quit.is_set():
+                self.state = "DANCE"
+                narrator.say("dance")
+                self.finale()
             self._home()
             self.state = "DONE"
         except estop.EStopped:
@@ -109,8 +121,10 @@ class Cell:
             row["outcome"] = "placed" if placed else "failed"
         if not placed:
             raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.PLACE_FAILED, instruction)
-        with self._stage("LOG", brick_id, signal, label=label) as row:
+        final = self.last_signal  # the look that settled it, after any recovery
+        with self._stage("LOG", brick_id, final, label=label) as row:
             row["outcome"] = "sorted"
+            row["note"] = ReasonTrace.from_signal(final, label, self.steps).note()
 
     def _pick(self, brick_id: int) -> None:
         for attempt in range(1, GRASP_ATTEMPTS + 1):
@@ -140,7 +154,11 @@ class Cell:
             except Exception as exc:
                 raise HelpNeeded(Reason.INSPECT_FAILED, str(exc)) from exc
             self.last_signal = signal
-            self.trace.append(f"{step}: {signal.score:.2f} vs {signal.t_low:.2f} / {signal.t_high:.2f} -> {signal.label}")
+            where = region(signal.bbox)
+            self.trace.append(f"{step}: {signal.score:.1f} vs {signal.t_low:.1f} / {signal.t_high:.1f} -> {signal.label}"
+                              + (f" at {where}" if where else ""))
+            if step != "first look":
+                self.steps.append((step, signal.score))
             row.update(label=signal.label, score=signal.score, device=signal.device, outcome=signal.label)
         return signal
 
@@ -187,6 +205,15 @@ class Cell:
         self.paused.set()
         self._checkpoint()  # returns on P (carry on with the next brick) or Q
         self.help_reason = None
+
+    def _notice_obstacles(self, row: dict) -> None:
+        """Something in the zone that isn't a brick: never picked (SceneLocator skips it), but the cowboy notices once."""
+        obstacles = getattr(self.locator, "obstacles", [])
+        if obstacles:
+            row["note"] = f"{len(obstacles)} non-brick object(s) in the zone, skipped"
+            if not self.obstacle_seen:
+                narrator.trigger("obstacle")
+        self.obstacle_seen = bool(obstacles)
 
     def _home(self) -> None:
         self.state = "HOME"
@@ -328,8 +355,19 @@ def build_real(scripted: set[str], bricks: int, run_id: str) -> Cell:
         learned_mover = LearnedMover(policy.get("pick"), policy.get("place"), poses,
                                      lambda: {role: capture.frame(role) for role in pol["cameras"]})
         movers |= {part: learned_mover for part in learned}
-    cell = Cell(capture, inspector, movers["pick"], movers["place"], CountLocator(bricks), load_config("rules.yaml"),
+    scene = load_config("scene.yaml")
+    if scene["zone"] is not None:
+        from perception.scene import SceneLocator, Zone
+
+        locator = SceneLocator(capture, Zone(scene["zone"]))
+    else:
+        _log.warning("config/scene.yaml has no zone (python -m ui.click_regions): counting %d bricks instead", bricks)
+        locator = CountLocator(bricks)
+    cell = Cell(capture, inspector, movers["pick"], movers["place"], locator, load_config("rules.yaml"),
                 views_of(cameras), run_id)
+    from robot.dance import dance
+
+    cell.finale = lambda: dance(poses["home"])
     # Honesty guardrail: the screen and the log always say what moved the arm.
     cell.mode = "pick: {} | place: {}".format(
         *("scripted" if p in scripted else f"{needed[p]} on {loaded[p][1]}" for p in ("pick", "place")))
@@ -354,15 +392,21 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--mock", action="store_true", help="stand-in cameras, inspector and arm")
     ap.add_argument("--scripted", type=parse_scripted, default=set(), help="pick, place or pick,place use waypoints")
-    ap.add_argument("--bricks", type=int, default=5, help="bricks in the zone (until F9 localization)")
+    ap.add_argument("--bricks", type=int, default=5, help="bricks in the zone when no zone is clicked (mock, or no scene.yaml)")
     ap.add_argument("--headless", action="store_true", help="no window: start at once, Ctrl+C = e-stop")
+    ap.add_argument("--aiven", action="store_true", help="also send a mock run to Aiven (real runs always do)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
 
-    run_id = time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
+    # Mock runs get their own log and a mock- run id, so stand-in data never mixes into the trial report.
+    run_id = ("mock-" if args.mock else "") + time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id)
     cell.pause_on_help = not args.headless
-    telemetry.start(Path("runs/events.jsonl"))
+    events = Path("runs/mock-events.jsonl" if args.mock else "runs/events.jsonl")
+    telemetry.start(events)
+    sync_stop = threading.Event()
+    # None when Aiven isn't configured: the JSONL file alone
+    sync = telemetry_sync.start(sync_stop, events) if args.aiven or not args.mock else None
     try:
         if args.headless:
             error = headless(cell)
@@ -375,6 +419,9 @@ def main() -> None:
     finally:
         cell.capture.stop()
         telemetry.stop()
+        sync_stop.set()
+        if sync is not None:
+            sync.join(timeout=30)  # its last pass sends the run's final rows
         if not args.mock:
             from robot import io
 

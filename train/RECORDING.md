@@ -10,6 +10,11 @@ for recording and runtime.
   recorded** (the F14 "new positions" test).
 - **Inspection pose:** marked with tape on the table under the inspection camera; every ACT episode ends there.
 - **Cameras:** the `/dev/v4l/by-id` paths in `config/cameras.yaml` (roles `top`, `inspect`, `wrist`). Never replug between recording and runtime.
+  Record all three, with exactly these keys, in both datasets. SmolVLA maps them onto its pretrained slots in this order:
+  `--cameras top,wrist,inspect` → `camera1`, `camera2`, `camera3` (Nate, 2026-11-14).
+- **Joint unit: degrees**, the same as `robot/io.py`. On the first test episode, compare its `observation.state` with
+  `robot.io.observe()` at the same pose: they must agree within a couple of degrees. If Studio can only record
+  normalized (−100 to 100), stop and tell the team: the fallback is switching `robot/io.py` to normalized (decisions.md D29).
 - **Leader arm** for teleoperation only; it is never driven by code.
 
 ## ACT (pick and present): 54 episodes

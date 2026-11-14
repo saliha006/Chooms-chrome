@@ -92,3 +92,14 @@ def test_learned_pick_with_scripted_place(station):
         assert cell.mode == "pick: act on GPU | place: scripted"  # the screen names the device it really loaded on
     finally:
         cell.capture.stop()
+
+
+def test_clicked_zone_switches_to_the_scene_check(station):
+    from perception.scene import SceneLocator
+
+    station("scene.yaml", lambda d: d.update(zone=[[0, 0], [8, 0], [8, 8], [0, 8]]))
+    cell = run.build_real({"pick", "place"}, 1, "t")
+    try:
+        assert isinstance(cell.locator, SceneLocator) and cell.finale is not None
+    finally:
+        cell.capture.stop()

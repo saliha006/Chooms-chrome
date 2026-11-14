@@ -141,7 +141,7 @@ def test_trace_records_the_whole_chain_for_the_panel(make_cell):
 def test_trace_starts_fresh_for_each_brick(make_cell):
     cell, _ = make_cell(("perfect",), bricks=2)
     cell.run()
-    assert cell.trace == ["first look: 0.20 vs 0.40 / 0.70 -> perfect", f"decision: {RULES['perfect']}"]
+    assert cell.trace == ["first look: 0.2 vs 0.4 / 0.7 -> perfect", f"decision: {RULES['perfect']}"]
 
 
 def test_trace_says_why_help_was_needed(make_cell):
@@ -149,3 +149,40 @@ def test_trace_says_why_help_was_needed(make_cell):
     with pytest.raises(run.HelpNeeded):
         cell.run()
     assert cell.trace == ["needs help: grasp failed"]
+
+
+def test_log_row_carries_the_reason_trace(make_cell, tmp_path):
+    path = tmp_path / "events.jsonl"
+    telemetry.start(path)
+    cell, _ = make_cell(("uncertain", "uncertain", "defective"))
+    cell.run()
+    telemetry.stop()
+    log_row = next(json.loads(line) for line in path.read_text().splitlines() if json.loads(line)["state"] == "LOG")
+    assert log_row["note"] == "defective: score 0.9 vs 0.4/0.7 (margin +0.2) | look again 0.6 > after wrist roll 90 0.9"
+
+
+def test_obstacle_noticed_once_while_it_stays(make_cell, monkeypatch):
+    triggers = []
+    monkeypatch.setattr(run.narrator, "trigger", triggers.append)
+
+    class Cluttered(CountLocator):
+        obstacles = ["hand"]
+
+    cell, _ = make_cell(("perfect",), bricks=3)
+    cell.locator = Cluttered(3)
+    cell.run()
+    assert triggers == ["obstacle"] and cell.sorted == 3
+
+
+def test_dance_only_after_an_empty_zone(make_cell):
+    danced = []
+    cell, mover = make_cell(("perfect",), bricks=2)
+    cell.finale = lambda: danced.append(True)
+    cell.run()
+    assert danced == [True] and mover.calls[-1] == ("home",)
+
+    cell, _ = make_cell(("perfect",), bricks=5)
+    cell.finale = lambda: danced.append(True)
+    cell.quit.set()
+    cell.run()
+    assert danced == [True]  # Q: no dance

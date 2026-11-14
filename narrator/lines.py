@@ -16,6 +16,7 @@ LINES: dict[str, dict[str, str]] = {
         "grasp_fail": "Missed it. Let me try that again.",
         "empty": "That's the last one. All done.",
         "quit": "Stopping here and heading home.",
+        "dance": "That's the zone empty. Time for a little victory dance.",
         "estop": "Emergency stop. Motors off.",
         "help.grasp_failed": "I can't get a grip on that brick. Could someone give me a hand?",
         "help.brick_lost": "I've lost the brick. I need a hand here.",
@@ -35,6 +36,7 @@ LINES: dict[str, dict[str, str]] = {
         "grasp_fail": "Dang, slipped right outta my hand. One more go.",
         "empty": "That's the whole herd. All done.",
         "quit": "Callin' it a day, partner. Headin' home.",
+        "dance": "That's the whole herd sorted. Time for a little two-step!",
         "estop": "Whoa there! Motors off.",
         "help.grasp_failed": "Can't get a grip on this little critter. Need a hand, partner.",
         "help.brick_lost": "Lost that brick somewhere on the trail. Need a hand.",
@@ -50,7 +52,7 @@ LINES: dict[str, dict[str, str]] = {
 }
 
 # Every event run.py says out loud; tests check each has a line in both personas.
-EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop",
+EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance",
           *(f"help.{reason.value}" for reason in Reason))
 
 

@@ -40,10 +40,8 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
-| 2026-11-14 08:50 | @saliha | @harry | 📨 for you | **Ready to wire into `run.py`** (on `main` @ `487ddf5`; details in your brief's v2.5 block): `perception.scene.SceneLocator` (drop-in for `CountLocator`), `scene.tall_object` → `hold`, `scene.brick_in_bowl` → place success, `perception.reason_trace.ReasonTrace` → `note`/panel, and a `DANCE` step after the zone is empty (`robot.dance.dance(home)`) + a narrator line. Inspector scores are now raw (use `t_low`/`t_high`) | 2026-11-14 08:50 |
-| 2026-11-14 08:50 | @saliha | @nate | ⚠️ conflict | Saliha's agent added `robot/dance.py` + `robot/tests/test_dance.py` on your branch at Saliha's request (end-of-run dance, D28): only `robot.io.move_to`, so your limits, speed cap and e-stop apply. Joint signs are TUNE on the arm. `git pull` before your next push | 2026-11-14 08:50 |
-| 2026-11-14 06:10 | @nate | @harry | 📨 waiting on | **Thresholds now live in `robot/io.py`** (`eb79301`, your offer, Nate's call): `io.POSE_TOLERANCE_DEG`, `io.GRIPPER_EMPTY_BELOW`, `io.GRIPPER_OPEN`. Please point `fallback/scripted.py` at them and drop your copies, so a tune on the arm (N8) changes one place | 2026-11-14 06:10 |
-| 2026-11-14 06:04 | @harry | @nate | ⚠️ conflict | **Joint unit must match between recording and runtime** (H6): physicalai's `SO101` defaults to `unit="normalized"` ([-100, 100]) and the Intel tutorial passes no unit; `robot/io.py` runs in `"degrees"` (its limits and 5°/step cap are degrees); LeRobot's current SO follower records degrees (`use_degrees=True`). Please confirm which unit your recordings and the red-lego smoke-test set use, and record with the same one `io.py` runs. Also: camera names in the dataset must be `top` / `wrist` (`config/models.yaml`). **@nate 06:10:** red-lego looks **normalized** (every joint within ±100; `elbow_flex` max 99.7 is past `io.py`'s 97° limit), harmless for the smoke test since it never drives our arm. Our recording unit and camera keys: Nate is deciding now, answer on this row next | 2026-11-14 06:04 |
+| 2026-11-14 08:50 | @saliha | @harry | 📨 for you | **Ready to wire into `run.py`** (on `main` @ `487ddf5`; details in your brief's v2.5 block): `perception.scene.SceneLocator` (drop-in for `CountLocator`), `scene.tall_object` → `hold`, `scene.brick_in_bowl` → place success, `perception.reason_trace.ReasonTrace` → `note`/panel, and a `DANCE` step after the zone is empty (`robot.dance.dance(home)`) + a narrator line. Inspector scores are now raw (use `t_low`/`t_high`). **@harry 11:37: wired** `SceneLocator` (once `config/scene.yaml` has the zone), non-brick objects → obstacle trigger, `ReasonTrace.note()` → LOG `note` + region on the panel, dance + line after an empty zone. **Still open:** `brick_in_bowl` (top-camera view is blocked by the arm right after a place; when to check is Harry's call) and `tall_object` (needs RealSense depth in capture) | 2026-11-14 08:50 |
+| 2026-11-14 11:53 | @nate | @harry | 📨 waiting on | **Unit and cameras decided (answer to your H6 row):** recordings use **degrees**, as `robot/io.py` runs (checked against `io.observe()` on the first Studio test episode; fallback normalized, D29). Both datasets record **all three cameras, `top`, `inspect`, `wrist`**, so please add `inspect` to the policy cameras in `config/models.yaml`. SmolVLA maps them `top`→`camera1`, `wrist`→`camera2`, `inspect`→`camera3` | 2026-11-14 11:53 |
 | 2026-11-14 07:15 | @saliha | @all | 🔀 scope proposal | **PRD v2.5 on `context` (`5da0552`), re-sync.** A research pass (6 research agents + design + critic) put an ordered 🆕 v2.5 block at the top of each brief's ▶ Current tasks. Same vision. Highlights: no RL (D1, numbers in), every stage verified with reason codes/deadlines (D22), recovery order look-again → roll → re-grasp (D7), two fixed VLA strings + language-swap test + single-colour ACT hedge (D23), device/efficiency measured (D24), Nemotron advisory only (D25), **red-lego smoke test first** (D26). Bugs listed per person. Say no on this row to anything in your block. **@harry 05:41: yes** to the whole block, and yes to `run.py` calling `perception/scene.py` (zone gate + bowl-region check). **@nate 05:54: yes** to the whole block; N1's ACT export goes through Studio's Python API or runs on Modal (the `physicalai` CLI crashes on Windows: `fcntl`) | 2026-11-14 07:15 |
 | 2026-11-14 05:32 | @harry | @saliha | 📨 waiting on | **`opencv-python` instead of `opencv-python-headless`** in `perception/requirements.txt`: mission control (F6) needs a window, the headless build has none, and the two can't be installed together. Same library and API; perception code is unaffected | 2026-11-14 05:32 |
 | 2026-11-14 05:12 | @nate | @all | 🔀 scope proposal | **Training stack and F14 positions changed in my area** (`main` @ `8bc38a6`, `decisions.md` D20): ACT now trains with **Physical AI Studio's trainer** (`physicalai fit`), so it exports straight into the `physicalai` runtime; SmolVLA stays on LeRobot (Studio's SmolVLA loader is unfinished). ACT demos: **all 9 positions × 6, recorded in rounds**. @harry: F14's "new positions" trials use only the off-grid spots. Say no on this row if you object | 2026-11-14 05:12 |
@@ -64,8 +62,8 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | All hardware-free tasks done (S1, S5, S6, bench, dance); next: 08:00 Intel laptop install (S2), 10:00 capture |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed; ACT smoke crash found and fixed (no forked loader workers), re-run on red-lego in flight (~07:15); next: ACT export test, then N3 |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H1–H4, H6, H7 panel done (H3 clips not generated yet); next 08:00 H5 cameras + waypoints |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | v2.5: N1 SmolVLA smoke passed; ACT smoke re-run on red-lego in flight (detached, ~12:45 after a dropped connection killed the first); next: ACT export test, then N3. Nothing recorded yet |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | A5 Aiven PostgreSQL live (sync + report); Kafka waits on the free Kafka service; next: station (H5, bowl check, 15:30 gate) |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -93,6 +91,43 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-14 12:28 — merge — A5: event log → Aiven PostgreSQL, verified live; Kafka producer ready; trial report — @harry [conflicts: @saliha]
+- **Where:** `systems-voice-harry` @ `992a89b` · merged to `main`: yes
+- **Did:** `telemetry/sync.py`: a thread beside the control loop sends new `runs/events.jsonl` rows to an Aiven PostgreSQL `events` table (PRD 7.3 columns) every 2 s and, once `AIVEN_KAFKA_*` is set, to the `sortsense.events` topic. Offline, rows wait in the file; the offset is saved only after a batch lands and a unique key makes re-sends no-ops. `python -m telemetry.check_aiven` tests the connection, printing no secrets. `telemetry/report.sql`: runs, pauses by reason, p50/p95 per stage and device, second looks. Mock runs now log to `runs/mock-events.jsonl` with a `mock-` run id and only go to Aiven with `--aiven`, so stand-in data stays out of the report. New pins: `psycopg[binary]==3.3.9`, `confluent-kafka==2.16.1`; `certs/` is git-ignored and `.env.example` lists the Aiven settings. **Measured live (free plan, PostgreSQL 18.7):** connect ~0.4 s warm (5.3 s on a cold service); a mock run's 37 rows all landed; re-sending all 37 left 37. 101 tests pass with Nate's. Kafka not tested yet (no free Kafka service created).
+- **Touched:** `telemetry/`, `run.py`, `requirements.txt`, `.gitignore`, `.env.example`
+- **Brief task:** A5 → 🟡 (PostgreSQL done; Kafka stream + drift alarm left)
+- **⚠️ Conflicts:** @saliha: the drift alarm will read `events` (INSPECT rows with `label`, `score`); your drift rule plugs in there. Your 05:32 `opencv-python` row is still open
+- **📨 Needs:** none
+- **Status:** open
+
+### 2026-11-14 11:53 — decision — Record in degrees with all three cameras; end-of-run dance accepted — @nate [conflicts: @harry @saliha]
+- **Where:** `robotics-policies-nate` (this commit) · merged to `main`: yes
+- **Did:** Answered Harry's H6 row. Joint unit **degrees** end to end, as `robot/io.py` runs; the first Studio test episode is checked against `io.observe()` at the same pose, and if Studio can only record normalized the fallback is switching `io.py` (D29). Both datasets record **`top`, `inspect`, `wrist`**; SmolVLA maps them `top`→`camera1`, `wrist`→`camera2`, `inspect`→`camera3` (`--cameras top,wrist,inspect`). Accepted Saliha's `robot/dance.py` (joint signs TUNE on the arm). `train/RECORDING.md` updated. The N1 ACT smoke was relaunched with `modal run --detach` after the laptop's network dropped at ~06:20 and killed the first client.
+- **Touched:** `train/RECORDING.md`, `progress.md`; on `context`: `decisions.md` D28, D29, my brief
+- **Brief task:** N6 → 🟡 (camera keys and unit) · N7 → check the unit on the first test episode
+- **⚠️ Conflicts:** @harry: `config/models.yaml` needs `inspect` among the policy cameras (board row 11:53). @saliha: ACT sees three cameras, so expect three image inputs in the exported IR you benchmark
+- **📨 Needs:** @harry: the config change above
+- **Agreed by:** @nate (unit and cameras: recommended options, Harry asked on H6)
+- **Status:** open
+
+### 2026-11-14 11:41 — feat — H3 clips: 37 cached voice lines generated and committed; bowl check stays, built at the venue — @harry [conflicts: none]
+- **Where:** `systems-voice-harry` @ `7bd7d7b` · merged to `main`: yes
+- **Did:** `python -m narrator.cache` generated every fixed line in `narrator/lines.py` (calm `etWmxTqEKhIYyGKMpDcb`, cowboy David `0hh7H4ZVAtaGpm1VZyEN`, `eleven_multilingual_v2`, WAV 22 kHz mono): 37 clips, 1,632 characters of credit, 98 s of audio, 4.3 MB, all checked as valid WAV. Committed in `narrator/clips/` (Harry's call) so the Intel laptop speaks offline without the key. Playback (A6) still to wire. Bowl check (Saliha's `brick_in_bowl`): Harry wants it; the timing (home after each place vs later) is settled and tested at the venue.
+- **Touched:** `narrator/clips/`
+- **Brief task:** H3 → ✅ clips generated
+- **⚠️ Conflicts:** none
+- **📨 Needs:** none
+- **Status:** open
+
+### 2026-11-14 11:37 — merge — Saliha's scene check, ReasonTrace and dance wired into `run.py`; region click tool; fallback uses `io` thresholds — @harry [conflicts: @saliha @nate]
+- **Where:** `systems-voice-harry` @ `ac268a7` · merged to `main`: yes
+- **Did:** (1) `ui/click_regions.py`: click the zone and both bowls (4 corners each, clockwise from top-left) on the top camera → `config/scene.yaml`. (2) Real mode uses `perception.scene.SceneLocator` once the zone is clicked (else `--bricks N`, with a warning); non-brick objects in the zone are skipped and trigger `narrator.trigger("obstacle")` once. (3) The LOG row's `note` is `ReasonTrace.from_signal(final, label, steps).note()`; the panel shows the defect region; scores print with one decimal (raw distances). (4) After an empty zone (not after Q): "dance" line + `robot.dance.dance(home)`, then home. (5) `fallback/scripted.py` reads `io.POSE_TOLERANCE_DEG`, `io.GRIPPER_EMPTY_BELOW`, `io.GRIPPER_OPEN` (Nate's ask; copies dropped). 95 tests pass with Nate's + Saliha's scene tests.
+- **Touched:** `run.py`, `fallback/scripted.py`, `narrator/lines.py`, `ui/click_regions.py`, `config/scene.yaml`
+- **Brief task:** H5 tool ready · Saliha's 08:50 wiring → 🟡 (bowl check, depth hold open)
+- **⚠️ Conflicts:** @saliha: `brick_in_bowl` not wired yet: right after `place` the arm still hangs over the bowl, so "region changed" is always true; deciding when to check. `tall_object` needs depth frames, which `SharedCapture` doesn't read yet. @nate: done with your 06:10 row
+- **📨 Needs:** none
+- **Status:** open
+
 ### 2026-11-14 08:50 — feat — S5 scene check (incl. brick-or-not key), S6 ReasonTrace, bench fixes, end-of-run dance — @saliha [conflicts: @harry @nate]
 - **Where:** `aiml-perception-saliha` @ `b67eff4`, `robotics-policies-nate` @ `487ddf5` · merged to `main`: yes
 - **Did:** `perception/scene.py`: zone homography, "is it a brick?" rule (D27, Nate's key idea), most-isolated brick, `tall_object` from depth, `brick_in_bowl`, `SceneLocator`. `perception/reason_trace.py`: score, margin, 3×3 defect region, recovery steps, decision, one-line note. Bench: any IR layout incl. multi-input policies, PyTorch baseline row (on this laptop: PaDiM 157 ms PyTorch vs 49 ms OpenVINO FP16, not Intel numbers), 1 Hz thermal, energy net of idle. `robot/dance.py` (D28). 143 tests pass across packages. All hardware-free tasks on Saliha's list are done.
@@ -100,7 +135,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **Brief task:** S1, S5, S6 → ✅ · S7 → 🟡 (harness ready; runs on the Intel laptop)
 - **⚠️ Conflicts:** @harry: wiring asks on the board; @nate: new file in `robot/`
 - **📨 Needs:** @harry: the run.py wiring above
-- **Status:** open
+- **Status:** @nate part resolved by @nate 2026-11-14 11:53 (dance accepted; joint signs TUNE on the arm); @harry part open
 
 ### 2026-11-14 08:20 — feat — S1: brick-level detector evaluation and raw anomaly scores — @saliha [conflicts: @harry]
 - **Where:** `aiml-perception-saliha` @ `882232a` · merged to `main`: yes
@@ -146,7 +181,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **Brief task:** H6 → ✅ done
 - **⚠️ Conflicts:** @nate: joint unit and dataset camera names (board row)
 - **📨 Needs:** @nate: confirm the recording unit
-- **Status:** open
+- **Status:** resolved by @nate 2026-11-14 11:53 (degrees; three cameras; config ask on the board)
 
 ### 2026-11-14 06:01 — feat — N1 SmolVLA smoke passes (camera mapping); N2 early exit + stage deadline in the policy loop — @nate [conflicts: @harry]
 - **Where:** `robotics-policies-nate` @ `945310a` · merged to `main`: yes
