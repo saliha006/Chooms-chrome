@@ -9,11 +9,13 @@ vision-language-action model) places the brick in the **purple bowl** (perfect) 
 (defective). Everything runs on one Intel Core Ultra laptop with OpenVINO, each model on the NPU, GPU or CPU on
 purpose.
 
-On top of that, the robot explains its reasoning out loud in a calm voice. An obstacle in the workspace, or the
-cowboy hat, flips it into a cowboy persona ("Holy smokes!") until the moment passes.
+On top of that, the robot explains its reasoning out loud, live, with its real numbers ("That scores 0.41, over my
+0.33 line, with a mark at the top left. Orange bowl."). In the demo it starts out of reach of the bricks, says so,
+and drags its wheeled base across a white box room to them. Tell it "I'm putting a cowboy hat on you" and it hears
+you, puts on a cowboy voice and keeps it until you say the hat is off.
 
-> **Status:** the mock loop runs end to end; the real station is being brought up. Measured numbers will land in
-> `bench/results.md`; until then every number below is marked TBD.
+> **Status:** the mock loop runs end to end; the real station is being brought up. Measured numbers live in
+> [`bench/results.md`](bench/results.md); anything not measured yet is marked TBD.
 
 ## Architecture
 
@@ -53,6 +55,7 @@ flowchart LR
     SM --> ACT & VLA & SCR --> ARM
     TOP & WR & INS --> ACT & VLA
     SM -.-> VOICE["Voice: ElevenLabs<br/>calm ↔ cowboy"]
+    MIC["Microphone"] -.-> STT["Speech-to-text<br/>(hat on / off)"] -.-> VOICE
     NEM -.-> VOICE
     SM -.-> LOG["JSONL → Aiven PostgreSQL<br/>(+ drift alarm)"]
 ```
@@ -96,28 +99,35 @@ cp .env.example .env   # then add your own keys; never commit .env
 | `make rebaseline` | Re-train the detector on the demo table after a lighting change (~60 images) |
 | `python -m bench.benchmark` | Device benchmark table |
 | `pytest -m "not slow"` | Tests |
+| `python run.py --mock --drive 42` | Rehearse the box-room opening: a stand-in base "drives" 42 cm first, talked over live |
+| `--no-live` / `--no-listen` | Cached voice lines only (no ElevenLabs calls) / don't listen to the microphone |
 
-**Keys in the window:** **S** start · **P** pause · **E** e-stop (torque off) · **Q** home and quit · **H** cowboy hat.
+**Keys in the window:** **S** start · **P** pause · **E** e-stop (torque off) · **Q** home and quit · **H** cowboy hat on/off (backup for saying it).
 
 The screen and the log always say what moved the arm (`pick: scripted | place: smolvla on GPU`). A scripted
 placement is never presented as SmolVLA.
 
 ### Station setup
 
-1. Camera paths in `config/cameras.yaml` (`ls /dev/v4l/by-id/`), the follower's port in `config/robot.yaml`.
-2. `python -m ui.click_regions`: click the pick zone and both bowls on the top camera.
-3. `python -m fallback.teach home pick_above pick pick_drop inspect bowl_red bowl_blue`: hand-guide each pose.
-   Pose names are roles: `bowl_blue` is the purple (perfect) bowl, `bowl_red` the orange (defective) one.
+Every step, in order, with how to tell it worked: [`docs/station.md`](docs/station.md). The demo itself:
+[`docs/demo-script.md`](docs/demo-script.md).
 
 ## The personality layer
 
-- **Voice:** every event and every failure reason has a line in two personas, pre-generated with ElevenLabs into
-  `narrator/clips/` so it works offline. Playback runs on its own thread; the newest line wins, but help and
-  e-stop lines are never dropped.
-- **Cowboy switch:** an obstacle in the pick zone or the **H** key flips to the cowboy at once. It drifts back to
-  calm through a half-way line once the obstacle has gone and one more brick is done.
-- **Reasoning panel:** each brick's chain (score vs thresholds, every recovery step, the decision) is shown on
-  screen and logged.
+- **It explains as it works, live:** each verdict with its score, the threshold it crossed and where the mark is;
+  the running tally between bricks; the borderline score before each recovery step; how far it has to drive and,
+  on arrival, how far and how long it took; a spoken summary of the run. These lines are synthesised on the fly
+  with ElevenLabs Flash, several at once and never out of order (0.5–1.6 s per line on a good connection).
+- **It never goes silent:** every line also exists as a cached clip in both voices (`narrator/clips/`). A line
+  not back within 3 s, a network drop or a spent budget (12,000 characters per run) plays the cached clip instead;
+  the arm never waits for speech.
+- **It hears you:** the microphone is cut into utterances by loudness and sent to ElevenLabs speech-to-text
+  (about 0.8 s); "I'm putting a cowboy hat on you" switches to the cowboy voice until "I'm taking the hat off".
+  **H** does the same if the room is too loud.
+- **It names what it doesn't recognise:** something on the plates that isn't a brick gets an instant
+  "Holy smokes!", then, from a naming model, "…there's a coffee mug in my zone! That ain't no brick."
+- **Subtitles and reasoning panel:** what it is saying runs under the camera feed (amber for the cowboy), and each
+  brick's chain (score vs thresholds, every recovery step, the decision) is shown and logged.
 
 ## Event log and Aiven
 
