@@ -60,9 +60,14 @@ and a cowboy (David, deep southern cowboy, from the Voice Library), pre-generate
 so the voice works offline and never waits on the network (19 calm + 20 cowboy clips). An obstacle in the pick
 zone or the cowboy hat flips the robot into the cowboy persona at once ("Holy smokes!"); once the obstacle is
 gone and one more brick is done it drifts back through a half-way line ("Right, partner... I mean, right.").
-Playback runs on its own thread, so speech never delays the arm. Live lines streamed with `eleven_flash_v2_5`
-from Nemotron's explanation: TBD (keep only if it works in the demo; then add the measured time from verdict to
-first audio).
+Playback runs on its own thread, so speech never delays the arm.
+
+The robot also explains each verdict live, with that brick's own numbers: "That scores 0.41, over my 0.63
+line, with a mark at the top left. Orange bowl." These lines are synthesised on the fly with `eleven_flash_v2_5`
+(625–1953 ms per line on the venue Wi-Fi); a warm-up call opens the connection before the first brick, and a line
+not back within 3 s falls back to the cached clip, so the voice keeps up even when the network doesn't. On real
+runs, NVIDIA Nemotron's explanation of what it sees follows in the same voice. Time from verdict to first audio
+on the demo laptop: TBD.
 
 ## Aiven
 
