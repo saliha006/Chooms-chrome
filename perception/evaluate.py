@@ -139,7 +139,8 @@ def evaluate(root: Path, model_name: str, out_yaml: Path, report: Path, work: Pa
         "recall": f"{caught}/{len(test_scores)}", "recall_ci95": list(interval(caught, len(test_scores))),
         "defective_uncertain": f"{test_uncertain}/{len(test_scores)}",
     }
-    thresholds.save(out_yaml, t_low, t_high, pixel_threshold=pixel, model=model_name, ckpt=str(ckpt),
+    thresholds.save(out_yaml, t_low, t_high, pixel_threshold=pixel, good_mean=float(good_scores.mean()),
+                    model=model_name, ckpt=str(ckpt),
                     good_images=len(good_scores), defective_dev_images=len(dev))
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(to_markdown(result), encoding="utf-8")

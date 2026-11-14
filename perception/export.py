@@ -2,7 +2,8 @@
 
     python -m perception.export --ckpt runs/perception/padim/.../model.ckpt --model padim --root data
 Writes <out>/<model>/<precision>/weights/openvino/model.xml with a static 1x3x256x256 input,
-because the NPU compiles static shapes only (decisions.md D8).
+because the NPU compiles static shapes only (decisions.md D8), and model_ppp.xml beside it with the
+colour flip, scaling and layout change inside the graph (perception/preprocess.py).
 """
 
 import argparse
@@ -12,6 +13,7 @@ import openvino as ov
 from anomalib.deploy import CompressionType, ExportType
 from anomalib.engine import Engine
 
+from perception.preprocess import with_preprocessing
 from perception.train import MODELS, build_model, datamodule
 
 INPUT_SIZE = (256, 256)
@@ -51,7 +53,9 @@ def main() -> None:
     ap.add_argument("--precision", choices=[*PRECISIONS, "all"], default="all")
     args = ap.parse_args()
     for precision in PRECISIONS if args.precision == "all" else [args.precision]:
-        print(export(args.ckpt, args.model, args.root, args.out, precision))
+        xml = export(args.ckpt, args.model, args.root, args.out, precision)
+        print(xml)
+        print(with_preprocessing(xml))
 
 
 if __name__ == "__main__":
