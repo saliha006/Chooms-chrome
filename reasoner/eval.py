@@ -1,9 +1,10 @@
 """Nemotron eval: how often the live line is usable, on saved inspection crops (F17, NVIDIA write-up).
 
-    python -m reasoner.eval runs/nemotron_eval/frames.csv                       # current prompt
-    python -m reasoner.eval runs/nemotron_eval/frames.csv --system revised.txt  # a prompt revision, same frames
+    python -m reasoner.eval runs/evaluate/frames.csv                       # current prompt
+    python -m reasoner.eval runs/evaluate/frames.csv --system revised.txt  # a prompt revision, same frames
 
-frames.csv columns: image,label,score,t_low,t_high (label is the inspector's verdict for that crop).
+frames.csv (written by `python -m perception.evaluate`): image,label,score,t_low,t_high, where label is the
+inspector's verdict for that crop.
 A line is usable when it is grounded (no wrong bowl, no invented number: the same check the live path applies)
 and says the decided action. Appends a table to bench/results.md, so before/after prompt rows sit together.
 """
@@ -54,6 +55,19 @@ def load_frames(manifest: Path) -> list[tuple[Path, DefectSignal]]:
     return frames
 
 
+def balanced(frames: list[tuple[Path, DefectSignal]], n: int) -> list[tuple[Path, DefectSignal]]:
+    """Up to n frames, taken in turn from each label, so a run is not all perfect bricks."""
+    by_label: dict[str, list] = {}
+    for frame in frames:
+        by_label.setdefault(frame[1].label, []).append(frame)
+    picked, queues = [], list(by_label.values())
+    while len(picked) < n and any(queues):
+        for queue in queues:
+            if queue and len(picked) < n:
+                picked.append(queue.pop(0))
+    return picked
+
+
 def evaluate(frames: list[tuple[Path, DefectSignal]], system: str = SYSTEM, ask=explain, pause_s: float = 1.6) -> list[Outcome]:
     """pause_s keeps one key under NVIDIA Build's free tier of about 40 requests a minute."""
     outcomes = []
@@ -92,11 +106,12 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("manifest", type=Path)
     ap.add_argument("--system", type=Path, help="a revised system prompt to compare against the current one")
+    ap.add_argument("--n", type=int, default=20, help="frames per run, balanced across labels")
     ap.add_argument("--out", type=Path, default=Path("bench/results.md"))
     args = ap.parse_args()
     load_dotenv()
     system = args.system.read_text().strip() if args.system else SYSTEM
-    outcomes = evaluate(load_frames(args.manifest), system)
+    outcomes = evaluate(balanced(load_frames(args.manifest), args.n), system)
     table = to_markdown(outcomes, args.system.name if args.system else "current")
     with args.out.open("a", encoding="utf-8") as f:
         f.write(f"\n{table}\n")

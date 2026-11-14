@@ -15,6 +15,7 @@ Writes the thresholds YAML the inspector reads and a markdown report. Prints the
 """
 
 import argparse
+import csv
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -132,7 +133,19 @@ def evaluate(root: Path, model_name: str, out_yaml: Path, report: Path, work: Pa
                     good_images=len(good_scores), defective_dev_images=len(dev))
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(to_markdown(result), encoding="utf-8")
+    write_frames(work / "frames.csv", {**oof_scores, **{p: final_scores[p] for p in test}}, t_low, t_high)
     return result
+
+
+def write_frames(path: Path, scores: dict[Path, float], t_low: float, t_high: float) -> None:
+    """Every honestly scored image with the verdict the inspector would give it: the input of `reasoner.eval`."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as f:
+        out = csv.writer(f)
+        out.writerow(["image", "label", "score", "t_low", "t_high"])
+        for image, score in scores.items():
+            label = "perfect" if score < t_low else "defective" if score > t_high else "uncertain"
+            out.writerow([image.resolve(), label, f"{score:.4f}", f"{t_low:.4f}", f"{t_high:.4f}"])
 
 
 def to_markdown(r: dict) -> str:

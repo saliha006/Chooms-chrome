@@ -44,3 +44,22 @@ def test_prompt_revision_reaches_the_call(tmp_path):
 
     evaluate(manifest(tmp_path)[:1], system="REVISED", ask=ask, pause_s=0)
     assert seen == ["REVISED"]
+
+
+def test_balanced_takes_labels_in_turn(tmp_path):
+    from reasoner.eval import balanced
+
+    frames = manifest(tmp_path)  # perfect, defective, defective, uncertain
+    assert [s.label for _, s in balanced(frames, 3)] == ["perfect", "defective", "uncertain"]
+    assert len(balanced(frames, 10)) == 4
+
+
+def test_evaluate_frames_csv_round_trips(tmp_path):
+    from pathlib import Path
+
+    from perception.evaluate import write_frames
+
+    cv2.imwrite(str(tmp_path / "g.png"), np.zeros((8, 8, 3), np.uint8))
+    write_frames(tmp_path / "frames.csv", {Path(tmp_path / "g.png"): 0.1, Path(tmp_path / "d.png"): 0.9,
+                                           Path(tmp_path / "u.png"): 0.4}, 0.2, 0.6)
+    assert [s.label for _, s in load_frames(tmp_path / "frames.csv")] == ["perfect", "defective", "uncertain"]
