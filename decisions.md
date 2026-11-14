@@ -197,12 +197,12 @@
 - **Evidence:** a unit test parses the ACT command with Studio's own `fit` parser; first Modal runs TBD (`train/runs.md`).
 - **Pitch line:** "The pick policy is trained in Intel's Physical AI Studio and exported straight to OpenVINO."
 
-### D21 · Safety · E-stop: keys set a flag, only the control thread talks to the motors — Status: Built · Owner: @harry · Updated: 2026-11-14 05:32
-- **Decision:** pressing E (or Ctrl+C) sets an e-stop flag; the control thread checks it on every scripted control step and at every stage boundary, turns the torque off and stops, and never homes afterwards. The mission-control window runs on the main thread and only sets flags (S, P, E, Q, H). Next: `robot/io.act()` checks the same flag, so learned-policy motion stops within one control step too (asked of @nate).
+### D21 · Safety · E-stop: keys set a flag, only the control thread talks to the motors — Status: Built · Owner: @harry @nate · Updated: 2026-11-14 05:47
+- **Decision:** pressing E (or Ctrl+C) sets an e-stop flag; the control thread checks it on every scripted control step and at every stage boundary, turns the torque off and stops, and never homes afterwards. The mission-control window runs on the main thread and only sets flags (S, P, E, Q, H). Since 05:47 `robot/io.act()` checks the same flag too (@nate), so learned-policy motion, `move_to` and the scripted fallback all stop within one control step.
 - **Why:** the motor driver was never checked for two threads writing to the serial bus at once; a garbled command at the moment of an e-stop is the worst case. A flag costs at most one control step (about 33 ms at 30 Hz), in which the 5° per step speed cap limits motion.
 - **Alternatives rejected:** calling torque-off straight from the window thread (fastest, but two writers on the bus); a lock around every motor call plus the direct call (more code in the shared robot layer for at most 33 ms).
-- **Trade-off / risk:** until `io.act` checks the flag, a learned policy mid-episode only stops at the next stage boundary; the scripted fallback stops within a step. E = torque off, so the arm drops: a person always watches it (PRD §9).
-- **Evidence:** tests: a scripted move stops part way within 0.5 s of E with torque off; E mid-run never homes; Q finishes the brick and homes; P holds at a stage boundary. TBD (stop latency on the real arm).
+- **Trade-off / risk:** a stop can take up to one control step (about 33 ms); learned policies used to stop only at the next stage boundary, closed at 05:47 by the `io.act` check. E = torque off, so the arm drops: a person always watches it (PRD §9).
+- **Evidence:** tests: a scripted move stops part way within 0.5 s of E with torque off; E mid-run never homes; Q finishes the brick and homes; P holds at a stage boundary; with E requested, `io.act` and `io.move_to` raise with torque off and no command sent (`robot/tests/test_io.py`). TBD (stop latency on the real arm).
 - **Pitch line:** "The stop button never fights the robot for the wire: one thread drives the motors, and it checks for the stop every step."
 
 ### D22 · Reliability · Every stage verified: grasp band, bowl-region check, early exit, reason codes — Status: Planned · Owner: @nate @harry @saliha · Updated: 2026-11-14 07:10
