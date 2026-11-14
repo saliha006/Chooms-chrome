@@ -58,7 +58,7 @@ own **Now** cell whenever you log an entry.
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
 | Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A code on `main` (written by Saliha's agent); next: Modal login + smoke run, export test |
-| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1, A2 done (interfaces, configs, mocks on `main`); next A2b shared capture, A3 `run.py` |
+| Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | Block A: A1–A3 done (`python run.py --mock` sorts 5 bricks); next A6 voice, A6b persona, A7 scripted fallback |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
 on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner publishes (CLAUDE.md 📤); your own
@@ -84,6 +84,15 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 04:30 — merge — A2b shared capture + A3 `run.py` state machine: mock run sorts 5 bricks — @harry [conflicts: @saliha @nate]
+- **Where:** `systems-voice-harry` @ `c3deb81` · merged to `main`: yes
+- **Did:** `common/capture.py` `SharedCapture` (F13): one grab thread per camera; the policy and the inspector get the same array; `frame(role, newer_than=...)` waits for a frame taken after the arm stopped. `run.py`: IDLE→LOCATE→PICK→VERIFY_GRASP→INSPECT→DECIDE→[REINSPECT]→PLACE→LOG; grasp retried once, then "help" + HOME and the run stops; uncertain → second view (`rules.yaml` `second_view: top`, no motion) → `reinspect(0)` → defective, said aloud; any exception → HOME + spoken message, run stops. One `events` row per stage (PRD 7.3 columns) via `telemetry` (queue → `runs/events.jsonl`). `narrator.say/trigger` print to the console until A6. 23 tests pass. Not yet on the `physicalai` runtime (R5): the real wiring comes with A7 / Block B.
+- **Touched:** `run.py`, `common/`, `config/rules.yaml`, `narrator/`, `telemetry/`
+- **Brief task:** A2b, A3 → ✅ done
+- **⚠️ Conflicts:** @saliha: the F4 uncertain chain is coded in `run.py` from PRD §6 and driven by `config/rules.yaml`; tell me if your decision logic differs. Your one-line `run.py` import (Block B 13:00) goes in `build_mock`'s real twin. @nate: `run.py` takes separate pick and place movers, so `LearnedMover` and the scripted fallback can mix (`--scripted pick,place`)
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 05:15 — feat — Nate's hardware-free Block A: robot I/O + MockRobot, learned Mover, Modal training — @saliha (for @nate) [conflicts: @nate @harry]
 - **Where:** `robotics-policies-nate` @ `ac2e2f2` · merged to `main`: yes
