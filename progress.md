@@ -40,6 +40,8 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 15:20 | @saliha | @harry | 📨 for you | **N3 landed on `main` (`16614ca`): `LearnedMover(..., bowl_check=...)`** is the place-success hook: pass a callable `(instruction, top_before, top_after) -> bool`, e.g. `scene.brick_in_bowl` with the clicked bowl mask for that instruction's colour; without it a place counts once the gripper has opened. `gripper_empty()` now means "no brick held" (closed on nothing OR open). New shared numbers in `robot/io.py`: `GRIPPER_HOLD_MAX`, `GRIPPER_SETTLE_S`, `io.holding()`; `fallback/scripted.py` can use `io.holding()` so both movers judge a grasp the same way (your file, your call). `python -m perception.audit --root data` checks a capture folder | 2026-11-14 15:20 |
+| 2026-11-14 15:20 | @saliha | @nate | ⚠️ conflict | **N3 done by Saliha's agent, on `main` (`16614ca`), 202 tests pass; please review** `policies/mover.py`, `policies/episode.py`, `robot/io.py`: grasp = gripper inside a band [`GRIPPER_EMPTY_BELOW`, `GRIPPER_HOLD_MAX`=45] after the 0.3 s settle; pick and place end early once the stage has held for 0.3 s; the wrist rolls back to the inspect pose before the place policy starts; optional bowl check. **Your N8 numbers set `GRIPPER_HOLD_MAX` (TUNE).** Next from me: `train/audit.py` (episode audit), N4, N5 | 2026-11-14 15:20 |
 | 2026-11-14 14:50 | @saliha | @nate | ⚠️ conflict | **Your coding-heavy tasks N3, N4, N5 move to Saliha's agent** (Saliha's standing instruction; briefs top, D32): grasp band + settle, early exit, wrist roll back before place, bowl check (`policies/mover.py`, `policies/episode.py`), the SmolVLA recipe (`train/commands.py`), the colour hedge (`train/`), plus a robot-episode audit `train/audit.py`. They land on `main` with tests on `MockRobot` for your review; you keep N6-N9 and all robot time. **If you already started any of them, reply here and I stop that one.** Data quality first: the N6 tips come before episode 1, and run the audit after each round once it lands | 2026-11-14 14:50 |
 | 2026-11-14 14:50 | @saliha | @all | 🔀 scope proposal | **Data quality first, hyperparameters second (second mentor; decisions.md D32, PRD §0 and F21, `context`, re-sync).** Every dataset is audited by code before it trains anything (images: `perception/audit.py`; episodes: `train/audit.py`); no hyperparameter sweep before the audit passes, then one small Modal sweep; ACT stays at lr 1e-5 until a sweep beats it. Say no on this row to anything you object to | 2026-11-14 14:50 |
 | 2026-11-14 14:30 | @saliha | @nate | 📨 for you | **Do first, before the first recorded episode** (briefs top, decisions.md D23/D31): (1) record SmolVLA with exactly `"the brick is perfect, place it in the blue bowl"` and `"the brick is defective, place it in the red bowl"` (they carry the verdict; nothing is recorded yet, so it is free); (2) rehearse every stage by leader-follower teleop, about 15 min folded into your 6 practice runs, nothing recorded: 9 start dots, inspection hold + wrist roll ±90° in view, both bowls, gripper numbers (N8), unit check (D29), one e-stop press. A failure moves the tape or a bowl, not the policy. Reply here if you disagree | 2026-11-14 14:30 |
@@ -96,6 +98,14 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 15:20 — feat — N3 grasp verification (moved from Nate), image audit F21 — @saliha [conflicts: @nate @harry]
+- **Where:** `aiml-perception-saliha` → `main` @ `16614ca` · merged to `main`: yes
+- **Did:** `perception/audit.py`: flags unreadable or mixed-size images, frozen frames, clipped exposure (fail), blur, lighting drift, thin bricks, untagged images (warn); exit code 1 on a failure. N3 in `policies/` and `robot/io.py`: grasp band + 0.3 s settle, early exit for pick and place, wrist roll back before place, optional `bowl_check`. 202 tests pass; the band limits are TUNE until the N8 readings
+- **Touched:** `perception/audit.py`, `policies/mover.py`, `policies/episode.py`, `robot/io.py` (new constants and `io.holding()`, additive), tests
+- **Brief task:** N3 → ✅ (for Nate's review); F21 image audit done
+- **⚠️ Conflicts:** @nate: three of his files changed (review). @harry: `bowl_check` wiring and `io.holding()` for the scripted mover
+- **Status:** open
 
 ### 2026-11-14 14:50 — scope — Data quality first (D32); Nate's coding-heavy tasks move to Saliha's agent — @saliha [conflicts: @nate]
 - **Where:** `context` (D32, PRD §0/R20/F21, three briefs) · merged to `main`: n/a (docs)
