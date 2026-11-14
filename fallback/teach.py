@@ -15,6 +15,9 @@ import yaml
 
 from fallback.scripted import POSES
 from robot import io
+from robot.drive import STROKE
+
+TEACHABLE = POSES + STROKE  # sorting poses, then the box-room drive's floor stroke (decisions.md D35)
 
 CONFIG = Path(__file__).resolve().parents[1] / "config"
 
@@ -30,7 +33,7 @@ def save_pose(path: Path, name: str, joints) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("names", nargs="+", choices=POSES, metavar="pose", help=f"any of: {', '.join(POSES)}")
+    ap.add_argument("names", nargs="+", choices=TEACHABLE, metavar="pose", help=f"any of: {', '.join(TEACHABLE)}")
     ap.add_argument("--port", help="follower serial port (default: config/robot.yaml)")
     ap.add_argument("--calibration", default=str(CONFIG / "so101_follower.json"))
     ap.add_argument("--mock", action="store_true", help="MockRobot, to try the flow without the arm")

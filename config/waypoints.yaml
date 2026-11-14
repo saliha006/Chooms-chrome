@@ -8,3 +8,9 @@ pick_drop: null    # where a re-grasp puts the brick down (usually the pick pose
 inspect: null      # brick held in front of the inspection camera
 bowl_red: null     # over the red bowl
 bowl_blue: null    # over the blue bowl
+# Box-room drive (decisions.md D35, robot/drive.py): one floor stroke, taught at the start of the drive with the
+# board free to roll: python -m fallback.teach drive_reach drive_touch drive_drag drive_lift
+drive_reach: null   # gripper closed (rubber bands), held out ahead of the board, just above the floor
+drive_touch: null   # same reach, pressed lightly onto the floor (no more than it takes to grip)
+drive_drag: null    # pulled back towards the base along the floor, so the board rolls forward
+drive_lift: null    # lifted clear of the floor at the end of the drag
