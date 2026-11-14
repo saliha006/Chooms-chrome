@@ -48,9 +48,9 @@ def collect() -> None:
     for job in _load():
         try:
             seconds = modal.FunctionCall.from_id(job["call_id"]).get(timeout=0)
-        except OutputExpiredError:  # a subclass of NotFinished, so it is caught first
+        except OutputExpiredError:  # a subclass of Modal's TimeoutError, so it is caught first
             print(f"{job['job']}: result expired (Modal keeps 7 days); see the Modal dashboard")
-        except NotFinished:
+        except (TimeoutError, NotFinished):  # get(timeout=0) on a running job raises the built-in one (Modal 1.6.4)
             running.append(job)
             print(f"{job['job']}: still running")
         except Exception as e:  # the job itself failed; report it and keep collecting the others

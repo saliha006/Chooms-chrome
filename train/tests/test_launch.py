@@ -54,7 +54,8 @@ def test_collect_logs_finished_jobs_and_keeps_the_running_ones(deployed, monkeyp
         return {"call_id": call_id, "job": f"act-{call_id}", "policy": "act", "dataset": "d", "episodes": 0, "steps": 100}
 
     launch._save([job("done"), job("busy"), job("broken")])
-    calls = {"done": FakeCall("done", result=120.0), "busy": FakeCall("busy", error=launch.NotFinished("not yet")),
+    # A running job raises the built-in TimeoutError from get(timeout=0) (seen on Modal 1.6.4), not Modal's own.
+    calls = {"done": FakeCall("done", result=120.0), "busy": FakeCall("busy", error=TimeoutError()),
              "broken": FakeCall("broken", error=RuntimeError("boom"))}
     monkeypatch.setattr(launch.modal.FunctionCall, "from_id", lambda call_id: calls[call_id])
     launch.collect()
