@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from train.commands import ACT_LR, SWEEP_EPISODES, act, job_name, smolvla
@@ -29,6 +31,17 @@ def test_smolvla_fine_tunes_the_base_model_with_lerobot():
 
 def test_smolvla_lr_only_when_asked():
     assert "--policy.optimizer_lr=0.0001" in smolvla("user/bricks", 10, "/runs/y", lr=1e-4)
+
+
+def test_smolvla_maps_dataset_cameras_onto_the_pretrained_slots():
+    flag = smolvla("user/bricks", 10, "/runs/y", cameras=("top", "gripper", "left"))[-1]
+    assert flag.startswith("--rename_map=")
+    assert json.loads(flag.removeprefix("--rename_map=")) == {
+        "observation.images.top": "observation.images.camera1",
+        "observation.images.gripper": "observation.images.camera2",
+        "observation.images.left": "observation.images.camera3",
+    }
+    assert not any(c.startswith("--rename_map") for c in smolvla("user/bricks", 10, "/runs/y"))
 
 
 def test_episode_subset_takes_the_first_n():

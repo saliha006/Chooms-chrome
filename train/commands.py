@@ -5,6 +5,8 @@ ACT trains with Physical AI Studio's trainer (`physicalai fit`), so its checkpoi
 loader is unfinished (decisions.md D20).
 """
 
+import json
+
 SWEEP_EPISODES = (18, 36, 54)  # F11: success vs number of demonstrations (decisions.md D9)
 ACT_LR = 1e-5  # 1e-4 makes ACT output one pose whatever it sees (Studio #998)
 BATCH_SIZE = 8
@@ -37,7 +39,8 @@ def act(dataset: str, steps: int, output_dir: str, lr: float | None = None, epis
     return cmd
 
 
-def smolvla(dataset: str, steps: int, output_dir: str, lr: float | None = None, episodes: int = 0) -> list[str]:
+def smolvla(dataset: str, steps: int, output_dir: str, lr: float | None = None, episodes: int = 0,
+            cameras: tuple[str, ...] = ()) -> list[str]:
     cmd = [
         "lerobot-train",
         "--policy.path=lerobot/smolvla_base",
@@ -52,4 +55,7 @@ def smolvla(dataset: str, steps: int, output_dir: str, lr: float | None = None, 
         cmd.append(f"--policy.optimizer_lr={lr}")
     if episodes:
         cmd.append(f"--dataset.episodes={_first_episodes(episodes)}")
+    if cameras:  # smolvla_base was pretrained on camera1..3; LeRobot rejects other camera names
+        rename = {f"observation.images.{name}": f"observation.images.camera{i}" for i, name in enumerate(cameras, 1)}
+        cmd.append(f"--rename_map={json.dumps(rename)}")
     return cmd

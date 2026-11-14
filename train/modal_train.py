@@ -1,7 +1,7 @@
 """Train ACT or SmolVLA on a Modal GPU; checkpoints land in the `sortsense-runs` Volume.
 
     modal run train/modal_train.py --policy act --dataset lerobot/svla_so100_pickplace --steps 200
-    modal run train/modal_train.py --policy smolvla --dataset <hf_id> --steps 10000
+    modal run train/modal_train.py --policy smolvla --dataset eruedas/so101_3cams_pickplace-red-lego_real --steps 200 --cameras top,gripper,left
     modal run train/modal_train.py --dataset <hf_id> --steps 20000 --sweep      # F11: 18 / 36 / 54 episodes in parallel
     modal run train/modal_train.py --dataset lerobot/svla_so100_pickplace --steps 100 --sweep --sweep-sizes 2,4   # A8 smoke
     modal volume get sortsense-runs <job> ./checkpoints/                         # fetch, then back up before export
@@ -48,11 +48,8 @@ def train_act(dataset: str, steps: int, lr: float | None, episodes: int, job: st
 
 
 @app.function(image=lerobot_image, **on_gpu)
-def train_smolvla(dataset: str, steps: int, lr: float | None, episodes: int, job: str) -> float:
-    return run(commands.smolvla(dataset, steps, f"/runs/{job}", lr, episodes))
-
-
-TRAINERS = {"act": train_act, "smolvla": train_smolvla}
+def train_smolvla(dataset: str, steps: int, lr: float | None, episodes: int, job: str, cameras: tuple[str, ...]) -> float:
+    return run(commands.smolvla(dataset, steps, f"/runs/{job}", lr, episodes, cameras))
 
 
 def log_run(job: str, policy: str, dataset: str, episodes: int, steps: int, seconds: float) -> None:
@@ -65,16 +62,22 @@ def log_run(job: str, policy: str, dataset: str, episodes: int, steps: int, seco
 
 @app.local_entrypoint()
 def main(dataset: str, policy: str = "act", steps: int = 200, lr: float | None = None, episodes: int = 0, sweep: bool = False,
-         sweep_sizes: str = ",".join(map(str, commands.SWEEP_EPISODES))):  # smaller sizes fit a public set with fewer episodes
-    if policy not in TRAINERS:
-        raise SystemExit(f"--policy must be one of: {', '.join(TRAINERS)}")
+         sweep_sizes: str = ",".join(map(str, commands.SWEEP_EPISODES)),  # smaller sizes fit a public set with fewer episodes
+         cameras: str = ""):  # SmolVLA only: the dataset's camera names in camera1, camera2, camera3 order
+    if policy not in ("act", "smolvla"):
+        raise SystemExit("--policy must be act or smolvla")
+    if cameras and policy != "smolvla":
+        raise SystemExit("--cameras maps SmolVLA's camera slots; ACT trains on the dataset's own camera names")
     if sweep:
         policy, sizes = "act", tuple(int(n) for n in sweep_sizes.split(","))
     else:
         sizes = (episodes,)
     stamp = datetime.now().strftime("%m%d-%H%M%S")
     jobs = [commands.job_name(policy, n, steps, stamp) for n in sizes]
-    seconds = TRAINERS[policy].starmap([(dataset, steps, lr, n, job) for n, job in zip(sizes, jobs)])
+    if policy == "smolvla":
+        seconds = [train_smolvla.remote(dataset, steps, lr, episodes, jobs[0], tuple(c for c in cameras.split(",") if c))]
+    else:
+        seconds = train_act.starmap([(dataset, steps, lr, n, job) for n, job in zip(sizes, jobs)])
     for n, job, s in zip(sizes, jobs, seconds):
         log_run(job, policy, dataset, n, steps, s)
         print(f"{job}: {s / 60:.1f} min -> volume sortsense-runs/{job}")
