@@ -44,6 +44,11 @@ You own **R1 (Studio), R4, R6, R10, R15, R20 (data quality), F5 and F11**, and y
 ---
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 2026-11-14 19:30 Nate's answers (decided; board rows 17:35, 17:55, 18:25, 18:38, 18:55)
+- **Units: normalized** (D29 changed; Saliha merges `aiml-perception-saliha-units`). N7's unit check becomes: Studio's `observation.state` matches `robot.io.observe()` at one pose, both normalized.
+- **N10 (new, Nate): base drive for the box-room demo** (D33 changed): a function for `cell.approach` that moves the wheeled board along a pre-planned route by scraping with the arm and returns the centimetres travelled (or `None`); it checks `common.estop.requested()` and `common.deadline.expired()` every step; rehearsed with the base held and cables clear first. 🟠 design calls first: the stroke, how distance is measured, where it ends (the recording dock?).
+- **N11 (new, Nate): Studio SmolVLA on Modal in parallel** (D20): smoke-test Studio's Modal training target (Settings → Training Targets → Modal Provider), then one Studio SmolVLA job on the real place dataset next to the LeRobot one; the better one at the gate ships, and the table says which.
+- **Tonight:** station order per Harry's 18:55 row (Nate's slot about 2 h: teleop rehearsal, then ACT + SmolVLA recording); the freeze is flexible. `train/requirements.txt` now declares pandas, pyarrow, pyyaml (Harry's 17:35 ask).
 ### 🆕 2026-11-14 17:22 STATION IS LIVE (from Saliha's agent, at the laptop)
 - One arm on `/dev/serial/by-id/usb-1a86_USB_Single_Serial_5AB0157419-if00` (which arm is not confirmed; plug in the second for teleop). Physical AI Studio runs in tmux session `studio` (`tmux attach -t studio`), UI http://localhost:3000. No calibration file yet. Your manual order is unchanged: calibrate → teleop rehearsal + N8 → test episode (D29 unit check) → record → Modal.
 - **ACT compiles on the NPU** (probe with random weights and our three cameras: NPU 8.9 ms, GPU 4.2 ms, CPU 65.7 ms per call; `bench/act_npu_probe.py`, `bench/results.md`). `config/models.yaml` keeps `devices: [GPU, CPU]` until the placement is decided.
