@@ -41,12 +41,9 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
 | 2026-11-14 07:15 | @saliha | @all | 🔀 scope proposal | **PRD v2.5 on `context` (`5da0552`), re-sync.** A research pass (6 research agents + design + critic) put an ordered 🆕 v2.5 block at the top of each brief's ▶ Current tasks. Same vision. Highlights: no RL (D1, numbers in), every stage verified with reason codes/deadlines (D22), recovery order look-again → roll → re-grasp (D7), two fixed VLA strings + language-swap test + single-colour ACT hedge (D23), device/efficiency measured (D24), Nemotron advisory only (D25), **red-lego smoke test first** (D26). Bugs listed per person. Say no on this row to anything in your block. **@harry 05:41: yes** to the whole block, and yes to `run.py` calling `perception/scene.py` (zone gate + bowl-region check) | 2026-11-14 07:15 |
-| 2026-11-14 05:32 | @harry | @nate | 📨 waiting on | **E-stop check in `robot/io.py`** (decisions.md D21, @harry chose B): please add at the top of `act()`: `if estop.requested(): torque_off(); raise estop.EStopped()` with `from common import estop`. Then E stops learned-policy motion within one control step too (today only `ScriptedMover` and the stage boundaries check it). Keeps one thread on the motors; no lock needed | 2026-11-14 05:32 |
 | 2026-11-14 05:32 | @harry | @saliha | 📨 waiting on | **`opencv-python` instead of `opencv-python-headless`** in `perception/requirements.txt`: mission control (F6) needs a window, the headless build has none, and the two can't be installed together. Same library and API; perception code is unaffected | 2026-11-14 05:32 |
-| 2026-11-14 06:00 | @saliha | @nate | ⚠️ conflict | Kept **your** `train/` rework (D20) as the best version and dropped my overlapping edits; added one thing on top in `train/modal_train.py` (`38ce0cb`): it uses your `huggingface` Modal secret, or forwards `HF_TOKEN` from the shell when that secret isn't set up (fresh machine). Tests green. `git pull` before your next push | 2026-11-14 06:00 |
-| 2026-11-14 05:50 | @saliha | @nate | 📨 for you | **`handoff/nate-catch-up.md` on `context`** (sync, then have your agent read it first): setup, libraries, what's done, what's left (A2 smoke runs, A3 export test, A8 sweep), TUNE values. Your D20 rework is the version in force; I dropped my overlapping local edits. Export probe evidence for D20 added to `decisions.md`: the LeRobot wrapper in `physicalai-train` exports torch only | 2026-11-14 05:50 |
 | 2026-11-14 05:12 | @nate | @all | 🔀 scope proposal | **Training stack and F14 positions changed in my area** (`main` @ `8bc38a6`, `decisions.md` D20): ACT now trains with **Physical AI Studio's trainer** (`physicalai fit`), so it exports straight into the `physicalai` runtime; SmolVLA stays on LeRobot (Studio's SmolVLA loader is unfinished). ACT demos: **all 9 positions × 6, recorded in rounds**. @harry: F14's "new positions" trials use only the off-grid spots. Say no on this row if you object | 2026-11-14 05:12 |
-| 2026-11-14 05:15 | @saliha | @nate | 📨 waiting on | **Your Block A code is on `main` (`ac2e2f2`)**: review it; then `modal token new`, add a Modal secret `huggingface` (HF_TOKEN), run the A2 smoke (`modal run train/modal_train.py --dataset lerobot/svla_so100_pickplace --steps 200`) and the A3 export test on those checkpoints. Pick the 🟠 in `train/RECORDING.md`. **@nate 05:12:** `train/` reviewed and reworked (see Log), 🟠 picked (all 9 in rounds); Modal login, A2 and A3 next | 2026-11-14 05:15 |
+| 2026-11-14 05:15 | @saliha | @nate | 📨 waiting on | **Your Block A code is on `main` (`ac2e2f2`)**: review it; then `modal token new`, add a Modal secret `huggingface` (HF_TOKEN), run the A2 smoke (`modal run train/modal_train.py --dataset lerobot/svla_so100_pickplace --steps 200`) and the A3 export test on those checkpoints. Pick the 🟠 in `train/RECORDING.md`. **@nate 05:12:** `train/` reviewed and reworked (see Log), 🟠 picked (all 9 in rounds); Modal login, A2 and A3 next. **@nate 05:47:** Modal and the `huggingface` secret set up; A2: ACT training on Modal, SmolVLA stops on camera names (= v2.5 N1); A3 next | 2026-11-14 05:15 |
 | 2026-11-14 01:35 | @saliha | @all | ⚠️ conflict | **Branches renamed again, by discipline:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry` (older rows below use the previous names; none were pushed yet). New file **`decisions.md`** on `context` (design choices and why, for pitching): your agent updates it on its own as you build (CLAUDE.md §4a). Re-sync from `context` | 2026-11-14 01:35 |
 | 2026-11-14 01:00 | @saliha | @all | 🔀 scope proposal | **PRD v2.3 on `context` (`b423fc4`), re-sync.** The team vision is now written in: Intel task first (accurate, smooth, quick); then the robot **explains its reasoning out loud live** (Nemotron writes, ElevenLabs speaks) and an **obstacle or cowboy hat flips it into a cowboy persona**. NVIDIA Nemotron is in (@saliha, `reasoner/`). Aiven = Kafka streaming → PostgreSQL (@harry). Modal = training + logs only; the F16 dashboard is dropped (no frontend). **Branches renamed, one per person:** `aiml-perception-saliha`, `robotics-policies-nate`, `systems-voice-harry`. Contract additions in PRD 7.3 (`narrator.trigger`, `reasoner.explain`, `reasoner.hat_seen`) need @harry's yes before the 01:00 freeze. **@nate 01:42: yes** | 2026-11-14 01:00 |
 | 2026-11-14 00:35 | @saliha | @all | 🔀 scope proposal | **PRD v2.2 on `context` (`84364a8`), re-sync.** New 🆕 items in every brief from the Junction challenge page + side-track pages: F11 demo-count sweep on Modal (@nate), F12 power/energy/thermal benchmark (@saliha), F13 shared cameras (@harry), F14 shifted + pile trials (@nate @harry), F15 Aiven drift alarm + more tables (@harry), F16 optional Modal dashboard (@harry), F4 now includes a re-grasp. Object = Duplo, cameras = top + inspection + wrist. Say no on this row if you object to any item in your brief. **@nate 01:42: yes** | 2026-11-14 00:35 |
@@ -63,7 +60,7 @@ own **Now** cell whenever you log an entry.
 | Who | GitHub | Role | Branch | Owns (paths) | Now |
 |---|---|---|---|---|---|
 | Saliha | `saliha006` | **AI/ML**: computer vision (Anomalib), edge-AI optimisation (OpenVINO), Nemotron reasoner; doc owner | `aiml-perception-saliha` | `perception/`, `bench/`, `reasoner/` | Block A done (A11 live call waits on the NVIDIA key); next Sat 08:00 install on the Intel laptop |
-| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | Block A: `train/` reworked (Studio ACT + LeRobot SmolVLA, `main` @ `8bc38a6`); next: Modal login, A2 smoke run, A3 export test |
+| Nate | `aldrichbanas07` | **Robotics and robot learning**: robot I/O, imitation-learning policies (ACT, SmolVLA), Modal training + logs | `robotics-policies-nate` | `robot/`, `policies/`, `train/` | A2: ACT training on Modal, SmolVLA waits on v2.5 N1 (camera rename); e-stop check in `robot/io.act` done; next: v2.5 yes/no, then N1 |
 | Harry | `Harryt3nn` | **Systems and integration**: orchestration, ElevenLabs voice (live reasoning + cowboy switch), Aiven streaming, demo, submission | `systems-voice-harry` | `run.py`, `common/`, `fallback/`, `ui/`, `narrator/`, `telemetry/`, `config/`, `README.md`, `docs/` | v2.5: H2 bug fixes done, H4 already done (JSONL); next H1 reason codes, deadlines, PAUSE_HUMAN, recovery chain |
 
 **Shared** (anyone may edit; flag it in ⚠️ Conflicts): `progress.md` (on `main`), `Makefile` (Harry creates it). Plan docs
@@ -82,15 +79,24 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 6. Read your brief's `▶ Current tasks`, then the 📌 Open board above.
 
 ## 📊 Latest (volatile facts live only here)
-- **Plan (2026-11-14 05:12):** `context` @ `68b1afd` (Nate's brief; `decisions.md` D9, D15, D20).
-- **robot/policies (2026-11-14 05:15):** `main` @ `ac2e2f2`: whole suite 55 pass (4 slow skipped).
-- **train (2026-11-14 05:12):** `main` @ `8bc38a6`: 7 tests pass, and the ACT command parses with Studio 0.3.0's own `fit` parser; Modal not yet run.
+- **Plan (2026-11-14 05:47):** PRD v2.5, `context` @ `5da0552`.
+- **robot/policies/train (2026-11-14 05:47):** `main` @ `f6a9f65`: 64 pass across `robot`, `policies`, `fallback`, `train`, `common` (1 Studio-only test skipped); mock loop sorts 5 bricks.
+- **Modal A2 (2026-11-14 05:47):** SmolVLA image fixed (LeRobot `training` extra), now stops on camera names (`camera1..3` expected; v2.5 N1); ACT via Studio training, result pending.
 - **perception (2026-11-14 04:30):** `main` @ `99f1d09`: 28 tests pass (4 slow); live Nemotron line 1.7–2.7 s. Not yet run on the Intel laptop or real bricks.
-- **`main` (2026-11-14 05:12):** @ `8bc38a6`, code in every area. Plan docs on `context`.
+- **`main` (2026-11-14 05:47):** @ `f6a9f65`, code in every area. Plan docs on `context`.
 
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 05:47 — fix — E-stop check in `robot/io.act`; SmolVLA image gets LeRobot's training extra; sweep takes smaller sizes — @nate [conflicts: @harry]
+- **Where:** `robotics-policies-nate` @ `f6a9f65` · merged to `main`: yes
+- **Did:** `robot/io.act` now turns the torque off and raises `EStopped` once E is requested (D21, Harry's ask), so learned-policy motion stops within one control step; `move_to` and the policy loop go through it. A2 smoke on Modal: SmolVLA's image lacked LeRobot's `training` extra (`datasets` ImportError), fixed; it now stops on camera names (`smolvla_base` expects `camera1..3`, the public set has `top`/`wrist`), which is v2.5 N1 (`--rename_map` + a 3-camera dataset). ACT via Studio is training. `--sweep-sizes` lets the A8 smoke run small sizes on the 50-episode public set. 64 tests pass; mock loop sorts 5 bricks. Read and kept: Saliha's `HF_TOKEN` fallback and the catch-up note (rows closed).
+- **Touched:** `robot/io.py`, `robot/tests/test_io.py`, `train/modal_train.py`
+- **Brief task:** Harry's 📨 → ✅ · A2 → 🟡 (ACT running, SmolVLA waits on N1) · A8 → 🟡
+- **⚠️ Conflicts:** @harry: `robot/io.py` now imports `common.estop`; `fallback/scripted.py`'s own e-stop check is redundant but harmless
+- **📨 Needs:** none
+- **Status:** open
 
 ### 2026-11-14 05:42 — fix — H2: uncertain chain uses fresh frames from the inspection camera; roll before re-grasp; help line says why — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` @ `4bd8cb2` · merged to `main`: yes
@@ -119,7 +125,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 - **⚠️ Conflicts:** @nate: learned-policy motion only stops at stage boundaries until `io.act` checks the e-stop (board row). @saliha: the window needs `opencv-python` (board row)
 - **📨 Needs:** @nate: the `io.act` check · @saliha: `opencv-python` in `perception/requirements.txt`
 - **Agreed by:** @harry (D21: e-stop path B)
-- **Status:** open
+- **Status:** @nate part resolved by @nate 2026-11-14 05:47 (`robot/io.act` checks the e-stop, `f6a9f65`); @saliha part open
 
 ### 2026-11-14 05:18 — merge — `run.py` real-station mode: real cameras, Anomalib inspector, scripted or learned mover per part — @harry [conflicts: @saliha @nate]
 - **Where:** `systems-voice-harry` @ `de5fe0a` · merged to `main`: yes
