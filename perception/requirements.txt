@@ -3,6 +3,6 @@
 torch
 torchvision
 anomalib[openvino]==2.7.0
-opencv-python-headless
+opencv-python
 pyyaml
 pytest

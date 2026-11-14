@@ -20,8 +20,12 @@ INPUT_SIDE = 256
 NORMALISED_PIXEL_THRESHOLD = 0.5  # only for old IRs exported with normalisation; raw-score IRs carry pixel_threshold in thresholds.yaml
 
 
-def to_input(frame_bgr: np.ndarray) -> np.ndarray:
-    rgb = cv2.cvtColor(cv2.resize(frame_bgr, (INPUT_SIDE, INPUT_SIDE), interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2RGB)
+def to_input(frame_bgr: np.ndarray, in_graph: bool = False) -> np.ndarray:
+    """in_graph: the IR was exported with perception.preprocess and wants the resized BGR uint8 frame."""
+    resized = cv2.resize(frame_bgr, (INPUT_SIDE, INPUT_SIDE), interpolation=cv2.INTER_AREA)
+    if in_graph:
+        return resized[None]
+    rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
     return (rgb.astype(np.float32) / 255.0).transpose(2, 0, 1)[None]
 
 
@@ -41,6 +45,7 @@ class Scorer:
         core = ov.Core()
         cache_dir.mkdir(parents=True, exist_ok=True)
         model = core.read_model(xml)
+        self.in_graph_preprocessing = model.inputs[0].get_element_type() == ov.Type.u8
         self.skipped: list[tuple[str, str]] = []  # (device, reason) for each device that failed to compile
         for device in devices:
             if device not in core.available_devices:
@@ -61,7 +66,7 @@ class Scorer:
     def score(self, frame_bgr: np.ndarray) -> tuple[float, np.ndarray, float]:
         """Return (score, anomaly map HxW, latency in ms)."""
         start = time.perf_counter()
-        out = self.compiled(to_input(frame_bgr))
+        out = self.compiled(to_input(frame_bgr, self.in_graph_preprocessing))
         latency_ms = (time.perf_counter() - start) * 1000
         return float(out["pred_score"].ravel()[0]), out["anomaly_map"][0, 0], latency_ms
 

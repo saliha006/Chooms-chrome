@@ -15,7 +15,9 @@ from pathlib import Path
 import numpy as np
 import openvino as ov
 
+from bench import operators
 from bench.power import idle_watts, measure
+from perception.preprocess import PPP_SUFFIX
 
 WARMUP = 10
 COLUMNS = ("model", "device", "p50_ms", "p95_ms", "size_mb", "compile_s", "cached_compile_s", "mj_per_inference", "net_mj_per_inference", "watts", "max_c")
@@ -48,7 +50,8 @@ def compile_seconds(xml: Path, device: str, cache_dir: str | None) -> tuple[floa
 def label(xml: Path, exports: Path) -> str:
     """'padim/int8' for <exports>/padim/int8/weights/openvino/model.xml; the folder path for other layouts."""
     parts = xml.relative_to(exports).parent.parts
-    return "/".join(parts[:-2] if parts[-2:] == ("weights", "openvino") else parts) or xml.stem
+    name = "/".join(parts[:-2] if parts[-2:] == ("weights", "openvino") else parts) or xml.stem
+    return f"{name} + in-graph preprocessing" if xml.stem.endswith(PPP_SUFFIX) else name  # model_ppp.xml sits beside model.xml
 
 
 def random_inputs(compiled: ov.CompiledModel) -> dict[str, np.ndarray]:
@@ -141,18 +144,19 @@ def main() -> None:
     args = ap.parse_args()
     devices = [d for d in ("CPU", "GPU", "NPU") if d in ov.Core().available_devices]
     idle_w = idle_watts(args.idle_s) if args.idle_s > 0 else None
-    rows, failures = [], []
+    rows, failures, support = [], [], []
     if args.torch_ckpt:
         rows.append(bench_torch(args.torch_ckpt, args.torch_model, args.n, idle_w))
     for xml in sorted(args.exports.rglob("*.xml")):
         for device in devices:
             try:
                 rows.append(bench_one(xml, device, args.n, args.exports, idle_w))
+                support.append((label(xml, args.exports), device, operators.op_support(xml, device)))
             except (RuntimeError, ValueError) as err:  # an op the NPU doesn't support, a dynamic shape: a result, keep going
                 failures.append(f"- {label(xml, args.exports)} on {device}: {str(err).splitlines()[0]}")
     idle = f" · idle {idle_w:.1f} W" if idle_w is not None else ""
     host = f"{time.strftime('%Y-%m-%d %H:%M')} · devices {', '.join(devices)} · n={args.n} warm runs, batch 1{idle}"
-    body = f"# Benchmark\n\n{host}\n\n{to_markdown(rows)}\n"
+    body = f"# Benchmark\n\n{host}\n\n{to_markdown(rows)}\n\n## Operator support\n\n{operators.to_markdown(support)}\n"
     if failures:
         body += "\n## Did not compile\n" + "\n".join(failures) + "\n"
     args.out.write_text(body, encoding="utf-8")
