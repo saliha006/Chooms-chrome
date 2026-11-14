@@ -121,6 +121,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 16:50 · submission draft + station prep · `docs/submission.md` (Intel, ElevenLabs, Aiven; NVIDIA and Modal asked of Saliha and Nate), `docs/station.md` (fresh laptop → scripted gate), trials slide on `bench.trials`; Intel laptop runs `main` (220 tests, mock sorts 5, CPU + GPU; NPU packages pending)
 - 2026-11-14 16:10 · DO NOW agent (a)–(e) + A6b + A8 · place check after home (`VERIFY_PLACE`), scripted grasp via `io.holding()`, persona switch, drift alarm on Aiven (speak + banner), README with the four layers, `docs/demo-script.md` + `docs/trials-slide.md`; merged to `main` (`ce9a437`), 149 tests pass
 - 2026-11-14 15:15 · BOWL COLOURS · purple/orange strings, scripted colour map, six lines + clips regenerated, click outlines; merged to `main` (`d6aa2ed`), 131 tests pass
 - 2026-11-14 14:40 · DO FIRST 1 · VLA strings carry the verdict in `config/rules.yaml`; `config/models.yaml` policy cameras `[top, wrist, inspect]` (Nate 11:53); merged to `main` (`5e99561`), 118 tests pass, mock sorts 5
