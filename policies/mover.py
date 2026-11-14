@@ -49,12 +49,12 @@ class LearnedMover:
     def place(self, instruction: str) -> bool:
         if not self._roll_back_to_inspect():
             return False
-        before = self.frames().get("top") if self.bowl_check else None
+        before = self.frames()["top"] if self.bowl_check else None  # KeyError beats handing the check a None frame
         opened = sustained(lambda: io.observe()[io.GRIPPER] >= io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG, SETTLE_TICKS)
         joints = run_episode(self.placer, self.frames, self.place_steps, task=instruction, stop=opened, abort_event=deadline.abort)
         if deadline.expired() or joints[io.GRIPPER] < io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG:
             return False
-        return self.bowl_check is None or bool(self.bowl_check(instruction, before, self.frames().get("top")))
+        return self.bowl_check is None or bool(self.bowl_check(instruction, before, self.frames()["top"]))
 
     def _roll_back_to_inspect(self) -> bool:
         """SmolVLA's place demos all start at the inspection pose, so undo a wrist roll from reinspect first."""
