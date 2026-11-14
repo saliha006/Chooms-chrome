@@ -49,9 +49,9 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 | # | Status | Task | Hours | Done when |
 |---|---|---|---|---|
 | H1 | ⬜ | `run.py`: `HelpNeeded` with a **reason enum**, per-state deadlines and retry budget, `PAUSE_HUMAN` instead of exit-after-home, hold flag checked at stage boundaries (depth/blob "something tall"), `abort_event` into episodes, recovery chain `[look again, roll 90, re-grasp]` | 4 | Mock run shows reasons per stage |
-| H2 | ⬜ | Bug fixes: `_resolve_uncertain` re-scores a stale frame (pass `newer_than=time.monotonic()` after a settle); `config/rules.yaml` `second_view: inspect` (not `top`) and add the roll to `reinspect_angles`; the help line speaks a reason, not an exception class name | 0.5 | Tests |
+| H2 | ✅ | Bug fixes: `_resolve_uncertain` re-scores a stale frame (pass `newer_than=time.monotonic()` after a settle); `config/rules.yaml` `second_view: inspect` (not `top`) and add the roll to `reinspect_angles`; the help line speaks a reason, not an exception class name | 0.5 | Tests |
 | H3 | ⬜ | Cached-WAV table keyed by reason (calm + cowboy) | 1 | Every reason has a line |
-| H4 | ⬜ | JSONL telemetry writer (Aiven later, after the gate) | 1 | Rows per stage |
+| H4 | ✅ | JSONL telemetry writer (Aiven later, after the gate) | 1 | Rows per stage |
 | H5 | ⬜ | 08:00–10:00 cameras by-id, decide which is the RealSense, click the zone corners (homography), waypoints | — | All streams open by path |
 | H6 | ⬜ | Read Intel's `physicalai/examples/tutorials/collect_train_deploy.ipynb` cells 5–9 (0.5 h) to confirm import paths and camera API; adopt `RobotRuntime` only if it accepts our abort and early-exit callbacks (add-on, 1 h max). Keep `Cell`, the `robot/io.py` clip + speed cap and shared capture | 0.5 | Notes |
 | H7 | ⬜ | Intel-stack items wired where we really call them (time-boxed 2 h); `ReasonTrace` panel (0.5 h) | 2.5 | On screen |
@@ -102,6 +102,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 05:42 · H2 · fresh frame after a 0.3 s settle for every inspection, `second_view: inspect`, `reinspect_angles: [90, 0]`, help line says the reason; merged to `main` (`4bd8cb2`), 57 tests pass · H4 was already built in A3 (`telemetry/` → `runs/events.jsonl`)
 - 2026-11-14 05:32 · A4 · `ui/mission_control.py` (feed, heatmap, verdict, stage times, mover mode; S/P/E/Q/H) + e-stop path B (D21: keys set flags, control thread acts); merged to `main` (`4d28398`), 55 tests pass. Waiting: @nate `io.act` e-stop check, @saliha `opencv-python`
 - 2026-11-14 05:18 · A3 real-station half (R5) · `run.py` without `--mock`: real cameras, Saliha's inspector via `config/models.yaml`, scripted or learned mover per part (`--scripted`), config checked before anything moves, Ctrl+C = e-stop; merged to `main` (`de5fe0a`), 48 tests pass
 - 2026-11-14 04:38 · A7 · `fallback/scripted.py` `ScriptedMover` (all 6 `Mover` methods, gripper kept closed while carrying) + `fallback/teach.py` (hand-guide, Enter saves into `config/waypoints.yaml`); merged to `main` (`b7c2f6e`), 44 tests pass with Nate's
