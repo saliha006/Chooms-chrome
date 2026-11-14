@@ -31,7 +31,7 @@
 - **Evidence:** TBD (10-trial gate results, `progress.md`).
 - **Pitch line:** "We taught the arm by showing it, the way Intel designed the stack, and measured how few demonstrations are enough."
 
-### D2 · Pipeline · ACT picks, Anomalib inspects, SmolVLA places — Status: Planned · Owner: @nate @saliha · Updated: 2026-11-14 01:30
+### D2 · Pipeline · ACT picks, Anomalib inspects, SmolVLA places — Status: Built (code, mock-tested) / Planned (trained policies) · Owner: @nate @saliha · Updated: 2026-11-14 01:30
 - **Decision:** the pipeline from Intel's End Goal slide: ACT picks and presents the brick, Anomalib scores it, the verdict becomes a language instruction ("place the brick in the red/blue bowl") for SmolVLA, which places it.
 - **Why:** it is the reference task, and the verdict-to-instruction step is exactly where a vision-language-action (VLA) model earns its place: one policy, two behaviours, chosen by language.
 - **Alternatives rejected:** one policy for the whole loop (needs more demonstrations than we can record; kept as an extension idea).
@@ -177,6 +177,14 @@
 - **Trade-off / risk:** nothing measured on synthetic bricks is reported; real-brick numbers replace them.
 - **Evidence:** 28 automated tests including a full train → export → calibrate → inspect run (`main` @ `dd1c4d7`).
 - **Pitch line:** "Our perception pipeline was tested end to end before we touched the robot."
+
+### D19 · Safety · Every arm command is clipped to joint limits and a speed cap — Status: Built · Owner: @nate · Updated: 2026-11-14 05:15
+- **Decision:** all motion, learned or scripted, goes through `robot/io.py`, which clips each command to the SO-101 driver's joint limits and moves no joint more than 5° per 30 Hz step; E turns torque off.
+- **Why:** a policy can output any number; the printed safety rules and judges' reliability criterion need motion that is bounded no matter what the model does. Smooth motion is also part of the task-success score.
+- **Alternatives rejected:** trusting the policy's output; limits inside each policy (easy to forget one).
+- **Trade-off / risk:** the cap slows big moves; tuned on the station with the arm watched.
+- **Evidence:** unit tests (`robot/tests/test_io.py`); on-arm value TBD.
+- **Pitch line:** "Whatever the AI says, the arm stays inside safe limits."
 
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
