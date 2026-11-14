@@ -61,12 +61,16 @@ class Clicker:
         return img
 
 
-def grab(camera: OpenCVCamera) -> np.ndarray:
-    for _ in range(30):  # the first reads after opening a camera are often empty
-        frame = camera.read()
-        if frame is not None:
-            return frame
-    raise RuntimeError("the camera gave no frame")
+def grab(camera: OpenCVCamera, warmup: int = 45) -> np.ndarray:
+    # A freshly opened camera gives empty, then dark frames until auto-exposure settles (~1.5 s at 30 fps).
+    frame = None
+    for _ in range(warmup):
+        latest = camera.read()
+        if latest is not None:
+            frame = latest
+    if frame is None:
+        raise RuntimeError("the camera gave no frame")
+    return frame
 
 
 def save_regions(path: Path, points: dict[str, list[tuple[int, int]]]) -> None:
@@ -96,6 +100,10 @@ def main() -> None:
     cv2.setMouseCallback(WINDOW, lambda event, x, y, *_: event == cv2.EVENT_LBUTTONDOWN and clicker.click(x, y))
     try:
         while True:
+            if not any(clicker.points.values()):  # live until the first click, so the picture can settle
+                latest = camera.read()
+                if latest is not None:
+                    frame = latest
             cv2.imshow(WINDOW, clicker.draw(frame))
             key = cv2.waitKey(30) & 0xFF
             if key == ord("q"):
