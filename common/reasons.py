@@ -11,6 +11,7 @@ class Reason(str, Enum):
     TIMEOUT = "timeout"  # a motion stage ran past its deadline
     CAMERA = "camera"  # no fresh frame from a camera in time
     INSPECT_FAILED = "inspect_failed"  # the inspector raised
+    DRIVE_FAILED = "drive_failed"  # the wheeled base didn't reach the table
     UNEXPECTED = "unexpected"  # anything else: a bug, logged with its traceback
 
 

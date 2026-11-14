@@ -25,6 +25,9 @@ LINES: dict[str, dict[str, str]] = {
         "help.camera": "I can't see through my camera. Could someone check it?",
         "help.inspect_failed": "My inspection just failed. I need someone to take a look.",
         "help.unexpected": "Something unexpected went wrong, so I've gone home. I need a hand.",
+        "help.drive_failed": "I couldn't drive all the way to the table. Could someone check my wheels?",
+        "drive": "The bricks are out of my reach from here, so I'm driving over to them.",
+        "arrived": "I'm in position. Let's start sorting.",
         "drift": "My perfect bricks are scoring closer to the line. The light may have changed, so please rebaseline me.",
         "cooldown": "Ahem. Where was I? Back to work.",
         "halfway": "Right, partner... I mean, right.",  # the cowboy drifting back, so in the calm voice
@@ -46,6 +49,9 @@ LINES: dict[str, dict[str, str]] = {
         "help.camera": "Can't see a thing out here. Somebody check my camera.",
         "help.inspect_failed": "My lookin' glass just went dark. Need somebody to check it.",
         "help.unexpected": "Somethin' went sideways, so I headed home. Need a hand.",
+        "help.drive_failed": "Couldn't ride all the way to the table. Somebody check my wheels.",
+        "drive": "Them bricks are out of reach, partner. Movin' the whole outfit over.",
+        "arrived": "Whoa there. We're in position. Let's get sortin'.",
         "drift": "Light's shiftin' out here, partner. My scores are driftin', best rebaseline me.",
         "obstacle": "Holy smokes!",
         "yeehaw": "Yeehaw!",
@@ -54,7 +60,7 @@ LINES: dict[str, dict[str, str]] = {
 }
 
 # Every event run.py says out loud; tests check each has a line in both personas.
-EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance", "drift",
+EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance", "drift", "drive", "arrived",
           *(f"help.{reason.value}" for reason in Reason))
 
 

@@ -276,3 +276,34 @@ def test_run_summary_gets_the_tally(make_cell, monkeypatch):
     cell, _ = make_cell(("perfect", "defective", "uncertain", "perfect"), bricks=3)
     cell.run()
     assert said[-1] == ("empty", {"n": 3, "perfect": 2, "defective": 1, "rechecked": 1})
+
+
+def test_the_base_drives_first_and_is_talked_over(make_cell, monkeypatch):
+    said = []
+    monkeypatch.setattr(run.narrator, "say", lambda event, **kw: said.append((event, kw)))
+    cell, mover = make_cell(("perfect",))
+    cell.approach_cm = 42.0
+    cell.approach = lambda: (said.append(("driving", {})), 41.0)[1]
+    cell.run()
+    events = [event for event, _ in said]
+    assert events[:3] == ["drive", "driving", "arrived"]
+    assert said[0][1] == {"cm": 42.0} and said[2][1]["cm"] == 41.0 and "seconds" in said[2][1]
+    assert cell.sorted == 1
+
+
+def test_a_failed_drive_asks_for_help_before_any_pick(make_cell):
+    cell, mover = make_cell(("perfect",))
+    cell.approach = lambda: None
+    with pytest.raises(run.HelpNeeded) as err:
+        cell.run()
+    assert err.value.reason is run.Reason.DRIVE_FAILED
+    assert not any(call[0] == "pick_and_present" for call in mover.calls)
+
+
+def test_no_base_means_no_drive_stage(make_cell, tmp_path):
+    events = tmp_path / "events.jsonl"
+    telemetry.start(events)
+    cell, _ = make_cell(("perfect",))
+    cell.run()
+    telemetry.stop()
+    assert "DRIVE" not in events.read_text()

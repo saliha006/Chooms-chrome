@@ -18,7 +18,7 @@ _log = logging.getLogger("narrator.live")
 # Flash took 625-1563 ms per full line on the venue Wi-Fi (4 calls, 2026-11-14); 3 s keeps nearly every live line
 # while the voice lags the arm by about a second at most (Harry, 2026-11-14). The arm never waits either way.
 TIMEOUT_S = 3.0
-LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit"}
+LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit", "drive", "arrived"}
 
 # Conversational on purpose: the robot thinks aloud. {where} is empty or " at the top left".
 TEMPLATES = {
@@ -36,6 +36,14 @@ TEMPLATES = {
 SUMMARY = {
     "calm": {"empty": "That's the last one. {tally}.", "quit": "Stopping here. {tally} so far."},
     "cowboy": {"empty": "That's the whole herd. {tally}.", "quit": "Callin' it a day. {tally} so far."},
+}
+
+# The base drive (demo): what it's doing and, once there, how far it went. Numbers come from the base driver.
+DRIVE = {
+    "calm": {"drive": "The bricks are about {cm} centimetres out of my reach, so I'm driving over to them.",
+             "arrived": "Made it: {cm} centimetres in {seconds} seconds. I'm in position, let's start sorting."},
+    "cowboy": {"drive": "Them bricks are {cm} centimetres yonder, partner. Movin' the whole outfit over.",
+               "arrived": "Whoa there. {cm} centimetres in {seconds} seconds. In position, let's get sortin'."},
 }
 
 # run.py's `after` values -> what a person would say
@@ -70,6 +78,11 @@ def summary(persona: str, event: str, n: int = 0, perfect: int = 0, defective: i
 def compose(persona: str, event: str, score: float | None = None, t_low: float | None = None,
             t_high: float | None = None, where: str | None = None, after: str | None = None, **counts) -> str | None:
     """The live line for a verdict, or None when the numbers it needs are missing (then the cached clip plays)."""
+    if event in ("drive", "arrived"):
+        cm, seconds = counts.get("cm"), counts.get("seconds")
+        if cm is None or (event == "arrived" and seconds is None):
+            return None  # the cached line covers it
+        return DRIVE[persona][event].format(cm=round(cm), seconds=round(seconds or 0))
     if event in ("empty", "quit"):
         return summary(persona, event, **{k: v for k, v in counts.items() if k in ("n", "perfect", "defective", "rechecked")})
     template = TEMPLATES.get(persona, {}).get(event)
