@@ -14,15 +14,15 @@ from anomalib.models import EfficientAd, Padim, Patchcore
 MODELS = {"padim": Padim, "patchcore": Patchcore, "efficientad": EfficientAd}
 
 
-def datamodule(root: Path, model_name: str) -> Folder:
+def datamodule(root: Path, model_name: str, batch_size: int = 32) -> Folder:
     return Folder(
         name="bricks",
         root=root,
         normal_dir="good",
         abnormal_dir="defective",
         normal_test_dir="val_good",
-        train_batch_size=1 if model_name == "efficientad" else 32,  # EfficientAd only trains with batch 1
-        eval_batch_size=32,
+        train_batch_size=1 if model_name == "efficientad" else batch_size,  # EfficientAd only trains with batch 1
+        eval_batch_size=batch_size,
         num_workers=0,  # worker processes hang on Windows spawn; the dataset is small
     )
 
