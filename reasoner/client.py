@@ -17,7 +17,7 @@ from dataclasses import asdict
 import cv2
 import numpy as np
 
-from perception.contract import DefectSignal
+from common.interfaces import DefectSignal
 
 BASE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 ACTIONS = {"perfect": "place it in the blue bowl", "defective": "place it in the red bowl", "uncertain": "take a second look"}

@@ -1,0 +1,5 @@
+t_low: 0.20361913323402406
+t_high: 0.6262581884860993
+model_xml: runs\export\padim\int8\weights\openvino\model.xml
+n_good: 30
+n_defective: 40
