@@ -75,12 +75,35 @@ The same table produces the trial report (`telemetry/report.sql`): success rate,
 per stage and device. Kafka stream (`sortsense.events`): TBD (only if the service is created). Drift alarm on
 real bricks: TBD.
 
-## NVIDIA Nemotron (Saliha to write)
+## NVIDIA Nemotron
 
-Required: model, what it does, why it matters, how we improved its outputs.
-- Model: `nvidia/nemotron-3.5-super-vl-120b-a12b` via NVIDIA Build.
-- What it does: TBD (Saliha). Advisory only: it explains the measured verdict and never changes it (D25).
-- How we improved its outputs: TBD (Saliha: grounding in the measured score and thresholds, eval table).
+**Model.** Nemotron 3.5 Super VL (`nvidia/nemotron-3.5-super-vl-120b-a12b`) through NVIDIA Build's
+OpenAI-compatible API.
+
+**What it does.** After the detector decides, Nemotron gets the brick crop plus the measured facts (label,
+anomaly score, both thresholds, defect box, the action already chosen) and writes one or two spoken sentences:
+what it sees on the brick, what the score means against the thresholds, and where the brick goes. ElevenLabs speaks
+the line while the arm places the brick. It explains the verdict and never changes it (decisions.md D25): Anomalib
+decides, Nemotron makes the decision understandable to a person standing at the table.
+
+**Why it matters.** A sorting robot that says *why* ("the score is 0.71, above my 0.63 limit, there's a mark
+near the stud, orange bowl") is one an operator can trust and correct. The vision-language model links the
+picture to the numbers, which a fixed template cannot do.
+
+**How it stays out of the way.** The call runs on its own thread after the verdict, with a 4 s timeout; only the
+newest request is kept, so a slow answer never talks over the next brick. If it is late or fails, the cached line
+already played. The arm never waits for it.
+
+**How we improved its outputs.**
+1. *It thought instead of talking.* Super VL reasons by default and spent the whole 80-token budget thinking,
+   returning no line. We turned thinking off (`enable_thinking: false`) and ask for JSON with one `line` field.
+2. *It contradicted the verdict.* With only the score, it called a perfect brick defective. Passing in the decided
+   action and what the threshold band means fixed it: 4 of 4 correct on stand-in bricks, 1.7–2.7 s per line.
+3. *A guard on every line.* A line that names the wrong bowl or quotes a number we never gave it is thrown away
+   and counted (`reasoner/live.py`). Live check on a stand-in image: 6 of 6 calls grounded, 1.9–2.7 s each.
+4. *Measured, not eyeballed.* `python -m reasoner.eval` runs saved inspection crops through the model and reports
+   answered, grounded, names the action, usable, p50 and p95 latency, once per prompt version on the same frames.
+   Real-brick table: TBD (needs the real-brick crops).
 
 ## Modal (Nate to write)
 
