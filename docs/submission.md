@@ -60,9 +60,14 @@ and a cowboy (David, deep southern cowboy, from the Voice Library), pre-generate
 so the voice works offline and never waits on the network (19 calm + 20 cowboy clips). An obstacle in the pick
 zone or the cowboy hat flips the robot into the cowboy persona at once ("Holy smokes!"); once the obstacle is
 gone and one more brick is done it drifts back through a half-way line ("Right, partner... I mean, right.").
-Playback runs on its own thread, so speech never delays the arm. Live lines streamed with `eleven_flash_v2_5`
-from Nemotron's explanation: TBD (keep only if it works in the demo; then add the measured time from verdict to
-first audio).
+Playback runs on its own thread, so speech never delays the arm.
+
+The robot also explains each verdict live, with that brick's own numbers: "That scores 0.41, over my 0.63
+line, with a mark at the top left. Orange bowl." These lines are synthesised on the fly with `eleven_flash_v2_5`
+(625–1953 ms per line on the venue Wi-Fi); a warm-up call opens the connection before the first brick, and a line
+not back within 3 s falls back to the cached clip, so the voice keeps up even when the network doesn't. On real
+runs, NVIDIA Nemotron's explanation of what it sees follows in the same voice. Time from verdict to first audio
+on the demo laptop: TBD.
 
 ## Aiven
 
@@ -77,35 +82,29 @@ real bricks: TBD.
 
 ## NVIDIA Nemotron
 
-**Model.** Nemotron 3.5 Super VL (`nvidia/nemotron-3.5-super-vl-120b-a12b`) through NVIDIA Build's
-OpenAI-compatible API.
+Required: model, what it does, why it matters, how we improved its outputs.
+- Model: `nvidia/nemotron-3.5-super-vl-120b-a12b` via NVIDIA Build.
+- What it does: after each brick is inspected, Nemotron gets the brick crop plus the measured numbers (verdict, anomaly score, the two thresholds, defect box) and says one or two short sentences out loud: what it sees, what the score means against our thresholds, and what the robot will do. A text-to-speech voice (ElevenLabs) speaks it. It is advisory only: Anomalib and the thresholds decide, Nemotron explains and never changes the verdict (D25).
+- Why it matters: a sorting robot that says why it chose a bowl can be checked by the person watching. Because the explanation uses our measured scores, it is a true account of the decision, not a guess.
+- How we improved its outputs:
+  1. **Thinking off for live speech.** Nemotron Super VL reasons by default and spent its whole 80-token budget thinking (empty answer). With thinking switched off, answers take 1.9-2.7 s.
+  2. **Grounding in the decision.** Given only a score and thresholds, it read "below t_low" as bad and told a perfect brick to be set aside. Passing the already-decided action and what each band means fixed it (4 of 4 correct on a small check, including an uncertain brick).
+  3. **A checker after the model.** `reasoner/live.py` throws away any line that names the wrong bowl or quotes a number we did not give it. It keeps only the newest request, so a slow answer never speaks over the next brick, and a late or failed call falls back to our fixed template lines.
+- Measured so far (stand-in image, NVIDIA Build API, 6 calls over perfect, defective, uncertain): 6 of 6 lines consistent with the verdict, 1.9-2.7 s. **Real bricks, the 20-frame evaluation and the spoken time from verdict to first audio: TBD.**
 
-**What it does.** After the detector decides, Nemotron gets the brick crop plus the measured facts (label,
-anomaly score, both thresholds, defect box, the action already chosen) and writes one or two spoken sentences:
-what it sees on the brick, what the score means against the thresholds, and where the brick goes. ElevenLabs speaks
-the line while the arm places the brick. It explains the verdict and never changes it (decisions.md D25): Anomalib
-decides, Nemotron makes the decision understandable to a person standing at the table.
+## Modal
 
-**Why it matters.** A sorting robot that says *why* ("the score is 0.71, above my 0.63 limit, there's a mark
-near the stud, orange bowl") is one an operator can trust and correct. The vision-language model links the
-picture to the numbers, which a fixed template cannot do.
-
-**How it stays out of the way.** The call runs on its own thread after the verdict, with a 4 s timeout; only the
-newest request is kept, so a slow answer never talks over the next brick. If it is late or fails, the cached line
-already played. The arm never waits for it.
-
-**How we improved its outputs.**
-1. *It thought instead of talking.* Super VL reasons by default and spent the whole 80-token budget thinking,
-   returning no line. We turned thinking off (`enable_thinking: false`) and ask for JSON with one `line` field.
-2. *It contradicted the verdict.* With only the score, it called a perfect brick defective. Passing in the decided
-   action and what the threshold band means fixed it: 4 of 4 correct on stand-in bricks, 1.7–2.7 s per line.
-3. *A guard on every line.* A line that names the wrong bowl or quotes a number we never gave it is thrown away
-   and counted (`reasoner/live.py`). Live check on a stand-in image: 6 of 6 calls grounded, 1.9–2.7 s each.
-4. *Measured, not eyeballed.* `python -m reasoner.eval` runs saved inspection crops through the model and reports
-   answered, grounded, names the action, usable, p50 and p95 latency, once per prompt version on the same frames.
-   Real-brick table: TBD (needs the real-brick crops).
-
-## Modal (Nate to write)
-
-- What: ACT and SmolVLA trained on Modal GPUs from `train/modal_train.py`; the demo-count sweep fans out in
-  parallel. GPU type, time and cost: TBD (Nate). No frontend (we accept losing the deployed-app points).
+- **What runs on Modal:** all training, nothing at demo time. ACT (the pick policy) trains with Intel's Physical AI
+  Studio trainer and SmolVLA (the place policy) fine-tunes from `lerobot/smolvla_base` with LeRobot, each in its own
+  pinned image on an A100, from one script (`train/modal_train.py`). Checkpoints land on a Modal Volume, and a Modal
+  CPU job exports them to OpenVINO and checks them (`train/export.py`), because Studio's tooling does not run on our
+  Windows laptops. Inference stays on the Intel laptop: the robot never waits on the network.
+- **Why it helped:** jobs start on a deployed app and keep running when the laptop's connection drops, which killed
+  two runs before we moved to it. The demo-count sweep (ACT on 18, 36 and 54 demonstrations) runs as three jobs in
+  parallel, so the "how much data is enough" question costs one training time, not three. Every run's GPU, time and
+  cost goes to `train/runs.md`.
+- **Measured so far:** SmolVLA smoke run, 200 steps in 1.8 min (about $0.06). A failed ACT run (about 38 min, about
+  $1.33) found a video-decoding crash in forked data-loader workers; we reproduced it on a Modal CPU container and fixed
+  it the same day. The SmolVLA export on Modal matches LeRobot's own policy to 2.6e-6 on identical inputs.
+- **Real runs:** GPU time and cost for ACT, SmolVLA and the sweep: TBD (Nate, from `train/runs.md`).
+- No frontend: we chose not to build a web app, so we accept losing the deployed-app points.

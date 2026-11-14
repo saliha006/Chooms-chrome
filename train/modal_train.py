@@ -46,8 +46,8 @@ def run(cmd: list[str]) -> float:
 
 
 @app.function(image=studio_image, **on_gpu)
-def train_act(dataset: str, steps: int, lr: float | None, episodes: int, job: str) -> float:
-    return run(commands.act(dataset, steps, f"/runs/{job}", lr, episodes))
+def train_act(dataset: str, steps: int, lr: float | None, episodes: int, job: str, episode_ids: tuple[int, ...] = ()) -> float:
+    return run(commands.act(dataset, steps, f"/runs/{job}", lr, episodes, episode_ids))
 
 
 @app.function(image=lerobot_image, **on_gpu)
@@ -80,7 +80,15 @@ def plan(policy: str, steps: int, episodes: int, sweep: bool, sweep_sizes: str, 
 @app.local_entrypoint()
 def main(dataset: str, policy: str = "act", steps: int = 200, lr: float | None = None, episodes: int = 0, sweep: bool = False,
          sweep_sizes: str = ",".join(map(str, commands.SWEEP_EPISODES)),  # smaller sizes fit a public set with fewer episodes
-         cameras: str = ""):  # SmolVLA only: the dataset's camera names in camera1, camera2, camera3 order
+         cameras: str = "",  # SmolVLA only: the dataset's camera names in camera1, camera2, camera3 order
+         episode_ids: str = "", tag: str = ""):  # ACT only: train on these episodes, e.g. the colour hedge (train/hedge.py prints them)
+    if episode_ids:
+        ids = commands.parse_episode_ids(episode_ids, policy, sweep)
+        job = commands.job_name("act", len(ids), steps, datetime.now().strftime("%m%d-%H%M%S"), tag)
+        seconds = train_act.remote(dataset, steps, lr, 0, job, ids)
+        log_run(job, "act", dataset, len(ids), steps, seconds)
+        print(f"{job}: {seconds / 60:.1f} min -> volume sortsense-runs/{job}")
+        return
     policy, jobs, camera_order = plan(policy, steps, episodes, sweep, sweep_sizes, cameras)
     if policy == "smolvla":
         seconds = [train_smolvla.remote(dataset, steps, lr, n, job, camera_order) for n, job in jobs]

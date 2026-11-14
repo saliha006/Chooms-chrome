@@ -1,0 +1,126 @@
+"""Live spoken reasoning with this brick's numbers (A6, decisions.md D12).
+
+The cached clips can only say the verdict. A live line says why, with the real score and thresholds, through
+ElevenLabs Flash on its own thread. It gets TIMEOUT_S to come back; if the network is slow, down or the key is
+missing, the cached clip for the same event plays instead, so the voice never waits and the arm never does.
+"""
+
+import logging
+import queue
+import tempfile
+import threading
+import time
+from collections.abc import Callable
+from pathlib import Path
+
+_log = logging.getLogger("narrator.live")
+
+# Flash took 625-1563 ms per full line on the venue Wi-Fi (4 calls, 2026-11-14); 3 s keeps nearly every live line
+# while the voice lags the arm by about a second at most (Harry, 2026-11-14). The arm never waits either way.
+TIMEOUT_S = 3.0
+LIVE_EVENTS = {"perfect", "defective", "uncertain"}
+
+# Conversational on purpose: the robot thinks aloud. {where} is empty or " at the top left".
+TEMPLATES = {
+    "calm": {
+        "perfect": "That scores {score}, under my {t_low} line. It looks clean, so the purple bowl.",
+        "defective": "That scores {score}, over my {t_high} line, with a mark{where}. Orange bowl.",
+        "uncertain": "Hmm, {score}. That's between my two lines, so I'm not sure yet. Let me take another look.",
+    },
+    "cowboy": {
+        "perfect": "Scorin' {score}, well under my {t_low} line. Clean as a whistle, partner. Purple bowl.",
+        "defective": "Whoa, {score}, past my {t_high} line, got a mark{where}. Orange bowl it is.",
+        "uncertain": "{score}? That's smack between my lines. Hold your horses, lemme look again.",
+    },
+}
+# run.py's `after` values -> what a person would say
+AFTER = {"looked again": "Second look: ", "reinspect 90": "After a wrist roll, ", "reinspect 0": "After a re-grasp, "}
+
+
+def _number(value: float) -> str:
+    # Two significant decimals read naturally ("zero point four one"); more is noise to a listener.
+    return f"{value:.2f}"
+
+
+def _where(cell: str | None) -> str:
+    if not cell:
+        return ""
+    return " in the centre" if cell == "middle-centre" else f" at the {cell.replace('-', ' ')}"
+
+
+def compose(persona: str, event: str, score: float | None = None, t_low: float | None = None,
+            t_high: float | None = None, where: str | None = None, after: str | None = None, **_) -> str | None:
+    """The live line for a verdict, or None when the numbers it needs are missing (then the cached clip plays)."""
+    template = TEMPLATES.get(persona, {}).get(event)
+    if template is None or score is None or t_low is None or t_high is None:
+        return None
+    line = template.format(score=_number(score), t_low=_number(t_low), t_high=_number(t_high),
+                           where=_where(where))
+    if after in AFTER:
+        line = AFTER[after] + line[0].lower() + line[1:]
+    return line
+
+
+class Live:
+    """One worker thread: takes the newest request, synthesises it, hands the WAV (or the fallback) to `submit`."""
+
+    def __init__(self, synth: Callable[[str, str], bytes], submit: Callable[[Path, bool], None],
+                 timeout_s: float = TIMEOUT_S):
+        self._synth, self._submit, self.timeout_s = synth, submit, timeout_s
+        self._requests: queue.Queue = queue.Queue()
+        self._dir = Path(tempfile.mkdtemp(prefix="sortsense-live-"))
+        self._count = 0
+        threading.Thread(target=self._run, name="narrator-live", daemon=True).start()
+
+    def warm_up(self) -> None:
+        """Open the connection before the first brick, so its set-up cost isn't paid on a real verdict."""
+        threading.Thread(target=self._warm, name="narrator-warm-up", daemon=True).start()
+
+    def _warm(self) -> None:
+        try:
+            started = time.monotonic()
+            self._synth("Ready.", "calm")
+            _log.info("live voice ready (warm-up %.0f ms)", (time.monotonic() - started) * 1000)
+        except Exception as exc:
+            _log.info("live voice warm-up failed (%s); cached lines will cover", type(exc).__name__)
+
+    def speak(self, text: str, persona: str, fallback: Path | None, priority: bool = False) -> None:
+        self._requests.put((text, persona, fallback, priority, time.monotonic()))
+
+    def _run(self) -> None:
+        while True:
+            request = self._requests.get()
+            while not self._requests.empty():  # a newer line supersedes one not started yet
+                request = self._requests.get_nowait()
+            self._say(*request)
+
+    def _say(self, text: str, persona: str, fallback: Path | None, priority: bool, asked: float) -> None:
+        try:
+            audio = self._synth(text, persona)
+            took = time.monotonic() - asked
+            if took > self.timeout_s:
+                raise TimeoutError(f"{took:.2f} s")
+        except Exception as exc:  # network, quota or timeout: the cached clip says the same verdict
+            _log.info("live line fell back to the cached clip (%s)", type(exc).__name__)
+            if fallback is not None and fallback.exists():
+                self._submit(fallback, priority)
+            return
+        self._count += 1
+        path = self._dir / f"line-{self._count % 8}.wav"  # a small ring: the player is done with older files
+        path.write_bytes(audio)
+        _log.info("live line ready in %.0f ms", took * 1000)
+        self._submit(path, priority)
+
+
+def elevenlabs_synth(voices: dict, api_key: str, timeout_s: float = TIMEOUT_S) -> Callable[[str, str], bytes]:
+    from elevenlabs.client import ElevenLabs
+
+    client = ElevenLabs(api_key=api_key)
+
+    def synth(text: str, persona: str) -> bytes:
+        return b"".join(client.text_to_speech.convert(
+            voice_id=voices[persona], text=text, model_id=voices["live_model"], output_format=voices["cached_format"],
+            request_options={"timeout_in_seconds": timeout_s, "max_retries": 0},
+        ))
+
+    return synth

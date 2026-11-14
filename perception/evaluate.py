@@ -133,12 +133,12 @@ def evaluate(root: Path, model_name: str, out_yaml: Path, report: Path, work: Pa
                     good_images=len(good_scores), defective_dev_images=len(dev))
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(to_markdown(result), encoding="utf-8")
-    write_frames(work / "frames.csv", {**oof_scores, **{p: final_scores[p] for p in test}}, t_low, t_high)
+    write_cases(work / "cases.csv", {**oof_scores, **{p: final_scores[p] for p in test}}, t_low, t_high)
     return result
 
 
-def write_frames(path: Path, scores: dict[Path, float], t_low: float, t_high: float) -> None:
-    """Every honestly scored image with the verdict the inspector would give it: the input of `reasoner.eval`."""
+def write_cases(path: Path, scores: dict[Path, float], t_low: float, t_high: float) -> None:
+    """Every honestly scored image with the verdict the inspector would give it: the input of `reasoner.evaluate`."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as f:
         out = csv.writer(f)
