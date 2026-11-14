@@ -38,7 +38,7 @@ def _image_url(crop_bgr: np.ndarray) -> str:
     return "data:image/png;base64," + base64.b64encode(png.tobytes()).decode()
 
 
-def request_body(crop_bgr: np.ndarray, signal: DefectSignal, persona: str, model: str) -> dict:
+def request_body(crop_bgr: np.ndarray, signal: DefectSignal, persona: str, model: str, system: str = SYSTEM) -> dict:
     facts = {k: v for k, v in asdict(signal).items() if k in ("label", "score", "t_low", "t_high", "bbox", "view")}
     facts |= {"action": ACTIONS[signal.label], "meaning": BAND}
     return {
@@ -47,7 +47,7 @@ def request_body(crop_bgr: np.ndarray, signal: DefectSignal, persona: str, model
         "temperature": 0.3,
         "chat_template_kwargs": {"enable_thinking": False},  # Super VL reasons by default and spends max_tokens thinking
         "messages": [
-            {"role": "system", "content": f"{SYSTEM} Persona: {persona}."},
+            {"role": "system", "content": f"{system} Persona: {persona}."},
             {"role": "user", "content": [
                 {"type": "text", "text": json.dumps(facts)},
                 {"type": "image_url", "image_url": {"url": _image_url(crop_bgr)}},
@@ -62,9 +62,9 @@ def parse_line(response: dict) -> str:
     return json.loads(text[start : end + 1])["line"] if start != -1 and end > start else text
 
 
-def explain(crop_bgr: np.ndarray, signal: DefectSignal, persona: str = "calm", timeout_s: float = 5.0) -> tuple[str, float]:
+def explain(crop_bgr: np.ndarray, signal: DefectSignal, persona: str = "calm", timeout_s: float = 5.0, system: str = SYSTEM) -> tuple[str, float]:
     """Return (line, latency in ms). Raises on HTTP errors and timeouts; the caller falls back to a template."""
-    body = json.dumps(request_body(crop_bgr, signal, persona, os.environ["NEMOTRON_MODEL"])).encode()
+    body = json.dumps(request_body(crop_bgr, signal, persona, os.environ["NEMOTRON_MODEL"], system)).encode()
     req = urllib.request.Request(
         BASE_URL,
         data=body,
