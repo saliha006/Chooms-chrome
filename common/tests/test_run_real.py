@@ -54,7 +54,7 @@ def station(tmp_path, monkeypatch):
         io._robot.connect()
 
     monkeypatch.setattr(io, "connect", connect)
-    monkeypatch.setattr(run, "load_policy", lambda export_dir, devices: f"policy from {export_dir}")
+    monkeypatch.setattr(run, "load_policy", lambda export_dir, devices: (f"policy from {export_dir}", devices[0]))
     yield edit
     io.disconnect()
 
@@ -89,5 +89,6 @@ def test_learned_pick_with_scripted_place(station):
         assert isinstance(cell.placer, ScriptedMover)
         assert type(cell.picker).__name__ == "LearnedMover"
         assert cell.picker.picker == "policy from exports/act" and cell.picker.placer is None
+        assert cell.mode == "pick: act on GPU | place: scripted"  # the screen names the device it really loaded on
     finally:
         cell.capture.stop()
