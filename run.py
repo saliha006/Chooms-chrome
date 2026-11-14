@@ -70,6 +70,7 @@ class Cell:
         self.bowl_check: Callable[[str, object, object], bool] | None = None
         self.obstacle_seen = False
         self.drift_alert = False  # set by the Aiven sync thread (F15): lighting changed, rebaseline
+        self.reasoner = None  # reasoner.live.LiveLine: Nemotron's explanation, spoken after the template line
         self.stage_ms: dict[str, float] = {}
         self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
         self.quit = threading.Event()  # Q: finish this brick, then home and stop
@@ -177,6 +178,8 @@ class Cell:
             except Exception as exc:
                 raise HelpNeeded(Reason.INSPECT_FAILED, str(exc)) from exc
             self.last_signal = signal
+            if self.reasoner is not None:
+                self.reasoner.submit(frame, signal, persona=narrator.current_persona())
             where = region(signal.bbox)
             self.trace.append(f"{step}: {signal.score:.1f} vs {signal.t_low:.1f} / {signal.t_high:.1f} -> {signal.label}"
                               + (f" at {where}" if where else ""))
@@ -425,6 +428,21 @@ def bowl_checker(scene: dict) -> Callable[[str, object, object], bool] | None:
     return check
 
 
+def nemotron_line():
+    """Real runs only: a stand-in frame gives Nemotron nothing true to say. None without the NVIDIA settings."""
+    import os
+
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    if not (os.environ.get("NVIDIA_API_KEY") and os.environ.get("NEMOTRON_MODEL")):
+        _log.info("NVIDIA_API_KEY / NEMOTRON_MODEL not set: template lines only")
+        return None
+    from reasoner.live import LiveLine
+
+    return LiveLine(narrator.say)
+
+
 def drift_alarm(cell: Cell, run_id: str) -> telemetry_sync.DriftWatch | None:
     """Spoken and on screen only: the database never stops the arm (Harry, 2026-11-14)."""
     if run_id.startswith("mock-"):
@@ -467,6 +485,7 @@ def main() -> None:
     cell.pause_on_help = not args.headless
     if not args.no_live:
         narrator.enable_live(load_config("voices.yaml"))
+        cell.reasoner = None if args.mock else nemotron_line()
     events = Path("runs/mock-events.jsonl" if args.mock else "runs/events.jsonl")
     telemetry.start(events)
     sync_stop = threading.Event()
