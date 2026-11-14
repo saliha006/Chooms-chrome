@@ -86,6 +86,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-14 05:18 · A3 real-station half (R5) · `run.py` without `--mock`: real cameras, Saliha's inspector via `config/models.yaml`, scripted or learned mover per part (`--scripted`), config checked before anything moves, Ctrl+C = e-stop; merged to `main` (`de5fe0a`), 48 tests pass
 - 2026-11-14 04:38 · A7 · `fallback/scripted.py` `ScriptedMover` (all 6 `Mover` methods, gripper kept closed while carrying) + `fallback/teach.py` (hand-guide, Enter saves into `config/waypoints.yaml`); merged to `main` (`b7c2f6e`), 44 tests pass with Nate's
 - 2026-11-14 04:30 · A2b, A3 · `common/capture.py` (shared grab, fresh-frame wait), `run.py` state machine with grasp retry, uncertain chain, help + HOME; `python run.py --mock` sorts 5 bricks; merged to `main` (`c3deb81`), 23 tests pass
 - 2026-11-14 04:23 · A2 · `config/{cameras,rules,robot,voices}.yaml`, `common/mocks.py` (`MockCamera`, `MockInspector`, `MockMover`); merged to `main` (`81f946d`), 11 tests pass
