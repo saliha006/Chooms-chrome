@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 import yaml
@@ -79,6 +81,15 @@ def test_place_goes_to_the_bowl_the_instruction_names(arm, mover):
     assert mover.place("place the brick in the red bowl")
     assert at("bowl_red", robot)
     assert robot.joints[io.GRIPPER] >= io.GRIPPER_OPEN - io.POSE_TOLERANCE_DEG
+
+
+@pytest.mark.parametrize("verdict, pose", [("perfect", "bowl_blue"), ("defective", "bowl_red")])
+def test_rules_strings_reach_the_role_pose(arm, mover, verdict, pose):
+    robot = arm()
+    mover.pick_and_present()
+    rules = yaml.safe_load((Path(__file__).resolve().parents[2] / "config" / "rules.yaml").read_text())
+    assert mover.place(rules[verdict])
+    assert at(pose, robot)
 
 
 def test_place_rejects_an_instruction_without_a_bowl(arm, mover):

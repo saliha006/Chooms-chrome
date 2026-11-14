@@ -9,10 +9,10 @@ from common.reasons import Reason
 
 LINES: dict[str, dict[str, str]] = {
     "calm": {
-        "perfect": "Okay, that one looks clean. Blue bowl.",
-        "defective": "Hmm, there's a mark on this one. Red bowl.",
+        "perfect": "Okay, that one looks clean. Purple bowl.",
+        "defective": "Hmm, there's a mark on this one. Orange bowl.",
         "uncertain": "I'm not sure about this one. Let me take another look.",
-        "still_uncertain": "Still can't tell, so I'll play it safe. Red bowl.",
+        "still_uncertain": "Still can't tell, so I'll play it safe. Orange bowl.",
         "grasp_fail": "Missed it. Let me try that again.",
         "empty": "That's the last one. All done.",
         "quit": "Stopping here and heading home.",
@@ -29,10 +29,10 @@ LINES: dict[str, dict[str, str]] = {
         "halfway": "Right, partner... I mean, right.",  # the cowboy drifting back, so in the calm voice
     },
     "cowboy": {
-        "perfect": "Clean as a whistle, partner. Blue bowl.",
-        "defective": "Well I'll be, there's a mark on this one. Red bowl it is.",
+        "perfect": "Clean as a whistle, partner. Purple bowl.",
+        "defective": "Well I'll be, there's a mark on this one. Orange bowl it is.",
         "uncertain": "Hold your horses, lemme take another look.",
-        "still_uncertain": "Can't rightly tell, so I'm playin' it safe. Red bowl.",
+        "still_uncertain": "Can't rightly tell, so I'm playin' it safe. Orange bowl.",
         "grasp_fail": "Dang, slipped right outta my hand. One more go.",
         "empty": "That's the whole herd. All done.",
         "quit": "Callin' it a day, partner. Headin' home.",

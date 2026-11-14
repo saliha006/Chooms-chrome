@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-14 15:08 | @saliha | @nate | 📨 for you | **Bowl colours: ours are purple (perfect) and orange (defective).** Record SmolVLA with exactly `"the brick is perfect, place it in the purple bowl"` and `"the brick is defective, place it in the orange bowl"`; update `train/RECORDING.md` lines 31-32. This supersedes the blue/red strings in my earlier rows. If you already recorded any SmolVLA episodes with the old strings, say so now | 2026-11-14 15:08 |
 | 2026-11-14 14:54 | @saliha | @nate | 📨 for you | **DO NOW (top of your brief, `context`): manual = you, agent = your coding agent in parallel.** Manual: rehearsal + N8 readings, test episode (unit check, 200-step ACT smoke), record the 54 ACT episodes, push, launch ACT; record the 50 SmolVLA episodes, push, launch SmolVLA; train both on Modal in parallel. Agent now: **A3 export test** (riskiest step, no robot needed), update `train/RECORDING.md` (new strings, N6 tips, audit step), review N3. Saliha's agent does N4, N5 and the episode audit. If recording has not started, tell us: the 17:00 and 19:00 gates move | 2026-11-14 14:54 |
 | 2026-11-14 14:54 | @saliha | @harry | 📨 for you | **DO NOW (top of your brief, `context`).** Manual: H5 station (cameras, RealSense, click zone and bowls, waypoints), the scripted full loop once Saliha has real bricks captured, Kafka service if the plan has it. Agent now: wire `bowl_check` into `run.py` + `io.holding()` in the scripted mover, A6b persona machine, drift alarm calling `perception.drift`, A8 README + architecture diagram (four layers named), draft the demo script and n = 20 slide. Say so here if you want Saliha's agent to take A6b or A8 | 2026-11-14 14:54 |
 | 2026-11-14 14:44 | @saliha | @harry | 📨 for you | **N3 landed on `main` (`16614ca`): `LearnedMover(..., bowl_check=...)`** is the place-success hook: pass a callable `(instruction, top_before, top_after) -> bool`, e.g. `scene.brick_in_bowl` with the clicked bowl mask for that instruction's colour; without it a place counts once the gripper has opened. `gripper_empty()` now means "no brick held" (closed on nothing OR open). New shared numbers in `robot/io.py`: `GRIPPER_HOLD_MAX`, `GRIPPER_SETTLE_S`, `io.holding()`; `fallback/scripted.py` can use `io.holding()` so both movers judge a grasp the same way (your file, your call). `python -m perception.audit --root data` checks a capture folder | 2026-11-14 14:44 |
@@ -101,6 +102,16 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-14 15:15 — feat — Bowls are purple and orange everywhere — @harry [conflicts: @nate]
+- **Where:** `systems-voice-harry` → `main` @ `d6aa2ed` · merged to `main`: yes
+- **Did:** `config/rules.yaml` = `the brick is perfect, place it in the purple bowl` / `the brick is defective, place it in the orange bowl`; `fallback/scripted.py` maps purple → `bowl_blue`, orange → `bowl_red` (red/blue still accepted); six narrator lines + clips regenerated; click-region outlines purple/orange. 131 tests pass, mock sorts 5.
+- **Touched:** `config/rules.yaml`, `fallback/scripted.py`, `narrator/lines.py`, `narrator/clips/`, `ui/click_regions.py`, tests
+- **Brief task:** 15:08 BOWL COLOURS
+- **⚠️ Conflicts:** @nate: safe to record SmolVLA now with exactly these two strings
+- **📨 Needs:** none
+- **Agreed by:** @saliha (15:08 row)
+- **Status:** resolved by @harry 2026-11-14 15:15
 
 ### 2026-11-14 14:44 — feat — N3 grasp verification (moved from Nate), image audit F21 — @saliha [conflicts: @nate @harry]
 - **Where:** `aiml-perception-saliha` → `main` @ `16614ca` · merged to `main`: yes

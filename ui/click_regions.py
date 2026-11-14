@@ -21,7 +21,7 @@ from common.capture import OpenCVCamera
 CONFIG = Path(__file__).resolve().parents[1] / "config"
 REGIONS = ("zone", "bowl_red", "bowl_blue")
 CORNERS = ("top-left", "top-right", "bottom-right", "bottom-left")
-COLOURS = {"zone": (0, 220, 0), "bowl_red": (40, 40, 230), "bowl_blue": (255, 150, 30)}  # BGR
+COLOURS = {"zone": (0, 220, 0), "bowl_red": (0, 140, 255), "bowl_blue": (200, 50, 160)}  # BGR: orange, purple
 WINDOW = "Click regions"
 
 

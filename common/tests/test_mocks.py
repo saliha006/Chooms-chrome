@@ -53,7 +53,7 @@ def test_mover_fails_first_picks_then_succeeds():
 
 def test_rules_cover_every_label():
     rules = yaml.safe_load((CONFIG / "rules.yaml").read_text())
-    assert "blue" in rules["perfect"] and "red" in rules["defective"]
+    assert "purple" in rules["perfect"] and "orange" in rules["defective"]
     assert rules["uncertain"]["then"] == "defective"
 
 
