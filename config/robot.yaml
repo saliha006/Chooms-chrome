@@ -1,4 +1,4 @@
 # Follower arm only; the leader is teleop and is never driven (CLAUDE.md §6).
 # Joint limits and the speed cap live in robot/io.py (Nate); tune them there with the arm watched.
-port: null                                 # e.g. /dev/ttyACM0, set at the station
-calibration: config/so101_follower.json    # written by the arm calibration, Sat 08:00
+port: /dev/serial/by-id/usb-1a86_USB_Single_Serial_5AB0157419-if00   # the follower board (ttyACM0 today); the leader is 5AE7045242, never driven
+calibration: config/so101_follower.json    # from Physical AI Studio on the Intel laptop, 18:34 (Saliha)
