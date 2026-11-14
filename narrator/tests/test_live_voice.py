@@ -177,3 +177,10 @@ def test_wait_idle_holds_until_the_last_line_reaches_the_player():
     live.speak("summary", "calm", fallback=None)
     assert live.wait_idle(2)
     assert len(spy.played) == 1
+
+
+def test_drive_lines_say_the_distance_and_time():
+    assert compose("calm", "drive", cm=42.4) == "The bricks are about 42 centimetres out of my reach, so I'm driving over to them."
+    assert compose("cowboy", "arrived", cm=41.0, seconds=6.2) == "Whoa there. 41 centimetres in 6 seconds. In position, let's get sortin'."
+    assert compose("calm", "drive", cm=None) is None  # the cached line, without a number
+    assert compose("calm", "arrived", cm=41.0) is None

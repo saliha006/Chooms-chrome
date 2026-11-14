@@ -37,10 +37,11 @@ CONFIG = Path(__file__).parent / "config"
 GRASP_ATTEMPTS = 2  # PRD §6: retry once, then ask for help
 SETTLE_S = 0.3  # TUNE: let the held brick stop swinging before a frame is scored (decisions.md D22)
 _log = logging.getLogger("run")
+MOCK_DRIVE_S = 3.0  # the stand-in base's drive, long enough to hear the opening line
 
 
 # TUNE on the arm. Motion stages only: the deadline stops the motion loop, so a stuck move ends as TIMEOUT.
-DEADLINE_S = {"PICK": 20.0, "REINSPECT": 25.0, "PLACE": 15.0, "HOME": 15.0}
+DEADLINE_S = {"PICK": 20.0, "REINSPECT": 25.0, "PLACE": 15.0, "HOME": 15.0, "DRIVE": 30.0}
 
 
 class Cell:
@@ -72,6 +73,10 @@ class Cell:
         self.obstacle_seen = False
         self.drift_alert = False  # set by the Aiven sync thread (F15): lighting changed, rebaseline
         self.reasoner = None  # reasoner.live.LiveLine: Nemotron's explanation, spoken after the template line
+        # The wheeled base (demo, Nate): drives to the table and returns centimetres travelled, or None if it
+        # didn't get there. `approach_cm` is the planned distance, said before it moves. None = no base, no drive.
+        self.approach: Callable[[], float | None] | None = None
+        self.approach_cm: float | None = None
         self.stage_ms: dict[str, float] = {}
         self.paused = threading.Event()  # P, or PAUSE_HUMAN: hold at the next stage boundary
         self.quit = threading.Event()  # Q: finish this brick, then home and stop
@@ -79,6 +84,8 @@ class Cell:
 
     def run(self) -> None:
         try:
+            if self.approach is not None:
+                self._drive_to_table()
             while not self.quit.is_set():
                 brick_id = self.next_brick
                 with self._stage("LOCATE", brick_id) as row:
@@ -107,6 +114,22 @@ class Cell:
             self.state = "E-STOP"
             narrator.say("estop")
             raise
+
+    def _drive_to_table(self) -> None:
+        """Before the first brick: the base drives the arm into reach, talked over live (the demo's opening)."""
+        narrator.say("drive", cm=self.approach_cm)
+        started = time.monotonic()
+        try:
+            with self._stage("DRIVE", 0, note=None if self.approach_cm is None else f"{self.approach_cm:.0f} cm planned") as row:
+                travelled = self.approach()
+                timed_out = deadline.expired()
+                row["outcome"] = "arrived" if travelled is not None else "failed"
+            if travelled is None:
+                raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.DRIVE_FAILED, "base")
+        except Exception as exc:
+            self._ask_for_help(0, exc)
+            return
+        narrator.say("arrived", cm=travelled, seconds=time.monotonic() - started)
 
     def sort_one(self, brick_id: int) -> None:
         # The arm is home here (start, or after the last place), so the bowls are in clear view.
@@ -479,6 +502,7 @@ def main() -> None:
     ap.add_argument("--headless", action="store_true", help="no window: start at once, Ctrl+C = e-stop")
     ap.add_argument("--aiven", action="store_true", help="also send a mock run to Aiven (real runs always do)")
     ap.add_argument("--no-live", action="store_true", help="cached voice lines only: no ElevenLabs calls during the run")
+    ap.add_argument("--drive", type=float, metavar="CM", help="--mock only: a stand-in base drives CM to the table first (rehearse the voice-over)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
 
@@ -486,6 +510,9 @@ def main() -> None:
     run_id = ("mock-" if args.mock else "") + time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id)
     cell.pause_on_help = not args.headless
+    if args.drive and args.mock:
+        cell.approach_cm = args.drive
+        cell.approach = lambda: time.sleep(MOCK_DRIVE_S) or args.drive
     if not args.no_live:
         narrator.enable_live(load_config("voices.yaml"))
         cell.reasoner = None if args.mock else nemotron_line()
