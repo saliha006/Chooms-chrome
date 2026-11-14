@@ -55,19 +55,6 @@ class MockInspector:
         )
 
 
-class MockLocator:
-    """Reports `n` bricks in the pick zone, then an empty zone."""
-
-    def __init__(self, n: int = 5):
-        self._left = n
-
-    def next_brick(self) -> bool:
-        if self._left == 0:
-            return False
-        self._left -= 1
-        return True
-
-
 class MockMover:
     """Records every call; the first `pick_failures` picks fail so the retry path gets exercised."""
 

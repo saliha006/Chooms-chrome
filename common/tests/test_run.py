@@ -7,7 +7,8 @@ import yaml
 import run
 import telemetry
 from common.capture import SharedCapture
-from common.mocks import MockCamera, MockInspector, MockLocator, MockMover
+from common.locate import CountLocator
+from common.mocks import MockCamera, MockInspector, MockMover
 
 RULES = yaml.safe_load((run.CONFIG / "rules.yaml").read_text())
 VIEWS = {"top": "webcam", "inspect": "realsense", "wrist": "wrist"}
@@ -29,7 +30,7 @@ def make_cell():
         cap = SharedCapture({r: MockCamera(size=(8, 8), fps=200) for r in VIEWS}).start()
         captures.append(cap)
         mover = mover or MockMover()
-        return run.Cell(cap, MockInspector(labels), mover, mover, MockLocator(bricks), RULES, VIEWS, "test"), mover
+        return run.Cell(cap, MockInspector(labels), mover, mover, CountLocator(bricks), RULES, VIEWS, "test"), mover
 
     yield make
     for cap in captures:

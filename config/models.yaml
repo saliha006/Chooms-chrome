@@ -1,0 +1,10 @@
+# Model files for the real run (python run.py). Paths are relative to the repo root.
+inspector:
+  xml: runs/rebaseline/export/padim/int8/weights/openvino/model.xml   # what `make rebaseline` writes
+  thresholds: perception/thresholds.yaml
+  model: padim
+policies:
+  act: null        # ACT export dir, once it passes the 17:00 gate
+  smolvla: null    # SmolVLA export dir, once it passes the 19:00 gate
+  devices: [GPU, CPU]   # PRD 7.2: GPU first, CPU fallback
+  cameras: [top, wrist] # roles the policies were recorded with (train/RECORDING.md)

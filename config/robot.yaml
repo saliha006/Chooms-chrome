@@ -1,4 +1,4 @@
 # Follower arm only; the leader is teleop and is never driven (CLAUDE.md §6).
-# Speed caps and joint limits are safety calls: set them at the station from the printed safety guidelines.
-port: null
-max_joint_speed: null
+# Joint limits and the speed cap live in robot/io.py (Nate); tune them there with the arm watched.
+port: null                                 # e.g. /dev/ttyACM0, set at the station
+calibration: config/so101_follower.json    # written by the arm calibration, Sat 08:00
