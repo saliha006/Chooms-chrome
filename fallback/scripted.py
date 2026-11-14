@@ -76,9 +76,10 @@ class ScriptedMover:
     @staticmethod
     def _bowl_for(instruction: str) -> str:
         # The instruction is the same language SmolVLA gets (config/rules.yaml), so read the colour from it.
-        for colour in ("red", "blue"):
+        # Pose names are roles (bowl_blue = perfect, bowl_red = defective); the real bowls are purple and orange.
+        for colour, pose in (("orange", "bowl_red"), ("purple", "bowl_blue"), ("red", "bowl_red"), ("blue", "bowl_blue")):
             if f"{colour} bowl" in instruction:
-                return f"bowl_{colour}"
+                return pose
         raise ValueError(f"no bowl named in instruction: {instruction!r}")
 
     def _go(self, name: str, gripper: float) -> bool:

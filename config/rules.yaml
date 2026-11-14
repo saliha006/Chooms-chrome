@@ -1,6 +1,6 @@
 # Verdict -> what the robot does (PRD 7.3, R11). Edit here for the Challenge-Day rules.
-perfect: the brick is perfect, place it in the blue bowl   # exact VLA training string (decisions.md D23); scripted reads "blue bowl"
-defective: the brick is defective, place it in the red bowl
+perfect: the brick is perfect, place it in the purple bowl  # exact VLA training string (decisions.md D23); scripted reads the colour
+defective: the brick is defective, place it in the orange bowl
 uncertain:
   second_view: inspect    # look again with a fresh frame: the model only knows the inspection camera (PRD v2.5)
   reinspect_angles: [90, 0]   # in order: roll the wrist 90, then put down and pick again (decisions.md D7)
