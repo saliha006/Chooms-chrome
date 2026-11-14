@@ -18,7 +18,7 @@ def folder(tmp_path):
 def fake(lines):
     it = iter(lines)
 
-    def ask(crop, signal, persona):
+    def ask(crop, signal, persona, timeout_s):
         line = next(it)
         if isinstance(line, Exception):
             raise line
@@ -29,7 +29,7 @@ def fake(lines):
 def test_counts_consistent_lines_per_label(folder):
     rows = load_cases(folder / "cases.csv")
     r = evaluate(rows, folder, ask=fake(["purple bowl, 0.12", "orange bowl, 0.7", "taking a second look"]))
-    assert (r["n"], r["ok"], r["failed"]) == (3, 3, 0)
+    assert (r["n"], r["ok"], r["failed"]) == (3, 3, {})
     assert "3 of 3 (100%" in to_markdown(r)
 
 
@@ -41,7 +41,8 @@ def test_a_contradiction_is_listed_by_image(folder):
 
 def test_a_failed_request_is_never_counted_as_consistent(folder):
     r = evaluate(load_cases(folder / "cases.csv"), folder, ask=fake([TimeoutError(), "orange bowl", "second look"]))
-    assert (r["n"], r["ok"], r["failed"]) == (3, 2, 1)
+    assert (r["n"], r["ok"]) == (3, 2) and r["failed"] == {"TimeoutError: ": 1}
+    assert "Failure: TimeoutError" in to_markdown(r)
 
 
 def test_a_bad_label_is_rejected(tmp_path):

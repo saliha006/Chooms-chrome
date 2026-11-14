@@ -36,9 +36,9 @@ def signal_for(row: dict) -> DefectSignal:
                         bbox, None, "recorded", "-", 0.0)
 
 
-def evaluate(rows: list[dict], root: Path, persona: str = "calm", ask=explain) -> dict:
+def evaluate(rows: list[dict], root: Path, persona: str = "calm", ask=explain, timeout_s: float = 5.0) -> dict:
     per_label = defaultdict(lambda: {"n": 0, "ok": 0})
-    latency, failures, bad = [], 0, []
+    latency, failures, bad = [], defaultdict(int), []
     for row in rows:
         crop = cv2.imread(str(root / row["image"]))
         if crop is None:
@@ -46,9 +46,9 @@ def evaluate(rows: list[dict], root: Path, persona: str = "calm", ask=explain) -
         signal = signal_for(row)
         per_label[signal.label]["n"] += 1
         try:
-            line, ms = ask(crop, signal, persona)
-        except Exception:
-            failures += 1
+            line, ms = ask(crop, signal, persona, timeout_s=timeout_s)
+        except Exception as exc:
+            failures[f"{type(exc).__name__}: {exc}"[:80]] += 1
             continue
         latency.append(ms)
         if grounded(line, signal):
@@ -56,7 +56,7 @@ def evaluate(rows: list[dict], root: Path, persona: str = "calm", ask=explain) -
         else:
             bad.append((row["image"], line))
     n = sum(v["n"] for v in per_label.values())
-    return {"n": n, "ok": sum(v["ok"] for v in per_label.values()), "failed": failures, "per_label": dict(per_label),
+    return {"n": n, "ok": sum(v["ok"] for v in per_label.values()), "failed": dict(failures), "per_label": dict(per_label),
             "latency_ms": latency, "inconsistent": bad, "persona": persona}
 
 
@@ -67,7 +67,8 @@ def to_markdown(r: dict) -> str:
     lines = [f"# Nemotron line check ({r['persona']} persona)", "",
              "| | Result |", "|---|---|",
              f"| Lines consistent with the verdict | {r['ok']} of {r['n']} ({100 * r['ok'] / r['n']:.0f}%, 95% interval {100 * low:.0f}-{100 * high:.0f}%) |",
-             f"| Requests that failed or timed out | {r['failed']} |"]
+             f"| Requests that failed or timed out | {sum(r['failed'].values())} |"]
+    lines += [f"| Failure: {why} | x{n} |" for why, n in r["failed"].items()]
     for label, v in sorted(r["per_label"].items()):
         lines.append(f"| {label} bricks | {v['ok']} of {v['n']} consistent |")
     if r["latency_ms"]:
@@ -83,8 +84,9 @@ def main() -> None:
     ap.add_argument("cases", type=Path)
     ap.add_argument("--persona", default="calm", choices=["calm", "cowboy"])
     ap.add_argument("--images", type=Path, help="folder the image column is relative to (default: next to cases.csv)")
+    ap.add_argument("--timeout", type=float, default=5.0, help="seconds per request (the robot waits 4)")
     args = ap.parse_args()
-    print(to_markdown(evaluate(load_cases(args.cases), args.images or args.cases.parent, args.persona)))
+    print(to_markdown(evaluate(load_cases(args.cases), args.images or args.cases.parent, args.persona, timeout_s=args.timeout)))
 
 
 if __name__ == "__main__":
