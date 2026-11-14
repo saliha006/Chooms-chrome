@@ -24,6 +24,7 @@ import yaml
 
 import narrator
 import telemetry
+from telemetry import sync as telemetry_sync
 from common import estop
 from common.capture import SharedCapture
 from common.interfaces import DefectSignal, Inspector, Mover
@@ -393,13 +394,19 @@ def main() -> None:
     ap.add_argument("--scripted", type=parse_scripted, default=set(), help="pick, place or pick,place use waypoints")
     ap.add_argument("--bricks", type=int, default=5, help="bricks in the zone when no zone is clicked (mock, or no scene.yaml)")
     ap.add_argument("--headless", action="store_true", help="no window: start at once, Ctrl+C = e-stop")
+    ap.add_argument("--aiven", action="store_true", help="also send a mock run to Aiven (real runs always do)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
 
-    run_id = time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
+    # Mock runs get their own log and a mock- run id, so stand-in data never mixes into the trial report.
+    run_id = ("mock-" if args.mock else "") + time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id)
     cell.pause_on_help = not args.headless
-    telemetry.start(Path("runs/events.jsonl"))
+    events = Path("runs/mock-events.jsonl" if args.mock else "runs/events.jsonl")
+    telemetry.start(events)
+    sync_stop = threading.Event()
+    # None when Aiven isn't configured: the JSONL file alone
+    sync = telemetry_sync.start(sync_stop, events) if args.aiven or not args.mock else None
     try:
         if args.headless:
             error = headless(cell)
@@ -412,6 +419,9 @@ def main() -> None:
     finally:
         cell.capture.stop()
         telemetry.stop()
+        sync_stop.set()
+        if sync is not None:
+            sync.join(timeout=30)  # its last pass sends the run's final rows
         if not args.mock:
             from robot import io
 
