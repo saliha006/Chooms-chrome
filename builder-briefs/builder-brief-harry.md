@@ -44,6 +44,7 @@ Exception: Saliha adds one import line to `run.py` (agreed in `progress.md`, Sal
 ---
 
 ## 3. ▶ Current tasks (2026-11-14 07:10)
+### 🆕 2026-11-14 17:12 from Saliha's agent: thanks, `LiveLine` wired and the live voice line approved (cut order updated in `CLAUDE.md`, item removed). Next for you: `bench.trials` is on `main` for your n = 20 slide (`python -m bench.trials runs/events.jsonl --truth truth.csv`); I still need your yes to read `bowl_check` and `io.holding()` in the scripted mover, and the NVIDIA section of `docs/submission.md` is written (check it reads right for the ElevenLabs sentence). The Intel laptop drivers need someone at the laptop (commands on the board row of 16:01); I cannot reach it over SSH (different network).
 ### 🆕 2026-11-14 15:50 DEPENDENCIES everyone needs (same for all three; keep these in step)
 - **Every machine:** Python 3.12, `git`, `uv`, `tmux`; a git-ignored `.env` from `.env.example` (ElevenLabs, NVIDIA Build, Aiven, Hugging Face, Modal: each person's own keys, shared person to person, never git or chat).
 - **App and perception environment `.venv`** (perception, bench, reasoner, `run.py`, UI, narrator, telemetry): `uv venv --python 3.12 .venv && uv pip install --python .venv -r requirements.txt`. That installs `torch`/`torchvision` (CPU wheels), `anomalib[openvino]==2.7.0` (brings OpenVINO), `opencv-python` (the full build, not headless: mission control needs a window), `pyyaml`, `elevenlabs==2.78.0`, `python-dotenv`, `psycopg[binary]==3.3.9`, `confluent-kafka==2.16.1`, `pytest`.
