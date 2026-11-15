@@ -19,7 +19,8 @@ from common.interfaces import DefectSignal
 from reasoner.client import explain
 
 _log = logging.getLogger("reasoner")
-WRONG_ACTION = {"perfect": ("orange",), "defective": ("purple",), "uncertain": ("purple bowl", "orange bowl")}
+# "bowl" is part of the match because the bricks themselves can be orange or purple
+WRONG_ACTION = {"perfect": ("orange bowl",), "defective": ("purple bowl",), "uncertain": ("purple bowl", "orange bowl")}
 NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 

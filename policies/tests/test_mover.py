@@ -59,6 +59,18 @@ def test_the_observation_uses_the_export_keys_rgb_and_a_batch_axis(mover):
     assert obs["images.top"].shape == (1, 4, 6, 3) and obs["images.top"][0, 0, 0].tolist() == [0, 0, 255]
 
 
+def test_pick_finishes_at_the_exact_taught_inspect_pose(mover):
+    mover.picker.target = INSPECT + [5.0, -5, 5, 0, 0, 0]  # inside POSE_TOLERANCE_DEG, so the policy counts it as presented
+    assert mover.pick_and_present()
+    assert np.allclose(io.observe(), INSPECT, atol=2)
+
+
+def test_a_failed_pick_does_not_snap_to_the_pose(mover):
+    mover.picker.target = np.array([*INSPECT[:5], 0.0])  # closes on nothing
+    assert not mover.pick_and_present()
+    assert io.observe()[io.GRIPPER] == 0.0 and len(io.robot().commands) == mover.pick_steps
+
+
 def test_place_passes_the_instruction_and_opens(mover):
     assert mover.place("place the brick in the red bowl")
     assert mover.placer.last_obs["task"] == ["place the brick in the red bowl"]

@@ -40,6 +40,7 @@ Everything still waiting on someone. Look for your name, or `@all`, under **To**
 
 | Since | From | To | Kind | What, and what to do | Entry |
 |---|---|---|---|---|---|
+| 2026-11-15 07:46 | @saliha | @nate @harry | ⚠️ conflict | **App `.venv` can't load any exported policy** (jsonargparse 4.46: `'ArgumentParser' object has no attribute 'instantiate'`); `.venv-robot` (4.53) can. Before running learned pick/place through `run.py`, upgrade jsonargparse in `.venv` or run it from `.venv-robot`. Also new: smoothing wrappers in `policies/episode.py`, snap to inspect after a learned pick | 2026-11-15 07:46 |
 | 2026-11-15 06:55 | @nate | @saliha | 📨 for you | **SmolVLA launch failed: `6salis/sortsense-place` needs a version tag.** Job `smolvla-allep-10000st-1115-045013` (started 06:50) stopped after 2 min: LeRobot 0.7.0 on Modal only loads a Hub dataset tagged with its codebase version, and yours has no tags (`meta/info.json` says `v3.0`). Only the owner can tag it; with your Hugging Face login run `python -c "from huggingface_hub import HfApi; HfApi().create_tag('6salis/sortsense-place', tag='v3.0', repo_type='dataset')"`. Nate's agent is watching the Hub and relaunches your exact command as soon as the tag appears | 2026-11-15 06:55 |
 | 2026-11-15 06:20 | @saliha | @nate | 📨 for you | **SmolVLA place data is on the Hub, launch it now from your PC:** `6salis/sortsense-place` (public; 50 episodes, 25 per instruction with the exact strings, recorded at the new inspect pose; audit: brick held and released in the wrist video, episodes 34-49 are fast). Run `python -m train.launch --dataset 6salis/sortsense-place --policy smolvla --steps 10000 --cameras top,wrist,inspect`; **after 3 minutes check the job log shows the step count rising** (Studio's local trainer froze at step 0 tonight; if Modal stalls, cancel, relaunch, post the error here). When done: `modal run train/export.py --job <job> --policy smolvla` and post the job name here; Saliha's agent copies it to the laptop and runs the gate | 2026-11-15 06:20 |
 | 2026-11-15 04:10 | @harry | @saliha @nate | 📨 for you | **`docs/how-it-works.md` is on `main`** (linked from the README): the whole codebase for the Intel judges, one brick traced end to end, then each layer with its owner (perception and thresholds, Intel deployment and benchmarks, robot I/O and both movers, the drive, Modal training, telemetry and Aiven, Pix, mission control, safety). Written from your code; please read your sections (4, 5 for @saliha; 6, 7 for @nate) and fix anything I described wrongly | 2026-11-15 04:10 |
@@ -124,6 +125,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 6. Read your brief's `▶ Current tasks`, then the 📌 Open board above.
 
 ## 📊 Latest (volatile facts live only here)
+- **Intel laptop (2026-11-15 07:46):** `main` after `a6fffb3`: 405 pass with `-m "not slow"` (1 skipped), mock sorts 5. Real photos through the deployed Inspector: good 21.6–23.7 (in-sample), defective 66.0–76.9, 2/42 uncertain. Nemotron real-brick line check 16/16 (`bench/results.md`).
 - **tests (2026-11-14 17:25):** `main` @ `2e38418`: 277 pass (same command, 3 skipped; the episode audit and colour hedge tests also run in the robot environment: 20 pass). Live Nemotron line, N5 hedge and the Nemotron line check are in; none run on real bricks yet. My `reasoner/tests/test_evaluate.py` clashed with `perception/tests/test_evaluate.py` and broke whole-suite collection on `main` for about 5 minutes (renamed `test_line_check.py`); no duplicate test basenames remain.
 - **Intel laptop (2026-11-14 17:51):** after merging everyone's `main`: 276 pass in `.venv` incl. slow (`pytest common fallback narrator telemetry policies robot perception bench reasoner ui`), 73 in `.venv-robot` (`robot policies train`); mock sorts 5. Mains power, stand-in PaDiM INT8 p50: CPU 8.9, GPU 1.0, NPU 7.2 ms. 5-minute run: NPU 0.96× (no slowdown), CPU 1.06×, GPU 1.43×. ACT probe: NPU 8.9 ms, GPU 4.2 ms, CPU 65.7 ms per call. Station: RealSense + webcam + one arm detected; wrist camera not. Pushed to GitHub 2026-11-14 18:00.
 - **Intel laptop (2026-11-14 16:58):** `main` @ `109c803`: 224 pass with `-m "not slow"` in `.venv` (229 with the slow ones in a test environment), 56 in `.venv-robot`; mock loop sorts 5 bricks. Devices CPU, GPU, NPU. PaDiM INT8 p50 (stand-in model, on battery, n=100): CPU 9.6 ms, GPU 1.0 ms, NPU 7.2 ms; PyTorch CPU 18.4 ms; all operators run on all three devices. Rebaseline parts here: train 18 s, export FP16 + INT8 16 s. Full table: `bench/results.md`.
@@ -139,6 +141,28 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-15 07:46 — feat — `scene.brick_px`: pixel centre of the biggest brick in a wrist frame — @saliha [conflicts: none]
+- **Where:** `aiml-perception-saliha` @ `a6fffb3` · merged to `main`: yes
+- **Did:** for a later visual-servo pick; same saturation mask as `analyse` (now shared), returns None below 200 px (TUNE). Not wired anywhere; tested on synthetic images only. After merging Nate's latest `main`: 405 pass (`-m "not slow"`), mock sorts 5.
+- **Touched:** `perception/scene.py`, `perception/tests/test_scene.py`
+- **Brief task:** none
+- **⚠️ Conflicts:** none
+
+### 2026-11-15 07:46 — feat — Policy smoothing options, snap to the inspect pose after a learned pick, export fetch-and-check — @saliha for @nate [conflicts: @nate @harry]
+- **Where:** `robotics-policies-nate` @ `d603edc` · merged to `main`: yes
+- **Did:** `policies/episode.py`: `Smoothed(model, alpha)` (moving average) and `TemporalEnsemble(model, m=0.01, query_every=1)` (ACT's overlapping chunks, oldest weighted most) wrap any policy; off unless a caller wraps the model, so behaviour is unchanged. Tests show both stay under the speed cap, reach the target, and the ensemble halves the worst step-to-step jump of back-to-back chunks. `LearnedMover.pick_and_present` now moves to the exact taught `inspect` pose (current gripper value) after a successful pick. `python -m train.fetch <job>` fetches `<job>/openvino` into `runs/exports/<job>` and checks it on CPU and GPU (ACT probe: 87 ms CPU, 17 ms GPU first call). 403 + 133 pass, mock sorts 5.
+- **Touched:** `policies/episode.py`, `policies/mover.py`, `train/fetch.py`, `train/export.py` (shared zero observation), `train/runs.md`, tests
+- **Brief task:** none
+- **⚠️ Conflicts:** @nate: your area; the snap adds up to 1 s after each learned pick and commands the gripper at its read value (as `reinspect` already does), check the brick does not slip. @harry: nothing is wired yet; enabling smoothing is one line in `run.py` (`Smoothed(TemporalEnsemble(model), 0.5)`). Both: the app `.venv` (jsonargparse 4.46) cannot build any `InferenceModel` (`'ArgumentParser' object has no attribute 'instantiate'`), so `run.py` with a learned policy fails on every device under `.venv`; `.venv-robot` (4.53) works.
+- **Status:** open
+
+### 2026-11-15 07:43 — fix — Deployed detector checked on the real photos; line checker stops rejecting orange bricks; real-brick Nemotron table — @saliha [conflicts: @harry]
+- **Where:** `aiml-perception-saliha` @ `66f673d` · merged to `main`: yes
+- **Did:** `bench/real_photos.py` runs the deployed PatchCore IR through `Inspector` on all 66 saved photos (CPU): good 21.6–23.7 (in-sample, all perfect), defective 66.0–76.9 (40 defective, 2 uncertain, 0 perfect); a slow test guards it. Nemotron line check on 16 real photos: 12/16 at first, all 4 "contradictions" were correct lines about orange good bricks, because `reasoner.live.grounded` rejected any "orange" in a perfect line. It now matches "orange bowl"/"purple bowl": 16/16, p50 2.0 s, p95 2.6 s, 0 failures. Table in `bench/results.md`. 389 pass (`-m "not slow"`), mock sorts 5.
+- **Touched:** `bench/real_photos.py`, `perception/tests/test_real_photos.py`, `reasoner/live.py`, `reasoner/tests/test_live.py`, `bench/results.md`
+- **Brief task:** none
+- **⚠️ Conflicts:** @harry: live lines about a good orange brick were being rejected and replaced by the template on the robot; they will now be spoken. Nothing to change on your side.
 
 ### 2026-11-15 03:25 — docs — Pitch slides; ElevenLabs write-up, README and demo script brought up to Pix — @harry [conflicts: @saliha @nate]
 - **Where:** `main` @ `cc5dfd6` (docs) · slides: https://claude.ai/artifact/KsuECp6J2nvritHEstYSjN (private until Harry shares it)

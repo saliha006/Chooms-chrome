@@ -41,7 +41,16 @@ class LearnedMover:
         run_episode(self.picker, self.frames, self.pick_steps, stop=presented, abort_event=deadline.abort)
         if not presented():  # ran out of steps: give the brick the settle time an early exit already had
             time.sleep(io.GRIPPER_SETTLE_S)
+        if deadline.expired() or not (self._at_inspect() and io.holding()):
+            return False
+        self._snap_to_inspect()
         return not deadline.expired() and self._at_inspect() and io.holding()
+
+    def _snap_to_inspect(self) -> None:
+        """The policy stops anywhere within POSE_TOLERANCE_DEG; the detector scores best from the exact taught pose."""
+        target = self.poses["inspect"].copy()
+        target[io.GRIPPER] = io.observe()[io.GRIPPER]
+        io.move_to(target, seconds=1.0)
 
     def place(self, instruction: str) -> bool:
         if not self._roll_back_to_inspect():
