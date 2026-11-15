@@ -24,13 +24,16 @@ SLOT_POSES = tuple(f"{kind}_{n}" for n in range(2, 6) for kind in ("pick_above",
 # so a tune on the arm (Nate's N8) changes one place.
 GRIPPER_CLOSED = 0.0
 ARRIVE_TOLERANCE_DEG = 4.0  # a scripted move is done: the loaded shoulder settles up to 3.5° short (dry run, 2026-11-15 01:35)
-MOVE_SECONDS = 3.0  # TUNE: longest single move before it counts as blocked
+MOVE_SECONDS = 3.0  # TUNE: shortest time a move gets before it counts as blocked
+# io.act() steps from the observed position, so the servo only ever sees one cap of error and crawls:
+# elbow 91 -> 58 units at a 4-unit cap took ~2.2 s on the follower (2026-11-15 08:08), not cap x 30 Hz.
+ARM_SPEED_PER_CAP = 3.7  # TUNE: units per second per unit of step cap
 REACH_CM = 25.0  # TUNE: shoulder axis to a pick slot, turns a sideways search in cm into shoulder_pan degrees
 SHOULDER_PAN = io.JOINTS.index("shoulder_pan")
 LIFT_JOINTS = [io.JOINTS.index(name) for name in ("shoulder_lift", "elbow_flex", "wrist_flex")]
 # Station test 07:42: straight fast moves bumped the camera into the wall, slammed onto the brick (shoving the
 # wheeled board) and flung a tip-held brick out on the way to the bowl.
-APPROACH_STEP_DEG = 2.0  # TUNE: pick_above <-> pick, the last few cm onto and off the brick
+APPROACH_STEP_DEG = 3.0  # TUNE (about 11 units/s on the arm): pick_above <-> pick, the last few cm onto and off the brick
 CARRY_STEP_DEG = 4.0  # TUNE: any move while a brick is in the jaws
 PRE_CLOSE_S = 0.3  # TUNE: let the arm stop over the brick before closing
 POST_CLOSE_S = 0.5  # TUNE: let the grip settle before lifting
@@ -204,14 +207,21 @@ class ScriptedMover:
         """Step toward target until the arm joints arrive. The gripper is left out of the check: while
         carrying, it is commanded closed and the brick stops it short, which must not read as "stuck"."""
         with step_cap(CARRY_STEP_DEG if self._carrying else None):
-            if not self._step_until(target, lambda: self._near(target, ARRIVE_TOLERANCE_DEG), MOVE_SECONDS):
+            if not self._step_until(target, lambda: self._near(target, ARRIVE_TOLERANCE_DEG), self._seconds_for(target)):
                 return False
-            # Arrived counts from 4° out, more than a search shift or the last of a slow descent: finish the
-            # command on the exact pose (the servo then holds it, or settles short under load as before).
+            # Arrived counts from 4° out, more than a search shift or the last of a slow descent: send a few more
+            # steps toward the exact pose without waiting for it (a loaded elbow settles ~2 units short for good).
             for _ in range(math.ceil(ARRIVE_TOLERANCE_DEG / io.MAX_STEP_DEG)):
                 io.act(target)
                 time.sleep(1 / io.CONTROL_HZ)
             return True
+
+    @staticmethod
+    def _seconds_for(target: np.ndarray) -> float:
+        """Twice what the arm needs for this move at the current step cap, and never under MOVE_SECONDS."""
+        distance = np.abs(np.clip(target, io.JOINT_MIN, io.JOINT_MAX) - io.observe())[:io.GRIPPER]
+        speed = ARM_SPEED_PER_CAP * io.units(io.MAX_STEP_DEG)[:io.GRIPPER]
+        return max(MOVE_SECONDS, 2 * float((distance / speed).max()))
 
     def _set_gripper(self, value: float) -> None:
         target = io.observe()

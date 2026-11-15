@@ -341,3 +341,28 @@ def test_each_miss_is_searched_once_and_a_slot_alternates_sides(off_spot):
     assert pick() is False and np.isclose(pans, 40.0 + shift).any()  # slot 2's own search
     assert pick() is False  # slot 1 again
     assert pick() is True and robot.held  # slot 1's second search tries the - side
+
+
+class CrawlingRobot(io.MockRobot):
+    """Moves like the follower: ARM_SPEED_PER_CAP x the step cap in units per second, not straight to the command."""
+
+    def send_action(self, action, *, goal_time=0.1):
+        step = scripted.ARM_SPEED_PER_CAP * io.units(io.MAX_STEP_DEG) / io.CONTROL_HZ
+        if self.torque:
+            self.joints = self.joints + np.clip(np.asarray(action, float) - self.joints, -step, step)
+        self.commands.append(self.joints.copy())
+
+
+def test_a_slow_descent_the_real_arm_takes_4_s_is_not_called_blocked():
+    poses = {k: np.asarray(v, float) for k, v in POSES.items()}
+    poses["pick"] = np.array([10.0, 45, 0, 0, 0, 60])  # 40 units below pick_above: ~3.6 s at the approach cap
+    io.connect(mock=True)
+    io._robot = CrawlingRobot(poses["pick_above"])
+    io._robot.connect()
+    try:
+        mover = ScriptedMover(poses)
+        start = time.monotonic()
+        assert mover._slow(mover._pose("pick", io.GRIPPER_OPEN, 0.0))
+        assert time.monotonic() - start > scripted.MOVE_SECONDS  # the old fixed timeout would have failed it
+    finally:
+        io.disconnect()

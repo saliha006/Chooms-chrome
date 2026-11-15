@@ -43,8 +43,11 @@ MOCK_DRIVE_S = 3.0  # the stand-in base's drive, long enough to hear the opening
 
 
 # TUNE on the arm. Motion stages only: the deadline stops the motion loop, so a stuck move ends as TIMEOUT.
+# Scripted moves crawl at ~3.7 units/s per unit of step cap (fallback/scripted.py): a staged pick (raise, turn, lower,
+# slow descent, settle, close, slow lift, staged carry to inspect) is ~22 s, ~26 s with a re-close; a staged carry to
+# the bowl ~11 s; a re-grasp is a carry plus a whole pick. Each deadline is about twice that.
 # DRIVE: 4-5 floor strokes of ~5.5 s each into the dock, plus settling (Nate, robot/drive.py).
-DEADLINE_S = {"PICK": 20.0, "REINSPECT": 25.0, "PLACE": 15.0, "HOME": 15.0, "DRIVE": 120.0}
+DEADLINE_S = {"PICK": 45.0, "REINSPECT": 60.0, "PLACE": 25.0, "HOME": 20.0, "DRIVE": 120.0}
 
 
 class Cell:
