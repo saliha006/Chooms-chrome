@@ -66,6 +66,7 @@ class Cell:
         self.decided: str | None = None  # the last brick's final label, for "Hey Pix, why that bowl?"
         self.look: Callable[[], object] | None = None  # narrator.vision: what the wrist camera shows now (a Sight)
         self.next_brick = 1
+        self.inspect_role = "inspect"  # the camera Anomalib scores (config/models.yaml inspector.camera)
         self.mode = "mock"
         self.pause_on_help = True  # False without a window (--headless): nobody can press P, so stop instead
         self.help_reason: Reason | None = None
@@ -211,7 +212,7 @@ class Cell:
         # The arm is home here (start, or after the last place), so the bowls are in clear view.
         bowls_before = self._top_frame() if self.bowl_check else None
         self._pick(brick_id)
-        signal = self._inspect(brick_id, "inspect", "first look", newer_than=self._settle())
+        signal = self._inspect(brick_id, self.inspect_role, "first look", newer_than=self._settle())
         narrator.say(signal.label, **spoken_numbers(signal))
 
         with self._stage("DECIDE", brick_id, signal) as row:
@@ -298,7 +299,8 @@ class Cell:
         Every score uses a frame grabbed after the arm settled: re-scoring the frame we already judged
         uncertain would just repeat the verdict."""
         chain = self.rules["uncertain"]
-        signal = self._inspect(brick_id, chain["second_view"], "look again", newer_than=self._settle())
+        signal = self._inspect(brick_id, self.inspect_role if chain["second_view"] == "inspect" else chain["second_view"],
+                               "look again", newer_than=self._settle())
         if signal.label != "uncertain":
             narrator.say(signal.label, **spoken_numbers(signal), after="looked again")
             return signal.label
@@ -311,7 +313,7 @@ class Cell:
             if not back:
                 raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.BRICK_LOST, f"reinspect {angle}")
             step = f"after wrist roll {angle}" if angle else "after re-grasp"
-            signal = self._inspect(brick_id, "inspect", step, newer_than=self._settle())
+            signal = self._inspect(brick_id, self.inspect_role, step, newer_than=self._settle())
             if signal.label != "uncertain":
                 narrator.say(signal.label, **spoken_numbers(signal), after=f"reinspect {angle}")
                 return signal.label
@@ -479,7 +481,8 @@ def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False)
     from perception.inspector import Inspector as AnomalibInspector  # slow import: OpenVINO compile
 
     insp = models["inspector"]
-    inspector = AnomalibInspector(Path(insp["xml"]), Path(insp["thresholds"]), insp["model"])
+    crop = insp.get("crop")  # [x, y, side] of the square the detector was trained on (perception.capture --crop)
+    inspector = AnomalibInspector(Path(insp["xml"]), Path(insp["thresholds"]), insp["model"], crop=tuple(crop) if crop else None)
     io.connect(port=robot["port"], calibration=robot["calibration"])
     capture = SharedCapture({role: OpenCVCamera(cam["path"], cam.get("fourcc")) for role, cam in cameras.items()}).start()
 
@@ -506,6 +509,7 @@ def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False)
         locator = CountLocator(bricks)
     cell = Cell(capture, inspector, movers["pick"], movers["place"], locator, load_config("rules.yaml"),
                 views_of(cameras), run_id)
+    cell.inspect_role = insp.get("camera", "inspect")
     from robot.dance import dance
 
     cell.finale = lambda: dance(poses["home"])

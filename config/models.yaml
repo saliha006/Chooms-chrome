@@ -3,6 +3,8 @@ inspector:
   xml: runs/rebaseline/export/padim/int8/weights/openvino/model.xml   # what `make rebaseline` writes
   thresholds: perception/thresholds.yaml
   model: padim
+  camera: wrist   # the gripper camera scores the held brick: it is always in the same spot of its picture (2026-11-15)
+  crop: null      # [x, y, side] in pixels; null = centred square. Must equal the --crop the training photos used
 policies:
   act: null        # ACT export dir, once it passes the 17:00 gate
   smolvla: null    # SmolVLA export dir, once it passes the 19:00 gate

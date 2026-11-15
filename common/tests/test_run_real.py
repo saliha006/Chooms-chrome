@@ -48,7 +48,7 @@ def station(tmp_path, monkeypatch):
 
     monkeypatch.setattr(capture, "OpenCVCamera", lambda path, fourcc=None: MockCamera(size=(8, 8), fps=200))
     fake_perception = types.ModuleType("perception.inspector")
-    fake_perception.Inspector = lambda xml, thresholds, model: MockInspector(("defective",))
+    fake_perception.Inspector = lambda xml, thresholds, model, **kw: MockInspector(("defective",))
     monkeypatch.setitem(sys.modules, "perception.inspector", fake_perception)
 
     def connect(port=None, calibration=None, mock=False):
@@ -125,3 +125,17 @@ def test_base_drives_into_the_dock_before_the_first_brick(station, monkeypatch):
     cell.pause_on_help = False
     cell.run()
     assert seen and seen[0][1] == sorted(drive.STROKE) and cell.sorted == 1
+
+
+def test_inspection_reads_the_camera_models_yaml_names(station):
+    station("models.yaml", lambda d: d["inspector"].update(camera="wrist", crop=[10, 20, 300]))
+    cell = run.build_real({"pick", "place"}, 1, "t")
+    try:
+        assert cell.inspect_role == "wrist"
+        roles = []
+        real_frame = cell.capture.frame
+        cell.capture.frame = lambda role, **kw: roles.append(role) or real_frame(role, **kw)
+        cell.run()
+    finally:
+        cell.capture.stop()
+    assert "wrist" in roles and "inspect" not in roles
