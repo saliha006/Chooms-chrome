@@ -5,7 +5,8 @@ the inspection camera (config/models.yaml inspector.camera) takes the photos, th
     python -m perception.shoot defective 14    # into data/defective/
     python -m perception.shoot --lock          # once, brick held: fix exposure and white balance at the inspect pose
 
-Hand the brick into the jaws first. Studio must not be holding the follower or the camera.
+Each run opens the jaws for INSERT_S to swap bricks, closes, photographs, and comes home still holding.
+Studio must not be holding the follower or the camera.
 """
 
 import argparse
@@ -22,6 +23,7 @@ from robot import io
 
 CONFIG = Path(__file__).resolve().parents[1] / "config"
 TARGET_BRIGHTNESS = 125  # mean grey level of the crop the detector sees
+INSERT_S = 5.0  # time to swap the brick while the jaws are open
 
 
 def camera() -> dict:
@@ -58,7 +60,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", nargs="?", choices=("good", "defective"))
     ap.add_argument("brick", nargs="?", type=int)
-    ap.add_argument("--n", type=int, default=12)
+    ap.add_argument("--n", type=int, default=6)
     ap.add_argument("--lock", action="store_true")
     ap.add_argument("--root", type=Path, default=Path("data"))
     args = ap.parse_args()
@@ -69,19 +71,25 @@ def main() -> None:
     cam, box = camera(), crop()
     io.connect(port=robot["port"], calibration=robot["calibration"])
     try:
+        hand = io.observe()
+        hand[io.GRIPPER] = io.GRIPPER_OPEN
+        io.move_to(hand, seconds=1.5)  # opens: take the last brick out, put this one between the jaws
+        print(f"jaws open: put the brick in now, {INSERT_S:.0f} s", flush=True)
+        time.sleep(INSERT_S)
+        hand[io.GRIPPER] = 0.0  # closes on the brick (a Duplo held at the tips reads ~2, deeper in ~17)
+        io.move_to(hand, seconds=1.5)
+        time.sleep(0.5)
         held = np.asarray(wp["inspect"], float)
-        held[io.GRIPPER] = 0.0  # closes on the brick; a Duplo brick stops it at about 17
+        held[io.GRIPPER] = 0.0
         io.move_to(held, seconds=5.0)
         time.sleep(1.0)  # let the brick stop swinging
-        if not io.holding():
-            print(f"warning: gripper reads {io.observe()[io.GRIPPER]:.0f}, not a held brick (10-23)")
         if args.lock:
             lock_exposure(cam, box)
         else:
             saved = capture(args.root / args.kind, args.n, cam["path"], box, interval_s=0.25, brick=args.brick, fourcc=cam.get("fourcc"))
             print(f"{len(saved)} photos of {args.kind} brick {args.brick} -> {args.root / args.kind}")
         home = np.asarray(wp["home"], float)
-        home[io.GRIPPER] = io.GRIPPER_OPEN  # let go of the brick at home
+        home[io.GRIPPER] = 0.0  # keeps holding the brick; the next run opens first
         io.move_to(home, seconds=5.0)
     finally:
         io.disconnect()

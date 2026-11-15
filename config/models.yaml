@@ -4,7 +4,7 @@ inspector:
   thresholds: perception/thresholds.yaml
   model: padim
   camera: wrist   # the gripper camera scores the held brick: it is always in the same spot of its picture (2026-11-15)
-  crop: null      # [x, y, side] in pixels; null = centred square. Must equal the --crop the training photos used
+  crop: [200, 170, 300]   # [x, y, side] around the held brick in the wrist image (2026-11-15 06:30); training photos use the same
 policies:
   act: null        # ACT export dir, once it passes the 17:00 gate
   smolvla: null    # SmolVLA export dir, once it passes the 19:00 gate
