@@ -70,13 +70,14 @@
 - **Evidence:** pipeline built and tested end to end on synthetic stand-in bricks (`perception/train.py`, `calibrate.py`, `inspector.py`); held-out AUROC on real bricks TBD (Saturday 10:30, targets ≥ 0.95, minimum 0.90). Stand-in scores are not evidence.
 - **Pitch line:** "It learned what good looks like, so any new kind of defect stands out."
 
-### D6 · Detector · Model choice decided by measurement (PaDiM default) — Status: Planned · Owner: @saliha · Updated: 2026-11-14 01:30
+### D6 · Detector · Model choice decided by measurement: PatchCore on real bricks — Status: Verified · Owner: @saliha · Updated: 2026-11-15 08:00
 - **Decision:** train PaDiM, PatchCore and EfficientAd on real bricks on Saturday and pick by held-out AUROC and latency. PaDiM is the default (the guide we cite reports it trains about 30× faster than PatchCore) and exports with static shapes for the NPU. If the good bricks come in several colours, compare PatchCore and one PaDiM per colour, because PaDiM fits one Gaussian per patch position.
 - **Why:** Anomalib's models trade accuracy, speed and export friendliness; the NPU needs static shapes, and PatchCore can export with batch 2 (Anomalib issue #3883).
 - **Alternatives rejected:** choosing before seeing the real bricks.
 - **Trade-off / risk:** the training window is 10:30–12:00 Saturday.
-- **Evidence:** TBD (comparison table in `bench/results.md`).
-- **Pitch line:** "We chose the model by measuring three on our own bricks, not by guessing."
+- **Outcome (2026-11-15):** PatchCore, inspecting through the wrist camera (crop [140, 80, 400]). EfficientAd was not trained, because there wasn't time.
+- **Evidence (`bench/results.md` → Real-brick detector; brick-level held-out, small sample of 2 good and 4 defective bricks):** PatchCore AUROC 1.000, 0/24 false alarms, 18/18 held-out defectives caught; PaDiM AUROC 0.431, 0/18 caught. PaDiM, the planned default, does not separate real bricks. PatchCore's ONNX export fails (Anomalib #3883), so the IR is converted straight from PyTorch (`perception/export_direct.py`); its scores match Anomalib's to 2 decimals.
+- **Pitch line:** "We chose the model by measuring on our own bricks: the default we planned on failed, and the numbers showed it."
 
 ### D7 · Reliability · Two-threshold uncertainty band and recovery chain (order changed 07:10) — Status: Built (band) / Planned (re-grasp chain) · Owner: @saliha @nate · Updated: 2026-11-14 04:16
 - **Decision:** `t_low` = 99th percentile of good-brick scores, `t_high` = 5th percentile of defective scores; below `t_low` perfect, above `t_high` defective, between uncertain. Uncertain → second camera view → re-grasp (Intel's own suggested idea: use the anomaly score to trigger a re-grasp) → wrist roll if time → defective, said aloud. Re-grasp and wrist roll share one motion call, `Mover.reinspect(angle_deg)`: `0` puts the brick down in the pick zone and picks it again, `±90` rolls the wrist in place, and it returns `True` only when the brick is back at the inspection pose (agreed by @nate and @saliha 2026-11-14 01:35, @harry 2026-11-14 04:16).
@@ -88,13 +89,14 @@
 
 ## C. Edge optimization (OpenVINO)
 
-### D8 · Deployment · Deliberate NPU / GPU / CPU placement with INT8 — Status: Built · Owner: @saliha · Updated: 2026-11-14 16:58
+### D8 · Deployment · Deliberate NPU / GPU / CPU placement with INT8 — Status: Built · Owner: @saliha · Updated: 2026-11-15 08:00
 - **Decision:** Anomalib (small convolutional net, static 1×3×256×256) on the NPU with INT8 post-training quantisation; ACT and SmolVLA on the GPU; capture, state machine and serial on the CPU. Fallback chain NPU → GPU → CPU. Every optimisation claim gets a number: p50/p95 latency, model size, first vs cached compile time, bricks per minute.
 - **Why:** the NPU is low power but needs static shapes (OpenVINO docs); the transformers are heavy and called often, so they get the GPU; control stays on the CPU for predictability. The rubric asks for appropriate use of all three.
 - **Alternatives rejected:** everything on the GPU (wastes the NPU, no efficiency story).
 - **Trade-off / risk:** operator support on the NPU is untested for our model; the GPU fallback is ready.
 - **Built:** the export bakes a static 1×3×256×256 input into the IR (Anomalib leaves the batch dynamic by default, which the NPU cannot compile) and INT8 post-training quantisation calibrates at batch 1. The inspector compiles the IR itself on the first working device in NPU → GPU → CPU order with a compile cache, and records why each skipped device failed (Anomalib's `OpenVINOInferencer` has no fallback chain).
 - **Evidence:** PaDiM IR size INT8 47 MB vs FP16 88 MB (file sizes). On Saliha's own laptop (not the Intel laptop, stand-in model): the compile cache cut GPU compile from ~10 s to ~1.5 s. **Intel laptop, first run (2026-11-14 16:44, stand-in model, on battery, n=100, `bench/results.md`):** PaDiM INT8 p50 CPU 9.6 ms, GPU 1.0 ms, NPU 7.2 ms; FP16 6.4 / 1.5 / 7.2 ms; PyTorch on the CPU 18.4 ms. NPU first compile 2.8 s (FP16) and 4.3 s (INT8), 0.02–0.05 s cached. Every operator of both IRs runs on all three devices. To be re-run on the real-brick model with the charger in.
+- **Real-brick PatchCore (2026-11-15, Intel laptop, mains, `bench/results.md`):** FP32 deployed, p50 GPU 2.9 ms, NPU 28.9 ms, CPU 36.5 ms (n=100); every one of the 378 operators runs on all three devices; NPU package power about 9 W vs 32 W GPU and 40 W CPU. **INT8 trial (NNCF, 6 s):** 29 MB vs 114 MB, CPU 25.5 ms, GPU 3.0 ms, NPU 27.2 ms. Good and defective stay apart (gap 25.9 vs 42.3 for FP32), but scores shift by up to 9 points, so the FP32 thresholds don't carry over (same verdict on 8 of 20 photos). Not deployed: INT8 would need its own held-out threshold evaluation.
 - **Pitch line:** "Each model runs on the chip it suits, and we have the numbers for every choice."
 
 ### D9 · Efficiency · Energy, thermal and demo-count measurements — Status: Built (energy/thermal harness, `bench/power.py`; demo-count sweep, `train/modal_train.py --sweep`) · Owner: @saliha @nate · Updated: 2026-11-14 05:11
