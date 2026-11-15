@@ -37,17 +37,20 @@ def brick_id(path: Path) -> str:
     return match.group(1) if match else path.stem
 
 
-def open_camera(cam: str) -> cv2.VideoCapture:
+def open_camera(cam: str, fourcc: str | None = None) -> cv2.VideoCapture:
     cap = cv2.VideoCapture(int(cam) if cam.isdigit() else cam)
     if not cap.isOpened():
         raise RuntimeError(f"cannot open camera {cam}")
+    if fourcc:  # the Sonix wrist camera sends no frames in its default YUYV, only in MJPG
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fourcc))
     return cap
 
 
-def capture(out: Path, n: int, cam: str, box: tuple[int, int, int] | None, interval_s: float, brick: int | None = None) -> list[Path]:
+def capture(out: Path, n: int, cam: str, box: tuple[int, int, int] | None, interval_s: float, brick: int | None = None,
+            fourcc: str | None = None) -> list[Path]:
     out.mkdir(parents=True, exist_ok=True)
     start = len(list(out.glob("*.png")))
-    cap = open_camera(cam)
+    cap = open_camera(cam, fourcc)
     saved = []
     try:
         for _ in range(5):  # first frames are often dark while auto-exposure settles
@@ -80,9 +83,10 @@ def main() -> None:
     ap.add_argument("--cam", default="0", help="camera index or /dev/v4l/by-id path")
     ap.add_argument("--crop", help="x,y,side in pixels; default = centred square")
     ap.add_argument("--interval", type=float, default=0.3, help="seconds between shots (move or swap the object)")
+    ap.add_argument("--fourcc", help="e.g. MJPG for the wrist camera")
     ap.add_argument("--brick", type=int, help="physical brick number shown in these images (for brick-level evaluation)")
     args = ap.parse_args()
-    saved = capture(args.out, args.n, args.cam, parse_box(args.crop), args.interval, args.brick)
+    saved = capture(args.out, args.n, args.cam, parse_box(args.crop), args.interval, args.brick, args.fourcc)
     print(f"saved {len(saved)} images to {args.out}")
 
 

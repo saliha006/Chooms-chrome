@@ -52,3 +52,22 @@ def test_brick_id_from_filename():
 def test_synthetic_images_are_grouped_by_brick(tmp_path):
     generate(tmp_path, ["red"], n_good=8, n_defective=1, n_val_good=1)
     assert {brick_id(p) for p in (tmp_path / "good").glob("*.png")} == {"b00", "b01"}
+
+
+def test_open_camera_asks_for_the_fourcc(monkeypatch):
+    import cv2
+
+    from perception import capture
+
+    calls = []
+
+    class Cap:
+        def isOpened(self):
+            return True
+
+        def set(self, prop, value):
+            calls.append((prop, value))
+
+    monkeypatch.setattr(capture.cv2, "VideoCapture", lambda src: Cap())
+    capture.open_camera("/dev/fake", "MJPG")
+    assert calls == [(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))]
