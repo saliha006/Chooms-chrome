@@ -196,3 +196,26 @@ def test_deadline_stops_a_scripted_move():
         assert not deadline.expired()  # cleared on exit
     finally:
         io.disconnect()
+
+
+def test_a_drive_that_runs_out_of_time_pauses_then_p_sorts_from_where_it_parked(make_cell, monkeypatch, tmp_path):
+    from robot import drive
+
+    monkeypatch.setattr(drive, "DEMO_STROKE", tmp_path / "no_stroke.yaml")  # the station's learned stroke stays out
+    monkeypatch.setitem(run.DEADLINE_S, "DRIVE", 0.2)
+    seen = drive.tag_image(dpi=50)  # the tag in view, never any nearer the dock
+    dock = drive.TagPose(x_px=5000.0, y_px=0.0, heading_deg=0.0, side_px=200.0)
+    stroke = {name: np.full(6, 10.0 * i) for i, name in enumerate(drive.STROKE)}
+    io.connect(mock=True)
+    try:
+        cell, mover = make_cell(bricks=2)
+        cell.approach = lambda: drive.approach(lambda: seen, dock, stroke)
+        worker = run_in_background(cell)
+        wait_for(lambda: cell.state == "PAUSE_HUMAN")
+        assert cell.help_reason is Reason.TIMEOUT
+        assert mover.calls == [("home",)]  # homed, and nothing picked while it waits
+        cell.paused.clear()  # P
+        worker.join(timeout=5)
+        assert cell.sorted == 2 and cell.state == "DONE"
+    finally:
+        io.disconnect()

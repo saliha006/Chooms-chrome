@@ -222,8 +222,7 @@ def test_a_miss_is_retried_at_the_same_slot_wider_and_deeper(arm):
     mover = search_mover(0.0)
     sent = record(robot)
     assert mover.pick_and_present() is False
-    assert max(j[1] for j, *_ in sent) == pytest.approx(16.0)  # jaws shut on nothing: once more 10% deeper
-    assert max(j[io.GRIPPER] for j, *_ in sent) == io.GRIPPER_OPEN
+    assert max(j[1] for j, *_ in sent) == pytest.approx(POSES["pick"][1])  # the first try stops at the taught pick
     sent.clear()
     assert mover.pick_and_present() is False  # the retry: slot 1 again, not slot 2
     assert max(j[0] for j, *_ in sent) == POSES["pick"][0]
@@ -233,30 +232,24 @@ def test_a_miss_is_retried_at_the_same_slot_wider_and_deeper(arm):
     assert mover.pick_and_present() is False and max(j[0] for j, *_ in sent) == 40.0  # then slot 2
 
 
-class LowBrickRobot(io.MockRobot):
-    """The brick sits a little below the taught pick: only a deeper grasp gets it."""
-
-    def __init__(self):
-        super().__init__()
-        self.held = False
+class SqueezedBrickRobot(io.MockRobot):
+    """A brick held squarely that the gripper servo reads as almost closed (2.9 on the station)."""
 
     def send_action(self, action, *, goal_time=0.1):
-        action = np.asarray(action, float).copy()
-        if action[io.GRIPPER] < BRICK_WIDTH and self.joints[1] > POSES["pick"][1] + 0.5:
-            self.held = True
-        if action[io.GRIPPER] > 30:
-            self.held = False
-        if self.held:
-            action[io.GRIPPER] = max(action[io.GRIPPER], BRICK_WIDTH)
         super().send_action(action, goal_time=goal_time)
+        self.joints[io.GRIPPER] = min(self.joints[io.GRIPPER], 2.9)
 
 
-def test_jaws_shut_on_nothing_open_and_close_again_deeper():
+def test_a_brick_reading_like_empty_jaws_is_lifted_not_regrasped(monkeypatch):
     io.connect(mock=True)
-    io._robot = robot = LowBrickRobot()
+    io._robot = robot = SqueezedBrickRobot()
     robot.connect()
+    monkeypatch.setattr(io, "_grip_seen", lambda: True)  # the wrist camera sees the brick
+    sent = record(robot)
     try:
-        assert search_mover(0.0).pick_and_present() is True and robot.held
+        assert search_mover(0.0).pick_and_present() is True
+        closing = next(n for n, (j, *_) in enumerate(sent) if j[io.GRIPPER] == scripted.GRIPPER_CLOSED)
+        assert all(j[io.GRIPPER] == scripted.GRIPPER_CLOSED for j, *_ in sent[closing:])  # never opens again
     finally:
         io.disconnect()
 

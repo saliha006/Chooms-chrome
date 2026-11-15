@@ -3,10 +3,16 @@
 A closed-loop defect-sorting robot with a personality, built at **Junction 2026** (Espoo) for the
 **Intel x Ignite Next: Physical AI** track.
 
-An SO-101 follower arm picks a Duplo brick and holds it up to an inspection camera (ACT policy). Anomalib scores
-it **perfect**, **defective** or **uncertain**. The verdict becomes a language instruction, and SmolVLA (a
-vision-language-action model) places the brick in the **purple bowl** (perfect) or the **orange bowl**
-(defective). Everything runs on one Intel Core Ultra laptop with OpenVINO, each model on the NPU, GPU or CPU on
+An SO-101 follower arm picks a Duplo brick and holds it up to its wrist camera. Anomalib scores
+it **perfect**, **defective** or **uncertain**. The verdict becomes a language instruction, and the arm places the
+brick in the **purple bowl** (perfect) or the **orange bowl** (defective).
+
+> **What moves the arm today:** hand-taught waypoints (the scripted mover) for both the pick and the place. The
+> learned path is built behind the same interface (ACT for the pick, SmolVLA for the place, Modal training,
+> OpenVINO export), and 50 SmolVLA place demonstrations are recorded and published, but no policy was trained in
+> time, so none runs in the demo.
+
+ Everything runs on one Intel Core Ultra laptop with OpenVINO, each model on the NPU, GPU or CPU on
 purpose.
 
 On top of that, the robot explains its reasoning out loud, live, with its real numbers ("That scores 0.41, over my
@@ -74,7 +80,7 @@ Still uncertain → orange bowl, flagged and said aloud.
 
 | Workload | Device | Why | Fallback |
 |---|---|---|---|
-| Anomalib (static 1×3×256×256, INT8) | **NPU** | Small convolutional net with static shapes, low power, frees the GPU | GPU → CPU |
+| Anomalib PatchCore (static 1×3×256×256, FP32; INT8 measured, not deployed) | **NPU** | Small convolutional net with static shapes, low power, frees the GPU | GPU → CPU |
 | ACT | **GPU** | Transformer, called every control tick | CPU |
 | SmolVLA (450M parameters) | **GPU** | The heaviest model | CPU (f32) → PyTorch |
 | Capture, state machine, serial | **CPU** | Control-critical | — |
@@ -113,7 +119,7 @@ cp .env.example .env   # then add your own keys; never commit .env
 | `make mock` | The whole loop with stand-in cameras, inspector and arm. No hardware |
 | `python run.py --mock --headless` | Same, without a window |
 | `python run.py --scripted pick,place` | Real station, scripted motion |
-| `make run` | Real station: ACT picks, SmolVLA places |
+| `make run` | Real station with learned policies (needs trained exports; none yet, so use the scripted command above) |
 | `make rebaseline` | Re-train the detector on the demo table after a lighting change (~60 images) |
 | `python -m bench.benchmark` | Device benchmark table |
 | `pytest -m "not slow"` | Tests |
@@ -156,7 +162,7 @@ stays plain.
   score and threshold, tally), so they are instant and always true. **H** toggles the hat if the room is too loud.
 - **You can interrupt it:** "Hey Pix, …" while it talks cuts it off mid-sentence and it answers you (about
   0.4 s after the interruption); an echo guard stops it answering its own voice.
-- **It sees what's in front of it:** `narrator/vision.py` runs CLIP's image encoder locally through OpenVINO and
+- **It sees what's in front of it:** (built and tested; the CLIP model is not exported on the demo laptop, so this part is off in the live demo) `narrator/vision.py` runs CLIP's image encoder locally through OpenVINO and
   names what the wrist camera shows (brick, plate, purple or orange bowl, or "unknown" with a best guess); zero-shot
   out of the box, then a small classifier trained on our own photos on the Intel laptop in seconds
   (`docs/station.md` 5b). Something on the plates that isn't a brick gets an instant "Holy smokes!".

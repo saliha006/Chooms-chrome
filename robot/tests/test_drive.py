@@ -29,17 +29,29 @@ def scene(x=320.0, y=300.0, angle=0.0, tag_id=drive.TAG_ID):
 
 
 class Board:
-    """The board seen from above: every stroke moves its tag `step` pixels toward the dock."""
+    """The board seen from above: every stroke moves its tag `step` pixels toward the dock, except the first
+    `stuck_for`. The tag is out of sight after the stroke counts in `hidden_after`, and the stage deadline has
+    fired once `out_of_time` strokes are done."""
 
-    def __init__(self, y=340.0, step=60.0, visible=True):
-        self.y, self.step, self.visible, self.strokes = y, step, visible, 0
+    def __init__(self, y=340.0, step=60.0, visible=True, stuck_for=0, hidden_after=(), out_of_time=None):
+        self.y, self.step, self.visible, self.stuck_for = y, step, visible, stuck_for
+        self.hidden_after, self.out_of_time = hidden_after, out_of_time
+        self.presses = []
+
+    @property
+    def strokes(self):
+        return len(self.presses)
 
     def frame(self):
-        return scene(y=self.y) if self.visible else np.full((480, 640, 3), 255, np.uint8)
+        seen = self.visible and self.strokes not in self.hidden_after
+        return scene(y=self.y) if seen else np.full((480, 640, 3), 255, np.uint8)
 
-    def stroke(self, poses):
-        self.strokes += 1
-        self.y = max(DOCK_Y, self.y - self.step)  # the corner stops
+    def stroke(self, poses, press_s):
+        if self.strokes == self.out_of_time:
+            return False
+        self.presses.append(press_s)
+        if self.strokes > self.stuck_for:
+            self.y = max(DOCK_Y, self.y - self.step)  # the corner stops
         return True
 
 
@@ -52,8 +64,17 @@ def board(monkeypatch):
     return make
 
 
+@pytest.fixture
+def arm(monkeypatch):
+    """The mock follower, starting at all zeros, with the control-rate sleeps skipped."""
+    monkeypatch.setattr(io.time, "sleep", lambda s: None)
+    io.connect(mock=True)
+    yield io.robot()
+    io.disconnect()
+
+
 DOCK = drive.find_tag(scene(y=DOCK_Y))
-POSES = {name: np.full(6, float(i)) for i, name in enumerate(drive.STROKE)}
+POSES = {name: np.full(6, 10.0 * (i + 1)) for i, name in enumerate(drive.STROKE)}
 
 
 def test_the_tag_gives_its_centre_and_size():
@@ -86,10 +107,19 @@ def test_it_strokes_until_docked_and_says_how_far_it_went(board):
     assert b.strokes == 4
 
 
-def test_it_gives_up_when_the_board_stops_moving(board):
-    b = board(step=0)
+def test_a_stuck_board_is_stroked_until_the_deadline_pressing_longer_each_time(board):
+    b = board(step=0, out_of_time=40)
     assert drive.approach(b.frame, DOCK, POSES) is None
-    assert b.strokes == drive.STALL_STROKES
+    assert b.strokes == 40
+    assert b.presses[:3] == pytest.approx([0.0, drive.PRESS_MORE_S, 2 * drive.PRESS_MORE_S])
+    assert max(b.presses) == b.presses[-1] == drive.PRESS_MAX_S
+
+
+def test_a_board_that_slips_for_a_while_still_docks_and_keeps_the_press_that_worked(board):
+    b = board(y=340, step=60, stuck_for=6)
+    assert drive.approach(b.frame, DOCK, POSES) == pytest.approx(40, rel=0.03)
+    assert b.strokes == 10
+    assert b.presses[6:] == [drive.PRESS_MAX_S] * 4
 
 
 def test_without_the_tag_it_trusts_the_corner_stops(board):
@@ -98,9 +128,15 @@ def test_without_the_tag_it_trusts_the_corner_stops(board):
     assert b.strokes == drive.BLIND_STROKES
 
 
+def test_losing_sight_of_a_far_tag_once_is_not_a_docking(board):
+    b = board(step=0, hidden_after=(drive.BLIND_STROKES + 2,), out_of_time=drive.BLIND_STROKES + 5)
+    assert drive.approach(b.frame, DOCK, POSES) is None
+    assert b.strokes == drive.BLIND_STROKES + 5
+
+
 def test_a_fired_deadline_stops_before_any_move(monkeypatch):
     moves = []
-    monkeypatch.setattr(drive.io, "move_to", lambda pose, seconds: moves.append(pose))
+    monkeypatch.setattr(drive.io, "move_to", lambda *move: moves.append(move))
     deadline.abort.set()
     try:
         assert drive.approach(Board().frame, DOCK, POSES) is None
@@ -109,11 +145,41 @@ def test_a_fired_deadline_stops_before_any_move(monkeypatch):
     assert moves == []
 
 
-def test_a_stroke_is_reach_touch_drag_lift(monkeypatch):
+def test_a_stroke_is_reach_touch_drag_lift_each_left_four_degrees_out(arm, monkeypatch):
     moves = []
-    monkeypatch.setattr(drive.io, "move_to", lambda pose, seconds: moves.append(pose[0]))
+    monkeypatch.setattr(drive.io, "move_to", lambda pose, seconds, tolerance_deg: moves.append((pose[0], tolerance_deg)))
     assert drive.one_stroke(POSES)
-    assert moves == [0.0, 1.0, 2.0, 3.0]
+    assert moves == [(10.0, 4.0), (20.0, 4.0), (30.0, 4.0), (40.0, 4.0)]
+
+
+def test_a_move_gets_twice_the_time_its_distance_takes_at_the_measured_speed(arm):
+    speed = drive.ARM_SPEED_PER_DEG * io.MAX_STEP_DEG  # normalized units per second
+    assert drive._seconds_for(np.array([0.0, 1.5 * speed, 10.0, 0.0, 0.0, 0.0])) == pytest.approx(3.0)
+    assert drive._seconds_for(np.full(6, 1.0)) == drive.MIN_MOVE_S
+
+
+def test_a_longer_press_keeps_pushing_on_the_floor(arm):
+    assert drive.one_stroke(POSES, press_s=0.3)
+    at_touch = sum(np.array_equal(command, POSES["drive_touch"]) for command in arm.commands)
+    assert at_touch >= round(0.3 * io.CONTROL_HZ)
+    assert io.within(POSES["drive_lift"], drive.ARRIVE_TOLERANCE_DEG).all()
+
+
+def test_a_stroke_begun_before_the_deadline_still_ends_lifted_off_the_floor(arm, monkeypatch):
+    move_to = io.move_to
+
+    def deadline_fires_on_the_floor(pose, seconds, tolerance_deg):
+        if pose is POSES["drive_touch"]:
+            deadline.abort.set()
+        return move_to(pose, seconds, tolerance_deg)
+
+    monkeypatch.setattr(drive.io, "move_to", deadline_fires_on_the_floor)
+    try:
+        assert drive.one_stroke(POSES)
+        assert io.within(POSES["drive_lift"], drive.ARRIVE_TOLERANCE_DEG).all()
+        assert not drive.one_stroke(POSES)
+    finally:
+        deadline.abort.clear()
 
 
 def test_e_stops_a_stroke():
@@ -153,11 +219,29 @@ def test_run_once_drives_blind_without_a_taught_dock_then_goes_home(tmp_path, mo
     waypoints.write_text(yaml.safe_dump(poses))
     monkeypatch.setattr(io, "connect", lambda **kw: setattr(io, "_robot", io.MockRobot()) or io._robot.connect())
     monkeypatch.setattr(io.time, "sleep", lambda s: None)
-    monkeypatch.setattr(drive, "_top_frame", lambda: np.full((480, 640, 3), 255, np.uint8))  # no tag in view
+    monkeypatch.setattr(drive, "_top_frame", lambda: pytest.fail("no dock is taught: the camera stays shut"))
     monkeypatch.setattr(io, "disconnect", lambda: None)  # keep the mock arm to read where it ended
     cm = drive.run_once(dock_path=tmp_path / "missing.yaml", waypoints=waypoints)
     assert cm == drive.PLANNED_CM  # blind strokes into the corner stops
     assert np.allclose(io.observe(), 0)  # ends at home
+
+
+def test_run_once_stops_at_its_deadline_short_of_the_dock_then_goes_home(tmp_path, monkeypatch):
+    import yaml
+
+    waypoints, dock = tmp_path / "waypoints.yaml", tmp_path / "dock.yaml"
+    poses = {name: [0, 10, 10, 0, 0, 0] for name in drive.STROKE} | {"home": [0, 0, 0, 0, 0, 0]}
+    waypoints.write_text(yaml.safe_dump(poses))
+    drive.save_dock(DOCK, dock)
+    far = scene(y=340)
+    monkeypatch.setattr(io, "connect", lambda **kw: setattr(io, "_robot", io.MockRobot()) or io._robot.connect())
+    monkeypatch.setattr(io.time, "sleep", lambda s: None)
+    monkeypatch.setattr(drive, "_top_frame", lambda: far)  # the board never moves
+    monkeypatch.setattr(io, "disconnect", lambda: None)
+    monkeypatch.setattr(drive, "RUN_S", 0.2)
+    assert drive.run_once(dock_path=dock, waypoints=waypoints) is None
+    assert np.allclose(io.observe(), 0)
+    assert not deadline.expired()
 
 
 def test_typical_stroke_is_a_real_recorded_stroke_near_the_average():
