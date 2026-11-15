@@ -13,6 +13,10 @@ DOING = {
 BOWL = {"perfect": "purple", "defective": "orange"}
 
 
+def _a(name: str) -> str:
+    return ("an " if name[0] in "aeiou" else "a ") + name
+
+
 def _n(x: float) -> str:
     return f"{x:.2f}"
 
@@ -35,7 +39,14 @@ def answer(meaning: str, facts: dict) -> str:
     look = _last_look(facts)
     obstacles = facts.get("obstacles", 0)
     if meaning == "see":
-        parts = [f"Right now I'm {doing}."]
+        parts = []
+        sight = facts.get("sight")
+        if sight and sight["name"] != "unknown":
+            parts.append(f"I can see {_a(sight['name'])} in front of my camera.")
+        elif sight:
+            parts.append("There's something in front of my camera I don't recognise"
+                         + (f". My best guess is {_a(sight['guess'])}." if sight.get("guess") else "."))
+        parts.append(f"Right now I'm {doing}.")
         parts.append(f"{look[0].upper()}{look[1:]}." if look else "I haven't inspected a brick yet.")
         if obstacles:
             parts.append("There's also something on the plates that isn't a brick, so I'm leaving it alone.")

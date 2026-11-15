@@ -28,3 +28,10 @@ def test_doing_who_and_unknown():
     assert answer("doing", BUSY) == "I'm putting a brick in its bowl."
     assert answer("who", FRESH).startswith("I'm Pix.")
     assert answer("unknown", FRESH).startswith("Sorry, I didn't catch that.")
+
+
+def test_what_do_you_see_leads_with_what_the_camera_shows():
+    known = dict(BUSY, sight={"name": "orange bowl", "guess": None})
+    assert answer("see", known).startswith("I can see an orange bowl in front of my camera. Right now I'm")
+    unknown = dict(FRESH, sight={"name": "unknown", "guess": "mug"})
+    assert answer("see", unknown).startswith("There's something in front of my camera I don't recognise. My best guess is a mug.")

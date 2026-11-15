@@ -89,6 +89,25 @@ Base at the parked spot. Torque goes off: **hold the arm** before pressing Enter
 
 Saliha's real-brick capture, then `make rebaseline` (writes the model `config/models.yaml` points at).
 
+## 5b. Pix's eyes: recognising objects (wrist camera)
+
+Once per laptop (downloads CLIP, ~600 MB; converts it to OpenVINO):
+```bash
+.venv/bin/python -m narrator.vision build
+.venv/bin/python -m narrator.vision check --cam wrist     # prints what it sees twice a second; Ctrl+C to stop
+```
+Then train it on our own objects, all on this laptop. About 20 photos each, moving the object a little between shots
+(the command takes them every 0.5 s):
+```bash
+.venv/bin/python -m narrator.vision capture brick --cam wrist
+.venv/bin/python -m narrator.vision capture plate --cam wrist
+.venv/bin/python -m narrator.vision capture "purple bowl" --cam wrist
+.venv/bin/python -m narrator.vision capture "orange bowl" --cam wrist
+.venv/bin/python -m narrator.vision capture unknown --cam wrist    # mug, hand, anything else: mix them
+.venv/bin/python -m narrator.vision train                          # seconds; prints the held-out score
+```
+`run.py` picks it up on its own: "Hey Pix, what do you see now?" starts with what the wrist camera shows.
+
 ## 6. The MVP gate
 
 Energy per brick is logged by every real run (an `ENERGY` row and a log line). The power counter is root-only and

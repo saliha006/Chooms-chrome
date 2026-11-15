@@ -64,6 +64,7 @@ class Cell:
         self.sorted = 0
         self.tally = {"perfect": 0, "defective": 0, "rechecked": 0}  # for the spoken run summary
         self.decided: str | None = None  # the last brick's final label, for "Hey Pix, why that bowl?"
+        self.look: Callable[[], object] | None = None  # narrator.vision: what the wrist camera shows now (a Sight)
         self.next_brick = 1
         self.mode = "mock"
         self.pause_on_help = True  # False without a window (--headless): nobody can press P, so stop instead
@@ -140,7 +141,14 @@ class Cell:
         """What Pix knows right now, for its spoken answers (narrator/answers.py). Read from the listener thread:
         each value is read once, so an answer may mix two moments a few ms apart, never a half-written value."""
         signal = self.last_signal
+        sight = None
+        if self.look is not None:
+            try:
+                sight = self.look()
+            except Exception as exc:  # camera or model hiccup: answer from the other facts
+                _log.info("couldn't look (%s)", type(exc).__name__)
         return {
+            "sight": None if sight is None else {"name": sight.name, "guess": sight.guess},
             "state": self.state, "sorted": self.sorted, "tally": dict(self.tally), "decided": self.decided,
             "obstacles": len(getattr(self.locator, "obstacles", [])),
             "signal": None if signal is None else {"label": signal.label, "score": signal.score, "t_low": signal.t_low,
@@ -470,12 +478,25 @@ def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False)
     cell.finale = lambda: dance(poses["home"])
     if base:
         use_base(cell, capture)
+    cell.look = vision_look(capture)
     cell.bowl_check = bowl_checker(scene)
     # Honesty guardrail: the screen and the log always say what moved the arm.
     cell.mode = "pick: {} | place: {}".format(
         *("scripted" if p in scripted else f"{needed[p]} on {loaded[p][1]}" for p in ("pick", "place")))
     _log.info(cell.mode)
     return cell
+
+
+def vision_look(capture) -> Callable[[], object] | None:
+    """Pix's eyes for "what do you see?": the wrist camera through narrator.vision. None until it has been built."""
+    from narrator import vision
+
+    if not (vision.MODEL_DIR / "clip_image.xml").exists():
+        _log.info("narrator.vision not built (python -m narrator.vision build): Pix answers from the cell's facts only")
+        return None
+    recognizer = vision.Recognizer()
+    _log.info("Pix's eyes: CLIP on %s, %s", recognizer.device, "trained classifier" if recognizer.probe else "zero-shot")
+    return lambda: recognizer.recognise(capture.frame("wrist"))
 
 
 def use_base(cell: Cell, capture) -> None:

@@ -384,3 +384,17 @@ def test_no_energy_row_without_a_power_counter(make_cell, tmp_path, monkeypatch)
     cell.run()
     telemetry.stop()
     assert "ENERGY" not in events.read_text() and cell.sorted == 1
+
+
+def test_facts_include_what_pix_sees_and_survive_a_camera_failure(make_cell):
+    from narrator.vision import Sight
+
+    cell, _ = make_cell(("perfect",))
+    cell.look = lambda: Sight("unknown", 0.7, "mug")
+    assert cell.facts()["sight"] == {"name": "unknown", "guess": "mug"}
+
+    def broken():
+        raise TimeoutError("no wrist frame")
+
+    cell.look = broken
+    assert cell.facts()["sight"] is None
