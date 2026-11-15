@@ -72,10 +72,10 @@ def test_real_connect_needs_the_calibration():
         io.connect(port="/dev/ttyACM0", calibration=None)
 
 
-def test_speed_cap_is_five_degrees_on_every_joint(monkeypatch):
+def test_speed_cap_is_the_same_angle_on_every_joint(monkeypatch):
     monkeypatch.setattr(io, "_per_degree", np.array([2.0, 1.0, 1.0, 1.0, 0.5, 1.0]))
     step = io.clamp_step(np.zeros(6), np.full(6, 50.0))
-    assert step.tolist() == [10.0, 5.0, 5.0, 5.0, 2.5, 5.0]
+    assert step.tolist() == (io.MAX_STEP_DEG * np.array([2.0, 1.0, 1.0, 1.0, 0.5, 1.0])).tolist()
 
 
 class Flaky(io.MockRobot):

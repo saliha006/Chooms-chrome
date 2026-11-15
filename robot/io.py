@@ -30,7 +30,7 @@ GRIPPER = JOINTS.index("gripper")
 # Normalized limits = the calibrated range of each joint (gripper 0-100). Safety, PRD §9.
 JOINT_MIN = np.array([-100.0, -100.0, -100.0, -100.0, -100.0, 0.0])
 JOINT_MAX = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 100.0])
-MAX_STEP_DEG = 5.0  # speed cap: largest change per joint per act() call (150 deg/s at 30 Hz). TUNE with the arm watched
+MAX_STEP_DEG = 7.0  # speed cap: largest change per joint per act() call (210 deg/s at 30 Hz); raised from 5 at the station (Saliha, 06:40)
 TICKS_PER_DEGREE = 4095 / 360  # the driver's own degree convention
 
 # Shared by the learned and scripted movers, so a tune on the arm changes one place. TUNE (PRD v2.5 N8).

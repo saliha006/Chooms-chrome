@@ -37,7 +37,7 @@ def test_poses_stay_inside_joint_limits():
 def test_dance_ends_at_home_and_visits_both_sides(mock_arm):
     assert dance.dance(HOME, half_period_s=2.0)
     pans = [cmd[dance.PAN] for cmd in mock_arm.commands]
-    assert max(pans) == pytest.approx(25) and min(pans) == pytest.approx(-25)
+    assert max(pans) == pytest.approx(25, abs=2) and min(pans) == pytest.approx(-25, abs=2)  # move_to arrives within 2°
     assert np.allclose(io.observe(), HOME)
 
 
