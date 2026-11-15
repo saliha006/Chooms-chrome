@@ -35,21 +35,23 @@ def crop() -> tuple[int, int, int] | None:
 
 
 def lock_exposure(cam: dict, box) -> int:
-    """Manual exposure chosen by bisection so the crop's mean brightness is near TARGET_BRIGHTNESS; fixed white balance."""
+    """Fixed 30 ms exposure (longer drops the camera below the 30 fps the policies record at) and white balance,
+    then gain chosen by bisection so the crop's mean brightness is near TARGET_BRIGHTNESS."""
     def v4l2(**controls):
         subprocess.run(["v4l2-ctl", "-d", cam["path"], "--set-ctrl", ",".join(f"{k}={v}" for k, v in controls.items())], check=True)
-    v4l2(white_balance_automatic=0, white_balance_temperature=4600, auto_exposure=1, exposure_dynamic_framerate=0)
-    low, high = 1, 2000
-    for _ in range(9):
-        mid = (low + high) // 2
-        v4l2(exposure_time_absolute=mid)
+    v4l2(white_balance_automatic=0, white_balance_temperature=4600, auto_exposure=1, exposure_dynamic_framerate=0,
+         exposure_time_absolute=300)
+    low, high = 0, 100
+    for _ in range(7):
+        gain = (low + high) // 2
+        v4l2(gain=gain)
         cap = open_camera(cam["path"], cam.get("fourcc"))
         frames = [cap.read()[1] for _ in range(8)]
         cap.release()
         brightness = float(square_crop(frames[-1], box).mean())
-        low, high = (mid, high) if brightness < TARGET_BRIGHTNESS else (low, mid)
-    print(f"exposure locked at {mid} (crop brightness {brightness:.0f}), white balance 4600 K")
-    return mid
+        low, high = (gain, high) if brightness < TARGET_BRIGHTNESS else (low, gain)
+    print(f"locked: exposure 30 ms, gain {gain} (crop brightness {brightness:.0f}), white balance 4600 K")
+    return gain
 
 
 def main() -> None:
