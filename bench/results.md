@@ -1,8 +1,52 @@
 # Benchmark
 
+## Real-brick detector (2026-11-15)
+
+PatchCore (Anomalib 2.7.0) trained on **real Duplo bricks** seen by the wrist camera, crop [140, 80, 400]. Same laptop as below (Core Ultra X9 388H, OpenVINO 2026.4.1, on mains). Small sample: 2 good bricks (24 images) and 4 defective bricks with marker crosses (42 images), so treat the accuracy rows as a first result, not a rate.
+
+### Accuracy, brick-level held-out (`runs/evaluate/patchcore/report.md`, `runs/evaluate/padim/report.md`)
+
+| metric | PatchCore | PaDiM |
+|---|---|---|
+| AUROC (held-out defectives vs out-of-fold good) | 1.000 | 0.431 |
+| False alarms (good scored defective) | 0/24 (at most 11.7% at 95%) | 1/24 (at most 18.3%) |
+| Held-out defectives caught at t_high | 18/18 (81–100% at 95%) | 0/18 (0–19%) |
+| Good bricks sent to a second look | 1/24 | 17/24 |
+| t_low / t_high | 65.38 / 67.15 (`perception/thresholds.yaml`) | 155.09 / 209.60 |
+
+Two defective bricks set t_high; the other two are only scored. PatchCore is the detector; PaDiM does not separate real bricks.
+
+### Export
+
+PatchCore's ONNX export fails in Anomalib (issue #3883), so the IR is converted straight from PyTorch with `perception/export_direct.py`. On real photos the OpenVINO scores equal Anomalib's to 2 decimals.
+
+### Latency, energy and operators (`python -m bench.benchmark --exports runs/detector/ov --n 100 --idle-s 20`, 07:24, idle 2.1 W)
+
+`patchcore` is the deployed IR `runs/detector/ov/patchcore/model.xml`; `patchcore_fp32` is the FP32 conversion beside it. n=100 warm runs, batch 1, random input.
+
+| model | device | p50_ms | p95_ms | size_mb | compile_s | cached_compile_s | mj_per_inference | net_mj_per_inference | watts | max_c |
+|---|---|---|---|---|---|---|---|---|---|---|
+| patchcore | CPU | 36.48 | 39.60 | 114.48 | 0.13 | 0.05 | 1448.21 | 1372.09 | 39.73 | 70.00 |
+| patchcore | GPU | 2.94 | 2.97 | 114.48 | 0.25 | 0.10 | 95.23 | 89.06 | 32.20 | 60.05 |
+| patchcore | NPU | 28.94 | 29.44 | 114.48 | 0.02 | 0.02 | 266.08 | 205.68 | 9.20 | 95.05 |
+| patchcore_fp32 | CPU | 36.23 | 40.08 | 114.48 | 0.11 | 0.05 | 1466.32 | 1389.45 | 39.84 | 78.05 |
+| patchcore_fp32 | GPU | 2.93 | 3.09 | 114.48 | 0.63 | 0.10 | 99.28 | 93.09 | 33.50 | 72.05 |
+| patchcore_fp32 | NPU | 28.92 | 29.37 | 114.48 | 9.16 | 0.02 | 289.99 | 229.72 | 10.05 | 96.05 |
+
+| model | device | operators | runnable | not supported |
+|---|---|---|---|---|
+| patchcore | CPU / GPU / NPU | 378 | 378 | none |
+| patchcore_fp32 | CPU / GPU / NPU | 374 | 374 | none |
+
+Earlier tonight, 20 runs after warm-up on `patchcore/model.xml`: CPU p50 43.9 ms (compile 0.1 s), GPU 4.1 ms (compile 1.3 s), NPU 28.1 ms (compile 9.4 s). The 0.02 s NPU compile for `patchcore` above came after that first 9.4 s compile; the fp32 IR's first NPU compile took 9.16 s. `max_c` is the hottest zone on the laptop and carries heat from the run before (the NPU rows follow the CPU and GPU rows).
+
+## Stand-in measurements (2026-11-14, synthetic bricks)
+
+Everything below was measured on the **stand-in PaDiM model trained on synthetic bricks** and a random-weight ACT probe. The hardware rows are real; the model is not the real-brick detector.
+
 2026-11-14 16:59 · devices CPU, GPU, NPU · n=100 warm runs, batch 1 · idle 2.1 W
 
-**Read this first.** Intel laptop (Core Ultra X9 388H, Ubuntu 26.04, kernel 7.0.0-38, OpenVINO 2026.4.1, NPU driver 1.38.0), on mains power. The detector is PaDiM trained on **stand-in synthetic bricks**: latency, size, compile, operator and thermal rows are real measurements of this hardware; the final table is re-run on the real-brick model. An earlier run on battery (16:44) gave the same latencies within a few percent. `benchmark_app -hint latency` cross-check on padim/int8, median: CPU 8.70 ms, GPU 0.92 ms, NPU 6.57 ms. Energy = package energy (RAPL) per inference; net = minus idle. `max_c` / max °C = the hottest thermal zone on the laptop, so it carries heat over from the run before.
+**Stand-in model.** Intel laptop (Core Ultra X9 388H, Ubuntu 26.04, kernel 7.0.0-38, OpenVINO 2026.4.1, NPU driver 1.38.0), on mains power. The detector is PaDiM trained on **stand-in synthetic bricks**: latency, size, compile, operator and thermal rows are real measurements of this hardware; the final table is re-run on the real-brick model. An earlier run on battery (16:44) gave the same latencies within a few percent. `benchmark_app -hint latency` cross-check on padim/int8, median: CPU 8.70 ms, GPU 0.92 ms, NPU 6.57 ms. Energy = package energy (RAPL) per inference; net = minus idle. `max_c` / max °C = the hottest thermal zone on the laptop, so it carries heat over from the run before.
 
 | model | device | p50_ms | p95_ms | size_mb | compile_s | cached_compile_s | mj_per_inference | net_mj_per_inference | watts | max_c |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -20,7 +64,7 @@
 | padim/int8 + in-graph preprocessing | GPU | 0.95 | 1.78 | 47.04 | 0.15 | 0.03 | 33.73 | 31.44 | 31.36 | 79.05 |
 | padim/int8 + in-graph preprocessing | NPU | 7.33 | 9.23 | 47.04 | 0.02 | 0.05 | 82.43 | 66.30 | 10.90 | 80.05 |
 
-## Operator support
+### Operator support (stand-in PaDiM)
 
 | model | device | operators | runnable | not supported (type x count) |
 |---|---|---|---|---|
@@ -37,7 +81,7 @@
 | padim/int8 + in-graph preprocessing | GPU | 353 | 353 | none |
 | padim/int8 + in-graph preprocessing | NPU | 353 | 353 | none |
 
-## Sustained load (2026-11-14 17:16 · `runs/standin/export/padim/int8/weights/openvino/model.xml` · 300 s per device)
+### Sustained load, stand-in PaDiM (2026-11-14 17:16 · `runs/standin/export/padim/int8/weights/openvino/model.xml` · 300 s per device)
 
 | device | seconds | inferences | first p50 ms | last p50 ms | slowdown | watts | max °C |
 |---|---|---|---|---|---|---|---|
@@ -47,7 +91,7 @@
 
 The sustained rows ran one after the other with 60 s pauses, so the NPU row's 86 °C is heat left over from the CPU run, not the NPU's own.
 
-## ACT policy compile probe (2026-11-14 17:20, `bench/act_npu_probe.py`)
+### ACT policy compile probe, random weights (2026-11-14 17:20, `bench/act_npu_probe.py`)
 
 Studio's ACT with our inputs (6 joints; `top`, `inspect`, `wrist` cameras, resized to 384×384 by Studio's preprocessing), **random weights** (whether a graph compiles does not depend on the weights), exported with `policy.export(backend="openvino")` in 6.2 s, IR 133 MB (FP32). 30 runs after one warm-up:
 
