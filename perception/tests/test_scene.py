@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import pytest
 
-from perception.scene import SceneLocator, Zone, analyse, brick_in_bowl, brick_px, most_isolated, tall_object
+from perception.scene import SceneLocator, Zone, analyse, brick_angle, brick_in_bowl, brick_px, most_isolated, tall_object
 
 PX_PER_CM = 30
 ORIGIN = (100, 60)  # zone top-left in pixels; the zone is 10 x 10 cm = 300 x 300 px
@@ -113,3 +113,15 @@ def test_brick_px_ignores_grey_and_specks():
     cv2.rectangle(img, (50, 50), (300, 300), (90, 90, 90), -1)  # grey object: not brick-coloured
     cv2.rectangle(img, (500, 400), (505, 405), (30, 30, 210), -1)  # a red speck under min_area_px
     assert brick_px(img) is None
+
+
+@pytest.mark.parametrize("tilt", [-60, -30, 0, 30, 60, 89])
+def test_brick_angle_follows_the_long_side(tilt):
+    img = table_image()
+    corners = cv2.boxPoints(((320, 240), (120, 60), tilt)).astype(np.int32)
+    cv2.fillPoly(img, [corners], (0, 120, 240))
+    assert brick_angle(img) == pytest.approx((tilt + 90) % 180 - 90, abs=2)
+
+
+def test_brick_angle_is_none_without_a_brick():
+    assert brick_angle(table_image()) is None

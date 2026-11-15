@@ -105,15 +105,32 @@ def analyse(top_bgr: np.ndarray, zone: Zone, params: SceneParams = SceneParams()
     return scene
 
 
+def _largest_brick(frame_bgr: np.ndarray, min_area_px: float, params: SceneParams) -> np.ndarray | None:
+    contours = [c for c in _colour_contours(frame_bgr, params) if cv2.contourArea(c) >= min_area_px]
+    return max(contours, key=cv2.contourArea) if contours else None
+
+
 def brick_px(frame_bgr: np.ndarray, min_area_px: float = 200, params: SceneParams = SceneParams()) -> tuple[int, int] | None:
     """Pixel (x, y) centre of the largest brick-coloured blob in a wrist-camera frame, for a visual-servo pick.
     None when nothing saturated is at least min_area_px (TUNE) big."""
-    contours = [c for c in _colour_contours(frame_bgr, params) if cv2.contourArea(c) >= min_area_px]
-    if not contours:
+    brick = _largest_brick(frame_bgr, min_area_px, params)
+    if brick is None:
         return None
-    m = cv2.moments(max(contours, key=cv2.contourArea))
+    m = cv2.moments(brick)
     return round(m["m10"] / m["m00"]), round(m["m01"] / m["m00"])
 
+
+
+def brick_angle(frame_bgr: np.ndarray, min_area_px: float = 200, params: SceneParams = SceneParams()) -> float | None:
+    """Angle in degrees, in [-90, 90), of the largest brick's long side against the image x axis, for lining the
+    jaws up before a grasp. None when nothing saturated is at least min_area_px (TUNE) big."""
+    brick = _largest_brick(frame_bgr, min_area_px, params)
+    if brick is None:
+        return None
+    _, (w, h), angle = cv2.minAreaRect(brick)
+    if h > w:  # minAreaRect's angle belongs to its first side; turn it onto the long side
+        angle += 90
+    return (angle + 90) % 180 - 90
 
 def most_isolated(scene: Scene) -> Blob | None:
     """The brick farthest from every other blob: the safest one to grasp in a pile."""
