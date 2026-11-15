@@ -1,5 +1,20 @@
 # Benchmark
 
+## INT8 quantisation of the real-brick PatchCore (2026-11-15 07:55)
+
+NNCF post-training quantisation (`nncf.quantize`, MIXED preset, calibrated on the 24 good photos) of `runs/detector/ov/patchcore/model.xml`, compared with the deployed FP32 IR on the real photos (CPU):
+
+| | FP32 (deployed) | INT8 |
+|---|---|---|
+| Model size | 114 MB | 29 MB |
+| p50 CPU / GPU / NPU | 43.9 / 4.1 / 28.1 ms | 25.5 / 3.0 / 27.2 ms |
+| Good photos score | 21.6–23.6 | 23.4–34.2 |
+| Defective photos score | 66.0–76.9 | 60.0–69.6 |
+| Gap between the two | 42.3 | 25.9 |
+| Same verdict as FP32 at the FP32 thresholds | — | 8 of 20 sampled photos |
+
+INT8 keeps good and defective apart (good photos are in-sample for both), but shifts scores by up to 9 points, so the FP32 thresholds don't carry over. Not deployed: it needs its own held-out threshold evaluation first (`perception.evaluate` on INT8 scores). The demo runs FP32.
+
 ## Real-brick detector (2026-11-15)
 
 PatchCore (Anomalib 2.7.0) trained on **real Duplo bricks** seen by the wrist camera, crop [140, 80, 400]. Same laptop as below (Core Ultra X9 388H, OpenVINO 2026.4.1, on mains). Small sample: 2 good bricks (24 images) and 4 defective bricks with marker crosses (42 images), so treat the accuracy rows as a first result, not a rate.
