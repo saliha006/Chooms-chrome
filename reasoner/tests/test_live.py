@@ -31,6 +31,9 @@ def wait_for(cond, seconds=2.0):
     ("score 0.99 is high", "perfect", False),
     ("taking a second look", "uncertain", True),
     ("into the purple bowl", "uncertain", False),
+    ("an orange brick, score 0.12, so the purple bowl", "perfect", True),
+    ("a purple brick with a mark, orange bowl", "defective", True),
+    ("an orange brick, taking a second look", "uncertain", True),
 ])
 def test_grounding(line, label, ok):
     assert grounded(line, signal(label, 0.12 if label == "perfect" else 0.7)) is ok
