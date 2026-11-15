@@ -329,13 +329,13 @@
 - **Evidence:** OpenVINO IR 176 MB, conversion 5.6 s, 18.1 ms per frame on Harry's laptop CPU; held-out accuracy on our photos: TBD (printed by `train`).
 - **Pitch line:** "Ask Pix what it sees: it recognises the objects on its table with a model we trained on this laptop, then tells you."
 
-### D37 · Robotics perception · A grasp must be seen on the plate camera as well as the gripper camera — Status: Built (unit tests only; not tried on the arm) · Owner: @saliha · Updated: 2026-11-15 10:05
-- **Decision:** the `inspect` camera now looks down at the plate the bricks start on. `perception/plate.py` finds the bricks there by colour and reports which left the plate; `run.py` photographs the plate before each grasp attempt, and a grasp counts as held only when the gripper-camera check (`perception/grasp.py`) and the plate camera both agree. Without a `plate:` region in `config/scene.yaml` the old single check applies.
-- **Why:** a held brick reads like an empty gripper by the gripper position alone (D14-era note in `robot/io.py`), and one camera can be fooled by the held brick's own look; a brick that was on the plate and is gone is independent evidence, and the existing retry (`GRASP_ATTEMPTS`) then does the "keep trying" part.
-- **Alternatives rejected:** a live closed loop that retries until grasped (the state machine's deadlines and verification are on the never-cut list, so the attempts stay bounded); steering SmolVLA with bowl pixel coordinates (it takes only the text instruction; pixel targets mean retraining or the scripted placer, too late for submission).
-- **Trade-off / risk:** if the arm hides the plate at the inspect pose, a real grasp reads as not held and the run retries, then asks for help. Cut by deleting the `plate:` line.
-- **Evidence:** TBD (live trial: `python -m perception.plate`, then `VERIFY_GRASP` outcomes in the run log).
-- **Pitch line:** the robot checks a grasp from two cameras, the gripper's and the table's, and only counts a brick it saw leave the plate.
+### D37 · Robotics perception · Plate-camera grasp check: built, tried once, switched off — Status: Dropped (for this camera position) · Owner: @saliha · Updated: 2026-11-15 10:12
+- **Decision:** `perception/plate.py` finds bricks on the `inspect` camera and reports which left the plate; `run.py` could require that on top of the gripper-camera check. It is switched off (`plate:` commented out in `config/scene.yaml`), and a plate photo with no bricks can no longer veto a grasp.
+- **Why dropped:** on the 10:08 station run the inspect camera showed the arm and the red jaws, not the plate, so the check had nothing to compare and vetoed three real grasps the gripper camera saw (log line `gripper camera sees a brick, plate None`).
+- **Alternatives rejected:** a live closed loop retrying until grasped (deadlines and bounded attempts stay); steering SmolVLA with bowl pixel coordinates (it takes only the text instruction).
+- **Trade-off / risk:** the grasp check is the gripper camera alone, as before. The code stays for a camera that looks at the plate.
+- **Evidence:** the 10:08 run log; the first run at 10:02 also needed a second attempt, so the pick itself still misses often. TBD (a pick success rate from the 20-trial log).
+- **Pitch line:** we tried a second camera on the grasp, measured that it hurt at this camera position, and switched it off rather than ship it.
 
 ### D38 · Voice · Pix understands "seeing" and a question after a bare "Hey Pix" — Status: Built (unit tests; heard on the station log 09:07 before the fix) · Owner: @saliha · Updated: 2026-11-15 10:05
 - **Decision:** the phrase check matches word stems (`see` hears "seeing", `sort` hears "sorted") and a bare "Hey, Pix" opens an 8 s window in which the next sentence counts as addressed to Pix.
