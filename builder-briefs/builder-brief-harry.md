@@ -122,6 +122,7 @@ Goal: the whole application runs in `--mock` mode, so on Saturday only the real 
 - @nate: `fallback/scripted.py` replays waypoints through Nate's `robot/io.py`; learned policies arrive through `Mover`; `--scripted pick,place` stays available.
 
 ## 4. Done log (newest first)
+- 2026-11-15 02:20 · Pix's eyes (`narrator/vision.py`, CLIP + OpenVINO, zero-shot; capture/train for local training) + drive wired behind `--base` + energy per brick per run; 372 tests
 - 2026-11-14 23:30 · Pix (wake word, five questions answered from facts) + trigger C (cowboy exclamation on calm defective verdicts); 342 tests; freeze lifted
 - 2026-11-14 20:20 · box-room docs (demo script, station sheet, README), measured device numbers in submission + README, trial report rehearsed (`bench.trials` on a 20-brick log); `main` `f1d9279`
 - 2026-11-14 19:50 · stage narration + parallel live lines + credit floor + follower port/calibration · 220 tests; `main` `13a5239`

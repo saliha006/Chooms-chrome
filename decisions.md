@@ -319,6 +319,14 @@
 - **Evidence:** `robot/drive.py` (`73fd08a`) with 13 tests on the mock robot and synthetic overhead frames: it docks after 4 strokes and reports 40.7 cm for a 40 cm move (scale from the tag's corners, about 2%), gives up after 2 stalled strokes, trusts the stops after 5 blind strokes, and stops on the deadline and on E. Docking runs on the real board TBD.
 - **Pitch line:** "It sees the bricks are out of reach, pulls itself over, and knows when it has arrived."
 
+### D36 · Perception for the voice · Pix names what the wrist camera sees, trained on the Intel laptop — Status: Built (zero-shot, 18 ms per frame on a CPU) / Planned (our photos, training on the Intel laptop) · Owner: @harry · Updated: 2026-11-15 02:20
+- **Decision:** a CLIP image encoder (ViT-B/32) converted to OpenVINO names the object in front of the wrist camera: our regular objects (brick, plate, purple bowl, orange bowl) or "unknown" with a best guess from everyday things. It starts zero-shot from names; a small classifier trained on our own wrist-camera photos, on the Intel laptop in seconds, replaces it. "Hey Pix, what do you see now?" leads with the answer, and ElevenLabs says it.
+- **Why:** ElevenLabs only speaks; something local has to recognise the object, offline and fast. CLIP gives a useful answer before any photo exists, and training on our own photos is the honest "trained locally on Intel" step. Anomalib stays the only defect detector (D31): this names objects, it never judges a brick.
+- **Alternatives rejected:** a COCO object detector (no "plate"/"brick"/"cowboy hat" classes we control); a local vision-language model (multi-GB, seconds per answer, GPU contention with the policies); Nemotron VL for naming (network, 2–3 s on the venue Wi-Fi); fine-tuning CLIP itself (hours, risk) instead of a classifier on its embeddings.
+- **Trade-off / risk:** zero-shot on unusual views can be wrong (a drawn red block read as "unknown, guess person"), so the photo-training step matters; it shares the GPU with the policies (one frame per question, ~tens of ms).
+- **Evidence:** OpenVINO IR 176 MB, conversion 5.6 s, 18.1 ms per frame on Harry's laptop CPU; held-out accuracy on our photos: TBD (printed by `train`).
+- **Pitch line:** "Ask Pix what it sees: it recognises the objects on its table with a model we trained on this laptop, then tells you."
+
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
 |---|---|---|
