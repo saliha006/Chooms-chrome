@@ -30,7 +30,7 @@ flowchart LR
 
     subgraph Perception
         ZONE["Zone gate + brick-or-not<br/>(top camera)"]
-        AD["Anomalib (PaDiM by default), INT8<br/>OpenVINO on the NPU"]
+        AD["Anomalib PatchCore (wrist camera)<br/>OpenVINO on the NPU"]
     end
 
     subgraph Reasoning
@@ -80,17 +80,21 @@ Still uncertain → orange bowl, flagged and said aloud.
 | Capture, state machine, serial | **CPU** | Control-critical | — |
 
 Measured on the Intel laptop (`python -m bench.benchmark`, full table in [`bench/results.md`](bench/results.md)),
-detector PaDiM INT8 trained on stand-in bricks (re-run on the real-brick model pending):
+the deployed detector is PatchCore trained on real Duplo bricks seen by the wrist camera (FP32 IR, n=100, mains):
 
-| Device | p50 per inference | Net energy per inference | Package power | 5 min at full load |
-|---|---|---|---|---|
-| GPU | 1.00 ms | 33 mJ | 31.6 W | slows to 1.43× |
-| NPU | 7.17 ms | 68 mJ | 11.2 W | holds (0.96×) |
-| CPU | 8.91 ms | 300 mJ | 34.9 W | 1.06× |
-| PyTorch on CPU (baseline) | 17.27 ms | 836 mJ | 37.9 W | — |
+| Device | p50 per inference | Net energy per inference | Package power |
+|---|---|---|---|
+| GPU | 2.94 ms | 89 mJ | 32.2 W |
+| NPU | 28.94 ms | 206 mJ | 9.2 W |
+| CPU | 36.48 ms | 1372 mJ | 39.7 W |
+
+Held-out real bricks (brick-level split, small sample): PatchCore AUROC 1.000, 0/24 false alarms, 18/18 defectives
+caught; PaDiM, the planned default, scored AUROC 0.431, so PatchCore was chosen. INT8 (NNCF) cut the IR from 114 MB
+to 29 MB and CPU latency to 25.5 ms, but shifted scores by up to 9 points, so it is not deployed without its own
+thresholds. The 5-minute sustained run (stand-in PaDiM): NPU holds its speed (0.96×), GPU slows to 1.43×.
 
 ACT (Studio export, our three cameras) compiles on the NPU in 2.3 s and runs in 8.9 ms per call (GPU 4.2 ms).
-Physical AI Studio, used to record and train the policies, is part of Intel's Robotics AI Suite. Every real run
+Intel's Physical AI Studio records our teleoperated demonstrations. Every real run
 logs its own energy, average power, peak temperature and joules per brick; energy per brick and bricks per minute
 over the 20 trials: TBD.
 
