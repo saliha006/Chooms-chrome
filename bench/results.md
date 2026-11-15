@@ -40,6 +40,30 @@ PatchCore's ONNX export fails in Anomalib (issue #3883), so the IR is converted 
 
 Earlier tonight, 20 runs after warm-up on `patchcore/model.xml`: CPU p50 43.9 ms (compile 0.1 s), GPU 4.1 ms (compile 1.3 s), NPU 28.1 ms (compile 9.4 s). The 0.02 s NPU compile for `patchcore` above came after that first 9.4 s compile; the fp32 IR's first NPU compile took 9.16 s. `max_c` is the hottest zone on the laptop and carries heat from the run before (the NPU rows follow the CPU and GPU rows).
 
+### Deployed path on the saved photos (`python -m bench.real_photos`, 07:37)
+
+The deployed IR through `perception.inspector.Inspector` on CPU, every saved photo (already the 256x256 crop, so `crop=(0, 0, 256)`). The good photos trained the deployed model, so their scores are in-sample and far lower than the out-of-fold good scores in the report above; this checks the wiring, not accuracy.
+
+| truth | n | min | median | max | perfect | uncertain | defective |
+|---|---|---|---|---|---|---|---|
+| good | 24 | 21.60 | 22.18 | 23.65 | 24 | 0 | 0 |
+| defective | 42 | 65.97 | 70.00 | 76.86 | 0 | 2 | 40 |
+
+The two uncertain photos are brick b03 (65.97 and 67.14, just under t_high 67.15). No defective photo scored perfect.
+
+## Nemotron line check on real bricks (2026-11-15)
+
+`python -m reasoner.evaluate cases.csv --timeout 8`, calm persona, live NVIDIA API (`nvidia/nemotron-3.5-super-vl-120b-a12b`), 07:38. 16 real photos picked from the run above: 7 perfect, 7 defective, 2 uncertain (the only two), spread over the bricks. Labels and scores come from the deployed detector; consistency is the robot's own checker (`reasoner.live.grounded`).
+
+| | First run (07:37) | After the checker fix (07:39) |
+|---|---|---|
+| Lines consistent with the verdict | 12 of 16 (75%, 95% interval 48-93%) | 16 of 16 (100%, 95% interval 79-100%) |
+| perfect / defective / uncertain | 3 of 7 / 7 of 7 / 2 of 2 | 7 of 7 / 7 of 7 / 2 of 2 |
+| Requests that failed or timed out | 0 | 0 |
+| Time to a line | p50 1939 ms, p95 4474 ms | p50 1980 ms, p95 2592 ms |
+
+The four "contradictions" in the first run were all orange good bricks, and each line was right ("I see an orange brick ... score of 21.60 is well below the low threshold of 65.38 ... purple bowl"). The checker rejected any line containing "orange" for a perfect verdict, so it was flagging the brick's colour, not a wrong bowl. It now looks for "orange bowl" / "purple bowl". On the robot the same bug would have replaced every live line about a good orange brick with the template. The first run's p95 (4.5 s) is over the robot's 4 s wait; the second run's is 2.6 s. Small sample, one persona.
+
 ## Stand-in measurements (2026-11-14, synthetic bricks)
 
 Everything below was measured on the **stand-in PaDiM model trained on synthetic bricks** and a random-weight ACT probe. The hardware rows are real; the model is not the real-brick detector.

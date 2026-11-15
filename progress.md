@@ -124,6 +124,7 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 6. Read your brief's `▶ Current tasks`, then the 📌 Open board above.
 
 ## 📊 Latest (volatile facts live only here)
+- **Intel laptop (2026-11-15 07:43):** `main` @ `66f673d`: 389 pass with `-m "not slow"` (1 skipped), mock sorts 5. Real photos through the deployed Inspector: good 21.6–23.7 (in-sample), defective 66.0–76.9, 2/42 uncertain. Nemotron real-brick line check 16/16 (`bench/results.md`).
 - **tests (2026-11-14 17:25):** `main` @ `2e38418`: 277 pass (same command, 3 skipped; the episode audit and colour hedge tests also run in the robot environment: 20 pass). Live Nemotron line, N5 hedge and the Nemotron line check are in; none run on real bricks yet. My `reasoner/tests/test_evaluate.py` clashed with `perception/tests/test_evaluate.py` and broke whole-suite collection on `main` for about 5 minutes (renamed `test_line_check.py`); no duplicate test basenames remain.
 - **Intel laptop (2026-11-14 17:51):** after merging everyone's `main`: 276 pass in `.venv` incl. slow (`pytest common fallback narrator telemetry policies robot perception bench reasoner ui`), 73 in `.venv-robot` (`robot policies train`); mock sorts 5. Mains power, stand-in PaDiM INT8 p50: CPU 8.9, GPU 1.0, NPU 7.2 ms. 5-minute run: NPU 0.96× (no slowdown), CPU 1.06×, GPU 1.43×. ACT probe: NPU 8.9 ms, GPU 4.2 ms, CPU 65.7 ms per call. Station: RealSense + webcam + one arm detected; wrist camera not. Pushed to GitHub 2026-11-14 18:00.
 - **Intel laptop (2026-11-14 16:58):** `main` @ `109c803`: 224 pass with `-m "not slow"` in `.venv` (229 with the slow ones in a test environment), 56 in `.venv-robot`; mock loop sorts 5 bricks. Devices CPU, GPU, NPU. PaDiM INT8 p50 (stand-in model, on battery, n=100): CPU 9.6 ms, GPU 1.0 ms, NPU 7.2 ms; PyTorch CPU 18.4 ms; all operators run on all three devices. Rebaseline parts here: train 18 s, export FP16 + INT8 16 s. Full table: `bench/results.md`.
@@ -139,6 +140,13 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 ---
 
 ## Log (newest first)
+
+### 2026-11-15 07:43 — fix — Deployed detector checked on the real photos; line checker stops rejecting orange bricks; real-brick Nemotron table — @saliha [conflicts: @harry]
+- **Where:** `aiml-perception-saliha` @ `66f673d` · merged to `main`: yes
+- **Did:** `bench/real_photos.py` runs the deployed PatchCore IR through `Inspector` on all 66 saved photos (CPU): good 21.6–23.7 (in-sample, all perfect), defective 66.0–76.9 (40 defective, 2 uncertain, 0 perfect); a slow test guards it. Nemotron line check on 16 real photos: 12/16 at first, all 4 "contradictions" were correct lines about orange good bricks, because `reasoner.live.grounded` rejected any "orange" in a perfect line. It now matches "orange bowl"/"purple bowl": 16/16, p50 2.0 s, p95 2.6 s, 0 failures. Table in `bench/results.md`. 389 pass (`-m "not slow"`), mock sorts 5.
+- **Touched:** `bench/real_photos.py`, `perception/tests/test_real_photos.py`, `reasoner/live.py`, `reasoner/tests/test_live.py`, `bench/results.md`
+- **Brief task:** none
+- **⚠️ Conflicts:** @harry: live lines about a good orange brick were being rejected and replaced by the template on the robot; they will now be spoken. Nothing to change on your side.
 
 ### 2026-11-15 03:25 — docs — Pitch slides; ElevenLabs write-up, README and demo script brought up to Pix — @harry [conflicts: @saliha @nate]
 - **Where:** `main` @ `cc5dfd6` (docs) · slides: https://claude.ai/artifact/KsuECp6J2nvritHEstYSjN (private until Harry shares it)
