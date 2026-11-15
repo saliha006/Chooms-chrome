@@ -1,0 +1,11 @@
+#!/bin/sh
+# Is Harry's laptop linked as Pix's speaker and mic? Run before run.py. docs/station.md 2c
+ok=0
+for dir in speaker mic; do
+  pid=$(cat /tmp/pix-$dir.pid 2>/dev/null)
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then echo "pix $dir: linked to Harry's laptop"; else echo "pix $dir: NOT linked"; ok=1; fi
+done
+wpctl status | grep -q "\*.*Pix speaker" && echo "default output: Pix speaker" || { echo "default output is NOT the Pix speaker: wpctl set-default <id of Pix speaker>"; ok=1; }
+wpctl status | grep -q "\*.*Pix mic" && echo "default input: Pix mic" || { echo "default input is NOT the Pix mic: wpctl set-default <id of Pix mic>"; ok=1; }
+[ $ok = 0 ] || echo "Not linked: on Harry's laptop run: pythonw narrator\remote_audio\link.py"
+exit $ok

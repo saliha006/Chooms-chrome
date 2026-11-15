@@ -69,6 +69,27 @@ a mock with the arm powered and moving nearby, and watch the log: `heard '…' -
 `heard` lines from motor noise alone. Too many → raise `listen.threshold`; your sentence missed → lower it.
 The **H** key toggles the hat if the room is too loud.
 
+## 2c. Speaker and mic on Harry's laptop (the Intel laptop has no speaker)
+
+Pix talks and listens through Harry's laptop over SSH. `run.py` doesn't change: PipeWire gets two virtual
+devices, "Pix speaker (remote)" and "Pix mic (remote)", that are pipes in `/tmp`, and they become the defaults.
+
+Once, on the Intel laptop:
+```bash
+mkdir -p ~/.config/pipewire/pipewire.conf.d ~/.local/bin
+cp narrator/remote_audio/90-pix-remote-audio.conf ~/.config/pipewire/pipewire.conf.d/
+cp narrator/remote_audio/pix-audio-check ~/.local/bin/ && chmod +x ~/.local/bin/pix-audio-check
+systemctl --user restart pipewire pipewire-pulse wireplumber
+wpctl status                                    # then wpctl set-default <id> for "Pix speaker" and "Pix mic"
+```
+On Harry's laptop (needs key-based `ssh intel@10.0.41.130`, the repo `.venv` with `sounddevice`):
+```bash
+pythonw narrator\remote_audio\link.py           # stays running, reconnects on its own; log in runs/pix-audio.log
+```
+Before each run, on the Intel laptop: `pix-audio-check` (both lines "linked"). Not linked: speech plays into
+nothing and never blocks the arm; the subtitles still show it. Undo: delete the `.conf`, restart PipeWire, set the
+real devices back as defaults with `wpctl set-default`.
+
 ## 3. Arm → `config/robot.yaml`
 
 Follower only (the leader is never driven). Already set on `main`: port = the follower board's by-id path
