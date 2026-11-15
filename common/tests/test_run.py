@@ -434,3 +434,13 @@ def test_a_broken_dock_measurement_does_not_spoil_the_attempt(make_cell):
 
     cell.dock_offset = blind
     assert cell._drive_note(40.0) == "41 cm planned; 40.0 cm travelled"
+
+
+def test_placing_line_names_the_bowl_and_the_deciding_number():
+    from common.interfaces import DefectSignal
+
+    def sig(score):
+        return DefectSignal(1, "wrist", "x", score, 65.4, 67.1, None, None, "patchcore", "NPU", 1.0)
+    assert run.placing_line("purple", "perfect", sig(22.4)) == "Heading to the purple bowl: it scored 22, under my limit of 65."
+    assert run.placing_line("orange", "defective", sig(72.9)) == "Heading to the orange bowl: it scored 73, over my limit of 67."
+    assert "to be safe" in run.placing_line("orange", "uncertain", sig(66.0))

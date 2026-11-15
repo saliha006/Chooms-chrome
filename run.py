@@ -223,6 +223,8 @@ class Cell:
 
         instruction = self.rules[label]
         self.trace.append(f"decision: {instruction}")
+        bowl = "purple" if "purple" in instruction else "orange"
+        narrator.say("placing", text=placing_line(bowl, label, signal))
         with self._stage("PLACE", brick_id, note=instruction) as row:
             placed = self.placer.place(instruction)
             timed_out = deadline.expired()
@@ -231,6 +233,7 @@ class Cell:
             raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.PLACE_FAILED, instruction)
         if self.bowl_check:
             self._verify_place(brick_id, instruction, bowls_before)
+        narrator.say("placed", text=f"It's in the {bowl} bowl.")
         final = self.last_signal  # the look that settled it, after any recovery
         with self._stage("LOG", brick_id, final, label=label) as row:
             row["outcome"] = "sorted"
@@ -413,6 +416,15 @@ class Cell:
                 self.paused.clear()
                 return
             time.sleep(0.05)
+
+
+def placing_line(bowl: str, label: str, signal: DefectSignal) -> str:
+    """Said while the arm carries the brick: where it goes, and the number that decided it."""
+    if label == "perfect":
+        return f"Heading to the {bowl} bowl: it scored {signal.score:.0f}, under my limit of {signal.t_low:.0f}."
+    if label == "defective":
+        return f"Heading to the {bowl} bowl: it scored {signal.score:.0f}, over my limit of {signal.t_high:.0f}."
+    return f"Still unsure after looking again, so it goes to the {bowl} bowl to be safe."
 
 
 def spoken_numbers(signal: DefectSignal) -> dict:
