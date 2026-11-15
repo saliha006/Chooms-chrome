@@ -136,6 +136,12 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-15 03:10 — feat — Pix is funny — @harry [conflicts: none]
+- **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
+- **Did:** every cached line, live verdict, summary and spoken answer rewritten with humour: calm Pix dry and deadpan ("Cleaner than my code. Purple bowl."), cowboy Pix folksy ("More scuffs than my boots. Orange bowl."). Facts first (score, threshold, mark, bowl), joke after; verdicts choose among 2-3 wordings by score, the grip line rotates by brick; the e-stop line stays plain. 58 clips regenerated (3,409 characters), levelled to -12 dBFS. 390 tests pass.
+- **Touched:** `narrator/lines.py`, `narrator/live.py`, `narrator/answers.py`, `narrator/clips/`, `run.py`, tests
+- **Status:** open
+
 ### 2026-11-15 02:55 — feat — Pix louder, interruptible, narrates each pick unprompted; funnier cowboy lines — @harry [conflicts: none]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
 - **Did:** (1) Loudness: the calm voice measured 12.6 dB quieter than the cowboy (median RMS -26.4 vs -13.8 dBFS); every line (cached, new, live) is now levelled to -12 dBFS with a soft ceiling (`narrator/loudness.py`; both voices measure -12.0/-12.2 dBFS, peaks just under full scale). (2) Unprompted pick narration: before each pick the tally plus why that brick (the scene check takes the most isolated one; three wordings in turn), "Got it…" when the grip holds. (3) Interrupt: a sentence naming Pix cuts the clip playing (winsound async / aplay terminate), drops queued and in-flight live lines, then answers (heard: cut 2.5 s into a long line, answer ready 407 ms later). Echo guard: a heard sentence of 5+ words with 70%+ of its words in one of Pix's lines from the last 20 s is ignored, so Pix never answers itself. (4) Cowboy `hat_on` and `obstacle` replaced with the team's funnier lines; the defective exclamation now uses its own short "Holy smokes!". 389 tests pass; narrator tests 3/3 repeat runs.
