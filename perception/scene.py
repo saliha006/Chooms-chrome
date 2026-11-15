@@ -8,6 +8,7 @@ Rule-based on purpose: localisation is a zone gate and brick picker, never a pol
     if locator.next_brick(): locator.target     # table cm of the most isolated brick
     tall_object(depth_mm, table_mm, zone.mask(depth_mm.shape))   # -> run.py's hold flag
     brick_in_bowl(before, after, bowl_mask)     # place verification
+    brick_px(wrist_frame)                       # pixel centre of the biggest brick (not wired yet: visual-servo pick)
 
 Bricks are found by colour saturation, so a grey or skin-coloured object only shows up through depth.
 Every number marked TUNE is a guess until it is checked on the station.
@@ -84,21 +85,34 @@ def _measure(contour: np.ndarray, zone: Zone, params: SceneParams) -> Blob:
     return Blob(table.mean(axis=0), area, aspect, solidity, is_brick)
 
 
-def analyse(top_bgr: np.ndarray, zone: Zone, params: SceneParams = SceneParams()) -> Scene:
-    """Saturated blobs inside the zone, each classified brick or obstacle (the "is it a brick?" key check)."""
-    hsv = cv2.cvtColor(top_bgr, cv2.COLOR_BGR2HSV)
+def _colour_contours(bgr: np.ndarray, params: SceneParams) -> tuple[np.ndarray, ...]:
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
     mask = ((hsv[..., 1] >= params.saturation_min) & (hsv[..., 2] >= params.value_min)).astype(np.uint8)
     kernel = np.ones((5, 5), np.uint8)
     mask = cv2.morphologyEx(cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel), cv2.MORPH_CLOSE, kernel)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+
+def analyse(top_bgr: np.ndarray, zone: Zone, params: SceneParams = SceneParams()) -> Scene:
+    """Saturated blobs inside the zone, each classified brick or obstacle (the "is it a brick?" key check)."""
     scene = Scene()
-    for contour in contours:
+    for contour in _colour_contours(top_bgr, params):
         if cv2.contourArea(contour) < 20:  # speckle
             continue
         blob = _measure(contour, zone, params)
         if zone.contains(blob.centre_cm):
             (scene.bricks if blob.is_brick else scene.obstacles).append(blob)
     return scene
+
+
+def brick_px(frame_bgr: np.ndarray, min_area_px: float = 200, params: SceneParams = SceneParams()) -> tuple[int, int] | None:
+    """Pixel (x, y) centre of the largest brick-coloured blob in a wrist-camera frame, for a visual-servo pick.
+    None when nothing saturated is at least min_area_px (TUNE) big."""
+    contours = [c for c in _colour_contours(frame_bgr, params) if cv2.contourArea(c) >= min_area_px]
+    if not contours:
+        return None
+    m = cv2.moments(max(contours, key=cv2.contourArea))
+    return round(m["m10"] / m["m00"]), round(m["m01"] / m["m00"])
 
 
 def most_isolated(scene: Scene) -> Blob | None:

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import pytest
 
-from perception.scene import SceneLocator, Zone, analyse, brick_in_bowl, most_isolated, tall_object
+from perception.scene import SceneLocator, Zone, analyse, brick_in_bowl, brick_px, most_isolated, tall_object
 
 PX_PER_CM = 30
 ORIGIN = (100, 60)  # zone top-left in pixels; the zone is 10 x 10 cm = 300 x 300 px
@@ -99,3 +99,17 @@ def test_scene_locator_matches_the_count_locator_interface():
     assert np.allclose(locator.target, [3, 7], atol=0.3)
     locator.capture = FakeCapture(table_image())
     assert locator.next_brick() is False and locator.target is None
+
+
+def test_brick_px_is_the_centre_of_the_largest_coloured_blob():
+    img = table_image()
+    cv2.rectangle(img, (400, 300), (440, 340), (30, 210, 30), -1)  # small green brick
+    cv2.rectangle(img, (100, 100), (200, 160), (0, 120, 240), -1)  # big orange brick, centre (150, 130)
+    assert brick_px(img) == (150, 130)
+
+
+def test_brick_px_ignores_grey_and_specks():
+    img = table_image()
+    cv2.rectangle(img, (50, 50), (300, 300), (90, 90, 90), -1)  # grey object: not brick-coloured
+    cv2.rectangle(img, (500, 400), (505, 405), (30, 30, 210), -1)  # a red speck under min_area_px
+    assert brick_px(img) is None
