@@ -6,7 +6,7 @@ top:
   path: /dev/v4l/by-id/usb-Intel_R__RealSense_TM__Depth_Camera_415_Intel_R__RealSense_TM__Depth_Camera_415_310323024442-video-index0       # the RealSense D415 colour stream (YUYV; index2 is infrared), looking down: its depth sees tall things in the zone (F9, F18)
   view: realsense
 inspect:
-  path: /dev/v4l/by-id/usb-Webcam_Webcam_Audio_01.00.00-video-index0       # the webcam at the inspection mark
+  path: /dev/v4l/by-id/usb-Webcam_Webcam_Audio_01.00.00-video-index0       # the webcam, now looking down at the plate the bricks start on (perception.plate); Anomalib's crop in models.yaml was set for the old view
   view: webcam
 wrist:
   path: /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB2.0_CAM1_USB2.0_CAM1-video-index0   # gripper camera, looks past the jaws

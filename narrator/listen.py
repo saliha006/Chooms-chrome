@@ -30,15 +30,17 @@ THRESHOLD = 600  # TUNE at the station: RMS of 16-bit samples; above the room an
 SILENCE_S = 0.8  # this long below the threshold ends an utterance
 MIN_S = 0.4  # shorter is a clack, not a sentence
 MAX_S = 6.0
+WAKE_S = 8.0  # after a bare "Hey Pix", the next sentence counts as said to Pix even without the name
+GREETING = {"hey", "hi", "hello", "ok", "okay"}
 
 # Speech-to-text sometimes writes the name as a sound-alike; "Pix" is also passed to it as a key term.
 NAMES = {"pix", "picks", "pics", "pixs", "pyx", "pixie"}
 HAT_OFF = {"off", "take", "taking", "took", "remove", "removing", "stop", "longer", "anymore", "normal"}
 HAT_ON = {"on", "put", "putting", "give", "giving", "wear", "wearing", "here's"}
-# First match wins; each entry is (meaning, words that must all appear).
+# First match wins; each entry is (meaning, word stems that must all appear: "see" also hears "seeing", "sort" "sorted").
 QUESTIONS = (
     ("see", {"see"}), ("see", {"looking", "at"}), ("see", {"look", "at"}),
-    ("tally", {"how", "many"}), ("tally", {"sorted"}), ("tally", {"score"}),
+    ("tally", {"how", "many"}), ("tally", {"sort"}), ("tally", {"score"}),
     ("why", {"why"}),
     ("doing", {"doing"}),
     ("who", {"who"}), ("who", {"your", "name"}),
@@ -57,9 +59,15 @@ def intent(text: str | None) -> str | None:
         if words & HAT_ON or "cowboy" in words:
             return "hat_on"
     for meaning, needed in QUESTIONS:
-        if needed <= words:
+        if all(any(w.startswith(stem) for w in words) for stem in needed):
             return meaning
     return "unknown"
+
+
+def only_the_name(text: str | None) -> bool:
+    """"Hey, Pix" and nothing else: the question follows after a pause, as a sentence of its own."""
+    words = set(re.findall(r"[a-z']+", (text or "").lower()))
+    return bool(words & NAMES) and words <= NAMES | GREETING
 
 
 def wav_bytes(pcm: bytes, rate: int = RATE) -> bytes:
@@ -94,6 +102,7 @@ class Listener:
         self._stream, self._transcribe, self._act, self._threshold = stream, transcribe, act, threshold
         self._echo = echo  # True for Pix's own voice coming back through the microphone
         self._busy = threading.Lock()
+        self._awake_until = 0.0
         self.heard: list[str] = []
         self.thread = threading.Thread(target=self._run, name="listener", daemon=True)
         self.thread.start()
@@ -115,7 +124,13 @@ class Listener:
             if self._echo(text):
                 _log.info("ignored %r: Pix's own voice", text)
                 return
+            now = time.monotonic()
+            if only_the_name(text):
+                self._awake_until = now + WAKE_S
             meant = intent(text)
+            if meant is None and now < self._awake_until:
+                self._awake_until = 0.0
+                meant = intent(f"pix {text}")
             _log.info("heard %r -> %s (%.0f ms)", text, meant, (time.monotonic() - started) * 1000)
             self.heard.append(text)
             if meant:

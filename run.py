@@ -70,6 +70,7 @@ class Cell:
         self.look: Callable[[], object] | None = None  # narrator.vision: what the wrist camera shows now (a Sight)
         self.next_brick = 1
         self.inspect_role = "inspect"  # the camera Anomalib scores (config/models.yaml inspector.camera)
+        self.before_pick: Callable[[], None] | None = None  # photographs the plate before each grasp attempt (perception.plate)
         self.mode = "mock"
         self.pause_on_help = True  # False without a window (--headless): nobody can press P, so stop instead
         self.help_reason: Reason | None = None
@@ -262,6 +263,8 @@ class Cell:
 
     def _pick(self, brick_id: int) -> None:
         for attempt in range(1, GRASP_ATTEMPTS + 1):
+            if self.before_pick:
+                self.before_pick()
             with self._stage("PICK", brick_id, note=f"attempt {attempt}") as row:
                 presented = self.picker.pick_and_present()
                 timed_out = deadline.expired()
@@ -528,7 +531,11 @@ def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False,
     cell.inspect_role = insp.get("camera", "inspect")
     from perception.grasp import brick_in_jaws  # the gripper can't tell a tip-held brick from none; the camera can
 
-    io.see_grip(lambda: brick_in_jaws(capture.frame(cell.inspect_role), tuple(crop) if crop else None))
+    wrist_sees_brick = lambda: brick_in_jaws(capture.frame(cell.inspect_role), tuple(crop) if crop else None)  # noqa: E731
+    if scene.get("plate") is not None:
+        use_plate_camera(cell, capture, scene["plate"], wrist_sees_brick)
+    else:
+        io.see_grip(wrist_sees_brick)
     from robot.dance import dance
 
     cell.finale = lambda: dance(poses["home"])
@@ -572,6 +579,24 @@ def use_base(cell: Cell, capture) -> None:
         return None if tag is None else (tag.cm_to(dock), tag.degrees_to(dock))
 
     cell.dock_offset = offset
+
+
+def use_plate_camera(cell: Cell, capture, plate, also: Callable[[], bool], role: str = "inspect") -> None:
+    """A grasp counts only when the gripper camera sees the brick (`also`) and the plate camera agrees: a brick that
+    was there before the attempt is gone now (perception.plate). A plate photo with no bricks proves nothing."""
+    from perception.plate import compare, find_bricks
+    from robot import io
+
+    before: list = []
+
+    def snapshot() -> None:
+        before[:] = find_bricks(capture.frame(role), plate)
+
+    def brick_left_plate() -> bool:
+        return bool(before) and compare(before, find_bricks(capture.frame(role), plate)).lifted >= 1
+
+    cell.before_pick = snapshot
+    io.see_grip(lambda: also() and brick_left_plate())
 
 
 def bowl_checker(scene: dict) -> Callable[[str, object, object], bool] | None:

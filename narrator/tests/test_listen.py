@@ -16,6 +16,8 @@ from narrator.listen import RATE, Listener, intent, utterances
     ("Hey Pix, what do you see now?", "see"),
     ("Pix, what are you looking at?", "see"),
     ("Hey Pix, how many have you sorted?", "tally"),
+    ("Hey Pix, what are you seeing right now?", "see"),
+    ("Hey Pix, how many are you sorting?", "tally"),
     ("Hey Pix, why that bowl?", "why"),
     ("Pix, what are you doing?", "doing"),
     ("Hey Pix, who are you?", "who"),
@@ -168,3 +170,17 @@ def test_react_interrupts_before_it_answers(monkeypatch):
     monkeypatch.setattr(narrator, "say", lambda event, text=None, **kw: order.append(event))
     narrator.react("who", lambda meaning: "I'm Pix.")
     assert order == ["interrupt", "answer"]
+
+
+def test_a_question_after_a_bare_hey_pix_is_still_for_pix():
+    acted, done = [], threading.Event()
+    heard = iter(["Hey, Pix", "What are you seeing?"])
+
+    def act(meant):
+        if meant != "unknown":  # the bare name itself; react() ignores it too
+            acted.append(meant)
+            done.set()
+
+    Listener(io.BytesIO(pcm((1, True), (1, False), (1, True), (1, False))), lambda wav: next(heard), act)
+    assert done.wait(3)
+    assert acted == ["see"]

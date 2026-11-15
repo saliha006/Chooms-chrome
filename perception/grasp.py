@@ -1,5 +1,8 @@
 """Is a brick in the jaws? Seen by the inspection camera at the inspect pose, against a photo of the empty gripper.
 
+Only valid while that camera looks at the gripper. With a `plate:` region in config/scene.yaml run.py uses
+perception.plate instead (the camera now looks at the plate).
+
 The gripper's position can't tell: a Duplo held at the jaw tips reads ~2, the same as closed on nothing (N8 measured
 ~17 only for a brick held deeper). The wrist camera can: with a brick, the crop differs strongly from the empty one.
 """

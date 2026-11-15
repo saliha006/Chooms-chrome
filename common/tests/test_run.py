@@ -444,3 +444,39 @@ def test_placing_line_names_the_bowl_and_the_deciding_number():
     assert run.placing_line("purple", sig("perfect", 65.1)) == "Heading to the purple bowl: it scored 65.10, under my limit of 65.38."
     assert run.placing_line("orange", sig("defective", 67.4)) == "Heading to the orange bowl: it scored 67.40, over my limit of 67.15."
     assert "to be safe" in run.placing_line("orange", sig("uncertain", 66.0))
+
+
+def test_the_plate_is_photographed_before_every_grasp_attempt(make_cell):
+    cell, mover = make_cell(("perfect",), mover=MockMover(pick_failures=1))
+    looks = []
+    cell.before_pick = lambda: looks.append(len(mover.calls))
+    cell.run()
+    assert len(looks) == 2  # the failed attempt and the retry
+
+
+def test_a_brick_that_left_the_plate_counts_as_held(monkeypatch):
+    import numpy as np
+
+    from perception import plate as plate_module
+
+    two = [plate_module.Brick(200, 300, 2400), plate_module.Brick(400, 250, 2400)]
+    frames = iter([two, two[1:], two, two, two[1:]])
+    monkeypatch.setattr(plate_module, "find_bricks", lambda frame, roi: next(frames))
+    held = []
+    from robot import io
+
+    monkeypatch.setattr(io, "see_grip", held.append)
+
+    class Capture:
+        def frame(self, role):
+            return np.zeros((8, 8, 3), np.uint8)
+
+    cell = type("C", (), {})()
+    wrist = [True]
+    run.use_plate_camera(cell, Capture(), [[0, 0], [9, 0], [9, 9]], also=lambda: wrist[0])
+    cell.before_pick()
+    assert held[0]() is True  # one brick gone and the gripper camera agrees
+    assert held[0]() is False  # both back where they were: the grasp missed
+    wrist[0] = False
+    cell.before_pick()
+    assert held[0]() is False  # the plate says lifted, the gripper camera says empty: not held
