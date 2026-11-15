@@ -142,7 +142,7 @@ def test_trace_records_the_whole_chain_for_the_panel(make_cell):
 def test_trace_starts_fresh_for_each_brick(make_cell):
     cell, _ = make_cell(("perfect",), bricks=2)
     cell.run()
-    assert cell.trace == ["first look: 0.2 vs 0.4 / 0.7 -> perfect", f"decision: {RULES['perfect']}"]
+    assert cell.trace == ["first look: 0.20 vs 0.40 / 0.70 -> perfect", f"decision: {RULES['perfect']}"]
 
 
 def test_trace_says_why_help_was_needed(make_cell):
@@ -439,8 +439,8 @@ def test_a_broken_dock_measurement_does_not_spoil_the_attempt(make_cell):
 def test_placing_line_names_the_bowl_and_the_deciding_number():
     from common.interfaces import DefectSignal
 
-    def sig(score):
-        return DefectSignal(1, "wrist", "x", score, 65.4, 67.1, None, None, "patchcore", "NPU", 1.0)
-    assert run.placing_line("purple", "perfect", sig(22.4)) == "Heading to the purple bowl: it scored 22, under my limit of 65."
-    assert run.placing_line("orange", "defective", sig(72.9)) == "Heading to the orange bowl: it scored 73, over my limit of 67."
-    assert "to be safe" in run.placing_line("orange", "uncertain", sig(66.0))
+    def sig(label, score):  # tonight's PatchCore thresholds
+        return DefectSignal(1, "wrist", label, score, 65.38, 67.15, None, None, "patchcore", "NPU", 1.0)
+    assert run.placing_line("purple", sig("perfect", 65.1)) == "Heading to the purple bowl: it scored 65.10, under my limit of 65.38."
+    assert run.placing_line("orange", sig("defective", 67.4)) == "Heading to the orange bowl: it scored 67.40, over my limit of 67.15."
+    assert "to be safe" in run.placing_line("orange", sig("uncertain", 66.0))

@@ -142,6 +142,19 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-15 08:10 — fix — Gentler scripted motion, same-slot grasp retry, honest placing line, demo moments as tests — @saliha for @harry [conflicts: @nate @harry]
+- **Where:** `systems-voice-harry-agent` → `systems-voice-harry` · merged to `main`: yes
+- **Did:** `ScriptedMover` (station test 07:42): far moves raise to home's height, turn, then lower; pick_above↔pick at 3°/step; every move with a brick at ≤4°/step (`step_cap` sets and restores `io.MAX_STEP_DEG`); 0.3 s before closing, 0.5 s before lifting, 0.3 s at the bowl, open, 0.5 s. Each move sends a few more steps toward the exact pose without waiting (it used to stop up to 4° short). Move timeout = max(3 s, 2 × distance / (3.7 × cap) per joint), from the 08:08 arm measurement; `run.py` deadlines raised to PICK 45 s, REINSPECT 60 s, PLACE 25 s, HOME 20 s (staged pick ~22 s, carry ~11 s). A missed pick retries the **same slot** with jaws at 80 and 10% deeper (cap 110% of pick_above→pick), then moves on; jaws that read below `GRIPPER_EMPTY_BELOW` after closing open and close once more 10% deeper. `--search-cm CM` (off) also shifts that retry sideways. Kept inside the mover, not an attempt argument: `pick_and_present()` is the frozen contract. `run.py`: the placing line quoted the uncertain first score after a second look, called a still-uncertain brick "over my limit", and rounded 65.1 vs 65.38 to "65 under 65"; now the settling look, two decimals. Mission control shrinks long lines (a learned run's mover names ran off the window). `common/tests/test_demo.py`: look-again, two misses → help line → P, obstacle cowboy, H hat, e-stop mid-place, summary + dance, `--mock --drive`, same-slot retry
+- **Touched:** `fallback/scripted.py`, `run.py`, `ui/mission_control.py`, tests
+- **⚠️ Conflicts:** @nate: all TUNE constants at the top of `fallback/scripted.py`, untested on the real arm; deadlines are estimates from one speed measurement. @harry: placing line wording now has two decimals
+
+### 2026-11-15 08:00 — bench — INT8 PatchCore measured, not deployed — @saliha [conflicts: none]
+- **Where:** `aiml-perception-saliha` @ `660396a` · merged to `main`: yes (`a220160`)
+- **Did:** NNCF INT8 of the real-brick PatchCore: 29 MB vs 114 MB, CPU 25.5 ms vs 43.9, GPU 3.0, NPU 27.2. Scores shift by up to 9 points, so the FP32 thresholds don't carry over (same verdict on 8 of 20 photos); good and defective still separate (gap 25.9 vs 42.3). The demo keeps FP32. Table in `bench/results.md`; decisions D6 (PatchCore, Verified) and D8 updated on `context`.
+- **Touched:** `bench/results.md`
+- **Brief task:** none
+- **⚠️ Conflicts:** none
+
 ### 2026-11-15 07:46 — feat — `scene.brick_px`: pixel centre of the biggest brick in a wrist frame — @saliha [conflicts: none]
 - **Where:** `aiml-perception-saliha` @ `a6fffb3` · merged to `main`: yes
 - **Did:** for a later visual-servo pick; same saturation mask as `analyse` (now shared), returns None below 200 px (TUNE). Not wired anywhere; tested on synthetic images only. After merging Nate's latest `main`: 405 pass (`-m "not slow"`), mock sorts 5.

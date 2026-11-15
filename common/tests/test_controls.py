@@ -3,6 +3,7 @@
 import threading
 import time
 
+import cv2
 import numpy as np
 import pytest
 import yaml
@@ -150,3 +151,32 @@ def test_render_draws_a_long_subtitle_without_error(make_cell, monkeypatch):
     monkeypatch.setattr(mission_control.narrator, "subtitle", lambda: ("word " * 60, "cowboy"))
     assert mission_control.render(cell, control, None).shape == (mission_control.HEIGHT, mission_control.WIDTH, 3)
     assert len(mission_control._wrap("word " * 60, 800, 0.75)) == 2
+
+
+def test_render_shows_what_the_judges_need_and_all_of_it_fits(make_cell, monkeypatch):
+    from common.interfaces import DefectSignal
+
+    cell, _ = make_cell()
+    control = mission_control.Control(cell)
+    control.start()
+    control.thread.join(timeout=5)
+    cell.mode = "pick: act on GPU | place: smolvla on GPU"  # the longest honesty line a real run writes
+    cell.last_signal = DefectSignal(3, "wrist", "defective", 67.4, 65.38, 67.15, None, None, "patchcore", "GPU", 41.0)
+    cell.trace = ["after wrist roll 90: 66.12 vs 65.38 / 67.15 -> uncertain at middle-centre",
+                  f"decision: {RULES['defective']}"]
+    cell.drift_alert = True
+    subtitle = "Heading to the orange bowl: it scored 67.40, over my limit of 67.15."
+    monkeypatch.setattr(mission_control.narrator, "subtitle", lambda: (subtitle, "calm"))
+    drawn = []
+
+    def put_text(img, text, org, font, scale, colour, thickness, line_type):
+        drawn.append((text, org[0] + cv2.getTextSize(text, font, scale, thickness)[0][0]))
+
+    monkeypatch.setattr(mission_control.cv2, "putText", put_text)
+    mission_control.render(cell, control, np.zeros((480, 640, 3), np.uint8))
+    texts = [text for text, _ in drawn]
+    for needed in (subtitle, "DEFECTIVE", "score 67.40  (65.38 / 67.15)", "patchcore on GPU, 41 ms", cell.mode):
+        assert needed in texts
+    assert [text for text, right in drawn if right > mission_control.WIDTH] == []
+    feed_right = mission_control.FEED[0] + mission_control.FEED[2]
+    assert [text for text, right in drawn if text in cell.trace + [subtitle] and right > feed_right] == []
