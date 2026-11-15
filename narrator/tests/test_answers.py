@@ -27,7 +27,7 @@ def test_why_that_bowl():
 def test_doing_who_and_unknown():
     assert answer("doing", BUSY) == "I'm putting a brick in its bowl."
     assert answer("who", FRESH).startswith("I'm Pix.")
-    assert answer("unknown", FRESH).startswith("Sorry, I didn't catch that.")
+    assert answer("unknown", FRESH).startswith("Sorry, I only speak brick.")
 
 
 def test_what_do_you_see_leads_with_what_the_camera_shows():

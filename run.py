@@ -236,7 +236,7 @@ class Cell:
                 held = presented and not self.picker.gripper_empty()
                 row["outcome"] = "held" if held else "empty"
             if held:
-                narrator.say("grip")
+                narrator.say("grip", n=self.sorted)
                 return
             if attempt < GRASP_ATTEMPTS:
                 narrator.say("grasp_fail")

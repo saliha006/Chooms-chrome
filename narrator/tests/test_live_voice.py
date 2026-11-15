@@ -4,6 +4,7 @@ import time
 import pytest
 
 import narrator
+from narrator.lines import LINES
 from narrator.live import TEMPLATES, Live, compose
 
 NUMBERS = {"score": 0.4123, "t_low": 0.2, "t_high": 0.63, "where": "top-left"}
@@ -149,7 +150,7 @@ def test_a_centre_mark_is_said_naturally():
 
 def test_run_summary_says_the_counts():
     line = compose("calm", "empty", n=5, perfect=3, defective=2, rechecked=1)
-    assert line == "That's the last one. 5 bricks sorted: 3 perfect, 2 defective, and 1 needed a second look."
+    assert line == "That's the last one. 5 bricks sorted: 3 perfect, 2 defective, and 1 needed a second look. I'd like to thank my gripper."
     assert compose("cowboy", "quit", n=1, perfect=1, defective=0).startswith("Callin' it a day. 1 brick sorted")
 
 
@@ -160,7 +161,7 @@ def test_an_empty_run_keeps_the_cached_summary():
 def test_the_last_line_said_becomes_the_subtitle(monkeypatch):
     monkeypatch.setattr(narrator, "_live", None)
     narrator.say("grasp_fail")
-    assert narrator.subtitle() == ("Missed it. Let me try that again.", "calm")
+    assert narrator.subtitle() == (LINES["calm"]["grasp_fail"], "calm")
     assert narrator.subtitle(max_age_s=-1) is None  # older than the window
 
 
@@ -256,3 +257,8 @@ def test_cancel_drops_lines_still_being_synthesised():
     assert live.wait_idle(3) and spy.played == []
     live.speak("answer", "calm", fallback=None)  # lines asked after the interrupt still play
     assert spy.done.wait(2) and spy.played[-1][1] == b"answer"
+
+
+def test_the_grip_line_changes_from_brick_to_brick():
+    assert len({compose("calm", "grip", n=n) for n in range(4)}) == 4
+    assert compose("cowboy", "grip", n=0).startswith("Got 'er.")

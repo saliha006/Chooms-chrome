@@ -25,24 +25,35 @@ TIMEOUT_S = 3.0
 RUN_BUDGET_CHARS = 12_000
 ACCOUNT_FLOOR_CHARS = 10_000
 LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit", "drive", "arrived", "obstacle_named",
-               "first", "next", "roll", "regrasp"}
+               "first", "next", "grip", "roll", "regrasp"}
 
-# Conversational on purpose: the robot thinks aloud. {where} is empty or " at the top left".
+# Conversational and funny on purpose: the facts first (score, line, mark, bowl), then a punchline. Several wordings
+# per verdict, picked by the score so neighbouring bricks rarely sound the same. {where} is "" or " at the top left".
 TEMPLATES = {
     "calm": {
-        "perfect": "That scores {score}, under my {t_low} line. It looks clean, so the purple bowl.",
-        "defective": "That scores {score}, over my {t_high} line, with a mark{where}. Orange bowl.",
-        "uncertain": "Hmm, {score}. That's between my two lines, so I'm not sure yet. Let me take another look.",
+        "perfect": ("That scores {score}, under my {t_low} line. Flawless. Purple bowl, with honours.",
+                    "That scores {score}, under my {t_low} line. Cleaner than my code. Purple bowl.",
+                    "That scores {score}, under my {t_low} line. Not a scratch. Purple bowl."),
+        "defective": ("That scores {score}, over my {t_high} line, with a mark{where}. Someone's been drawing on it. Orange bowl.",
+                      "That scores {score}, over my {t_high} line, with a mark{where}. I don't make the rules. Well, I do. Orange bowl.",
+                      "That scores {score}, over my {t_high} line, with a mark{where}. No appeals. Orange bowl."),
+        "uncertain": ("Hmm, {score}. That's between my two lines, so I'm not sure yet. Let me take another look.",
+                      "Hmm, {score}. Right between my lines, and I refuse to guess. Another look."),
     },
     "cowboy": {
-        "perfect": "Scorin' {score}, well under my {t_low} line. Clean as a whistle, partner. Purple bowl.",
-        "defective": "Whoa, {score}, past my {t_high} line, got a mark{where}. Orange bowl it is.",
-        "uncertain": "{score}? That's smack between my lines. Hold your horses, lemme look again.",
+        "perfect": ("Scorin' {score}, well under my {t_low} line. Clean as a whistle, partner. Purple bowl.",
+                    "Scorin' {score}, under my {t_low} line. Purdier than a prairie sunset. Purple bowl."),
+        "defective": ("Whoa, {score}, past my {t_high} line, got a mark{where}. Orange bowl it is.",
+                      "Whoa, {score}, past my {t_high} line, got a mark{where}. More scuffs than my boots. Orange bowl."),
+        "uncertain": ("{score}? That's smack between my lines. Hold your horses, lemme look again.",
+                      "{score}? Foggier than a dust storm out here. Lemme look again."),
     },
 }
 SUMMARY = {
-    "calm": {"empty": "That's the last one. {tally}.", "quit": "Stopping here. {tally} so far."},
-    "cowboy": {"empty": "That's the whole herd. {tally}.", "quit": "Callin' it a day. {tally} so far."},
+    "calm": {"empty": "That's the last one. {tally}. I'd like to thank my gripper.",
+             "quit": "Stopping here. {tally} so far. Same time tomorrow."},
+    "cowboy": {"empty": "That's the whole herd. {tally}. Time to hang up my spurs.",
+               "quit": "Callin' it a day. {tally} so far. Back to the ranch."},
 }
 
 # The base drive (demo): what it's doing and, once there, how far it went. Numbers come from the base driver.
@@ -79,6 +90,15 @@ CHOICE = {"calm": ("I'm going for the brick with the most room around it, so I w
                      "That loner out on its own, that's my next one.",
                      "Pickin' the one with the most open range around it.")}
 NO_CHOICE = {"calm": "On to the next one.", "cowboy": "Next one."}
+# The grip holds: said on every brick, so it rotates by brick number.
+GRIP = {"calm": ("Got it. Firm but polite. Now let's take a close look.",
+                 "Got it. Not dropping this one. Let's have a look.",
+                 "In my grip. Hold still, this won't hurt a bit.",
+                 "Got it. Off to the camera for its close-up."),
+        "cowboy": ("Got 'er. Hold still, little doggie, let's get a look at ya.",
+                   "Lassoed! Now let's see what you're made of.",
+                   "Gotcha, partner. Time for a close look.",
+                   "Got 'er tight as a new saddle. Lookin' close now.")}
 AVOID = {"calm": "And I'll keep clear of that thing that isn't a brick.",
          "cowboy": "And I'm steerin' clear of that critter that ain't a brick."}
 
@@ -128,6 +148,8 @@ def summary(persona: str, event: str, n: int = 0, perfect: int = 0, defective: i
 def compose(persona: str, event: str, score: float | None = None, t_low: float | None = None,
             t_high: float | None = None, where: str | None = None, after: str | None = None, **counts) -> str | None:
     """The live line for a verdict, or None when the numbers it needs are missing (then the cached clip plays)."""
+    if event == "grip":
+        return GRIP[persona][counts.get("n", 0) % len(GRIP[persona])]
     if event in ("first", "next"):
         return _picking(persona, event, counts)
     if event in ("roll", "regrasp"):
@@ -142,9 +164,10 @@ def compose(persona: str, event: str, score: float | None = None, t_low: float |
         return DRIVE[persona][event].format(cm=round(cm), seconds=round(seconds or 0))
     if event in ("empty", "quit"):
         return summary(persona, event, **{k: v for k, v in counts.items() if k in ("n", "perfect", "defective", "rechecked")})
-    template = TEMPLATES.get(persona, {}).get(event)
-    if template is None or score is None or t_low is None or t_high is None:
+    wordings = TEMPLATES.get(persona, {}).get(event)
+    if wordings is None or score is None or t_low is None or t_high is None:
         return None
+    template = wordings[round(score * 100) % len(wordings)]  # by score: varied across bricks, fixed per brick
     line = template.format(score=_number(score), t_low=_number(t_low), t_high=_number(t_high),
                            where=_where(where))
     if after in AFTER:

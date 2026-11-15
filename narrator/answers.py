@@ -66,6 +66,6 @@ def answer(meaning: str, facts: dict) -> str:
     if meaning == "doing":
         return f"I'm {doing}."
     if meaning == "who":
-        return ("I'm Pix. I spot defects in bricks, sort them into the right bowl and tell you why, "
-                "and I'm partial to a cowboy hat.")
-    return "Sorry, I didn't catch that. Ask me what I see, how many I've sorted, or why I chose that bowl."
+        return ("I'm Pix. I find the defects in bricks, sort them into the right bowl and explain myself, "
+                "which is more than most coworkers do. Also, I look great in a hat.")
+    return "Sorry, I only speak brick. Ask me what I see, how many I've sorted, or why I chose that bowl."
