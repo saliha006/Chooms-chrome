@@ -11,7 +11,7 @@ because of the cloud" · that the robot detects things it was not tested on.
 
 - Repo (MIT): https://github.com/saliha006/Chooms-chrome
 - Video (≤ 2 min): TBD
-- Dataset cards on the Hugging Face Hub: TBD (Nate)
+- SmolVLA place dataset (50 episodes, 25 per instruction): https://huggingface.co/datasets/6salis/sortsense-place
 
 ## One-liner
 
@@ -41,25 +41,25 @@ defective, place it in the orange bowl"). Planning: the state machine (next bric
 place checks). Manipulation: ACT picks, SmolVLA places, a scripted mover behind the same interface as insurance.
 
 **Intel technology.** OpenVINO for every model, measured on the Intel laptop (Core Ultra X9 388H, OpenVINO
-2026.4.1, NPU driver 1.38.0, mains power; `bench/results.md`). Every operator of the detector runs on the CPU, GPU
-and NPU. Detector (PaDiM, INT8, 47 MB, half the FP16 size), p50 per inference: **GPU 1.00 ms, NPU 7.17 ms, CPU
-8.91 ms**, against 17.27 ms in PyTorch on the CPU. Net energy per inference: **GPU 33 mJ, NPU 68 mJ, CPU 300 mJ**,
-at about 11 W of package power on the NPU against 32–35 W on the GPU and CPU. Five minutes at full load: the NPU
-holds its speed (0.96×), the GPU slows to 1.43× and the CPU to 1.06×. ACT (Studio's export with our three cameras)
-compiles on the NPU in 2.3 s and runs in 8.9 ms per call (GPU 4.2 ms, CPU 65.7 ms). These numbers come from a
-detector trained on stand-in synthetic bricks; the table is re-run on the real-brick model (TBD). Placement:
-Anomalib INT8 on the NPU (low power, steady under load, frees the GPU), ACT and SmolVLA on the iGPU with a CPU
-fallback; Physical AI Studio (part of Intel's Robotics AI Suite) for recording and ACT training; the
+2026.4.1, NPU driver 1.38.0, mains power; `bench/results.md`). Every one of the detector's 378 operators runs on the CPU, GPU
+and NPU. Detector: PatchCore trained on real Duplo bricks through the wrist camera (FP32 IR, 114 MB), p50 per
+inference: **GPU 2.94 ms, NPU 28.94 ms, CPU 36.48 ms**. Net energy per inference: **GPU 89 mJ, NPU 206 mJ, CPU
+1372 mJ**, at about 9 W of package power on the NPU against 32–40 W on the GPU and CPU. INT8 with NNCF: 29 MB and
+25.5 ms on the CPU, but scores shift by up to 9 points, so it is measured and not deployed. On the earlier stand-in
+model, five minutes at full load: the NPU holds its speed (0.96×), the GPU slows to 1.43×. ACT (Studio's export with
+our three cameras) compiles on the NPU in 2.3 s and runs in 8.9 ms per call (GPU 4.2 ms, CPU 65.7 ms). Placement:
+the detector on the NPU (lowest power, steady under load, frees the GPU), ACT and SmolVLA on the iGPU with a CPU
+fallback; Intel's Physical AI Studio for recording; the
 `physicalai` runtime. Every real run measures its own package energy, average power and peak temperature and logs
 joules per brick (`bench/power.py`, an `ENERGY` row per run); energy per brick over the 20 trials: TBD.
 
-**Results.** Detector AUROC on held-out real bricks: TBD (interval TBD). Trials: k of 20 sorted without a human
+**Results.** Detector on held-out real bricks (brick-level split; 2 good, 4 defective bricks): AUROC 1.000, 0/24 false alarms (at most 11.7% at 95%), 18/18 defectives caught (81–100% at 95%); PaDiM scored 0.431 on the same split. Trials: k of 20 sorted without a human
 (95% CI TBD). Cycle time: TBD s per brick. Unseen start positions and a 3-brick pile: TBD. Which mode moved the
 arm in each trial is logged; scripted runs are reported as scripted.
 
-**Data and training.** Planned (update to the recorded counts): 54 ACT demonstrations (9 start positions × 6, recorded in rounds) and 25 + 25 SmolVLA
-demonstrations, every episode audited by code before training (`train/audit.py`). Success vs number of demos
-(18 / 36 / 54, trained in parallel on Modal): TBD.
+**Data and training.** Recorded in Physical AI Studio: 50 SmolVLA place demonstrations (25 per instruction), published as
+`6salis/sortsense-place`; no ACT pick demonstrations were recorded, so the pick runs on the scripted mover. Recording
+follows `train/RECORDING.md` and is checked by `train/audit.py`. The demo-count sweep was not run, because there was no ACT data.
 
 ## ElevenLabs (MLH)
 
@@ -117,7 +117,7 @@ Required: model, what it does, why it matters, how we improved its outputs.
   1. **Thinking off for live speech.** Nemotron Super VL reasons by default and spent its whole 80-token budget thinking (empty answer). With thinking switched off, answers take 1.9-2.7 s.
   2. **Grounding in the decision.** Given only a score and thresholds, it read "below t_low" as bad and told a perfect brick to be set aside. Passing the already-decided action and what each band means fixed it (4 of 4 correct on a small check, including an uncertain brick).
   3. **A checker after the model.** `reasoner/live.py` throws away any line that names the wrong bowl or quotes a number we did not give it. It keeps only the newest request, so a slow answer never speaks over the next brick, and a late or failed call falls back to our fixed template lines.
-- Measured so far (stand-in image, NVIDIA Build API, 6 calls over perfect, defective, uncertain): 6 of 6 lines consistent with the verdict, 1.9-2.7 s. **Real bricks, the 20-frame evaluation and the spoken time from verdict to first audio: TBD.**
+- Measured so far (stand-in image, NVIDIA Build API, 6 calls over perfect, defective, uncertain): 6 of 6 lines consistent with the verdict, 1.9-2.7 s. Real bricks (16 photos): 16 of 16 lines consistent with the verdict, p50 2.0 s, p95 2.6 s (`bench/results.md`). **Spoken time from verdict to first audio: TBD.**
 
 ## Modal
 
