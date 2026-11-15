@@ -5,6 +5,13 @@ import pytest
 from common import deadline, estop
 from robot import drive, io
 
+
+@pytest.fixture(autouse=True)
+def no_station_stroke(tmp_path, monkeypatch):
+    """The station's learned stroke (config/drive_stroke.yaml) must not replace the taught poses these tests use."""
+    monkeypatch.setattr(drive, "DEMO_STROKE", tmp_path / "no_stroke.yaml")
+
+
 DOCK_Y = 100  # where the tag sits in the overhead image when the board is docked
 SIDE = 60  # tag width in pixels: 6 px per cm
 
@@ -167,3 +174,22 @@ def test_typical_stroke_is_a_real_recorded_stroke_near_the_average():
     best = drive.typical_stroke(strokes)
     assert any(np.array_equal(best, s) for s in strokes)  # a medoid, not a blend
     assert 160 - 8 < best[:, 1].max() - best[:, 1].min() < 160 + 8  # the middle amplitude wins
+
+
+def test_a_learned_stroke_needs_no_taught_stroke_poses(tmp_path, monkeypatch):
+    import numpy as np
+    import yaml
+
+    from robot import drive, io
+
+    waypoints = tmp_path / "waypoints.yaml"
+    waypoints.write_text(yaml.safe_dump({"home": [0, 0, 0, 0, 0, 0], **{name: None for name in drive.STROKE}}))
+    stroke = tmp_path / "drive_stroke.yaml"
+    stroke.write_text(yaml.safe_dump({"path": [[0, 10 * i, 0, 0, 0, 14] for i in range(5)]}))
+    monkeypatch.setattr(drive, "DEMO_STROKE", stroke)
+    monkeypatch.setattr(io, "connect", lambda **kw: setattr(io, "_robot", io.MockRobot()) or io._robot.connect())
+    monkeypatch.setattr(io, "disconnect", lambda: None)
+    monkeypatch.setattr(io.time, "sleep", lambda s: None)
+    monkeypatch.setattr(drive.time, "sleep", lambda s: None)
+    monkeypatch.setattr(drive, "_top_frame", lambda: np.full((480, 640, 3), 255, np.uint8))
+    assert drive.run_once(dock_path=tmp_path / "missing.yaml", waypoints=waypoints) == drive.PLANNED_CM

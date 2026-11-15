@@ -152,7 +152,7 @@ def approach(top_frame: Callable[[], np.ndarray], dock: TagPose | None = None,
              poses: dict[str, np.ndarray] | None = None) -> float | None:
     """Stroke into the dock. Centimetres travelled, or None if the board stalled or ran out of strokes or time."""
     dock = dock or load_dock()
-    poses = poses or load_stroke()
+    poses = poses or ({} if DEMO_STROKE.exists() else load_stroke())  # a learned stroke needs no taught poses
     start = find_tag(top_frame())
     closest, stalled = None, 0
     for strokes in range(MAX_STROKES + 1):
@@ -186,7 +186,8 @@ def _top_frame() -> np.ndarray:
 
 def run_once(dock_path: Path = CONFIG / "dock.yaml", waypoints: Path = CONFIG / "waypoints.yaml") -> float | None:
     """The drive alone, from the start area, as `run.py --base` would do it, then home. Prints what happened."""
-    poses, home = load_stroke(waypoints), yaml.safe_load(waypoints.read_text())["home"]
+    poses = {} if DEMO_STROKE.exists() else load_stroke(waypoints)
+    home = yaml.safe_load(waypoints.read_text())["home"]
     # No taught dock yet: a pose the tag can never reach, so the drive ends on the blind stroke count (corner stops).
     dock = load_dock(dock_path) if dock_path.exists() else TagPose(x_px=-1e6, y_px=-1e6, heading_deg=0.0, side_px=1.0)
     robot = yaml.safe_load((CONFIG / "robot.yaml").read_text())
