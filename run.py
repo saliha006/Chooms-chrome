@@ -510,6 +510,9 @@ def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False)
     cell = Cell(capture, inspector, movers["pick"], movers["place"], locator, load_config("rules.yaml"),
                 views_of(cameras), run_id)
     cell.inspect_role = insp.get("camera", "inspect")
+    from perception.grasp import brick_in_jaws  # the gripper can't tell a tip-held brick from none; the camera can
+
+    io.see_grip(lambda: brick_in_jaws(capture.frame(cell.inspect_role), tuple(crop) if crop else None))
     from robot.dance import dance
 
     cell.finale = lambda: dance(poses["home"])

@@ -101,3 +101,15 @@ def test_observe_still_raises_on_a_dead_bus(monkeypatch):
     monkeypatch.setattr(io, "_robot", Flaky(failures=io.OBSERVE_RETRIES + 1))
     with pytest.raises(ConnectionError):
         io.observe()
+
+
+def test_the_camera_can_confirm_a_brick_the_gripper_reading_misses(monkeypatch):
+    io.robot().joints = np.array([0.0, 0, 0, 0, 0, 2.0])  # held at the tips: reads like closed on nothing
+    assert not io.holding()
+    io.see_grip(lambda: True)
+    try:
+        assert io.holding()
+        io.robot().joints = np.array([0.0, 0, 0, 0, 0, 90.0])  # wide open: never a grasp, whatever the camera says
+        assert not io.holding()
+    finally:
+        io.see_grip(None)

@@ -17,6 +17,7 @@ Once the E key has requested a stop (`common.estop`, D21), `act()` turns the tor
 """
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -129,9 +130,20 @@ def observe() -> np.ndarray:
     return np.asarray(robot().get_observation().joint_positions, float)
 
 
+_grip_seen: Callable[[], bool] | None = None  # optional camera check, set by run.py with see_grip()
+
+
+def see_grip(check: Callable[[], bool] | None) -> None:
+    """Also count a brick the inspection camera sees in the jaws: held at the tips it reads ~2, like no brick."""
+    global _grip_seen
+    _grip_seen = check
+
+
 def holding() -> bool:
-    """A brick is in the gripper: closed on something, not on nothing and not open."""
-    return bool(GRIPPER_EMPTY_BELOW <= observe()[GRIPPER] <= GRIPPER_HOLD_MAX)
+    """A brick is in the gripper: closed on something, not on nothing and not open (or seen there by the camera)."""
+    if GRIPPER_EMPTY_BELOW <= observe()[GRIPPER] <= GRIPPER_HOLD_MAX:
+        return True
+    return bool(_grip_seen is not None and observe()[GRIPPER] <= GRIPPER_HOLD_MAX and _grip_seen())
 
 
 def clamp_step(current: np.ndarray, target: np.ndarray) -> np.ndarray:
@@ -172,7 +184,8 @@ def torque_off() -> None:
 
 
 def disconnect() -> None:
-    global _robot
+    global _robot, _grip_seen
+    _grip_seen = None  # the camera check belongs to this connection's run
     if _robot is not None:
         _robot.disconnect()
         _robot = None
