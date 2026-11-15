@@ -3,4 +3,4 @@
 zone: null   # the taped 10 x 10 cm pick zone (perception.scene.Zone)
 bowl_red: [[450, 137], [544, 190], [510, 272], [393, 224]]   # around the red bowl, for the place check
 bowl_blue: [[368, 292], [485, 360], [408, 479], [293, 400]]   # around the blue bowl
-plate: [[95, 215], [390, 215], [390, 470], [95, 470]]   # inspection camera: the plate the bricks sit on (perception.plate); keeps the box and cables at the edge out
+# plate: [[95, 215], [390, 215], [390, 470], [95, 470]]   # off: the inspect camera sees the arm now, not the plate; re-enable only when it looks at the plate again (perception.plate)

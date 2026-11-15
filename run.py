@@ -583,20 +583,27 @@ def use_base(cell: Cell, capture) -> None:
 
 def use_plate_camera(cell: Cell, capture, plate, also: Callable[[], bool], role: str = "inspect") -> None:
     """A grasp counts only when the gripper camera sees the brick (`also`) and the plate camera agrees: a brick that
-    was there before the attempt is gone now (perception.plate). A plate photo with no bricks proves nothing."""
+    was there before the attempt is gone now (perception.plate). With no bricks in the before photo (the camera sees
+    something else) only the gripper camera decides."""
     from perception.plate import compare, find_bricks
     from robot import io
 
     before: list = []
+    last: list = []
 
     def snapshot() -> None:
         before[:] = find_bricks(capture.frame(role), plate)
 
-    def brick_left_plate() -> bool:
-        return bool(before) and compare(before, find_bricks(capture.frame(role), plate)).lifted >= 1
+    def grasp_seen() -> bool:
+        wrist = also()
+        outcome = compare(before, find_bricks(capture.frame(role), plate)) if before else None
+        if not last or last[0] != (wrist, outcome):
+            last[:] = [(wrist, outcome)]
+            _log.info("grasp check: gripper camera %s, plate %s", "sees a brick" if wrist else "sees none", outcome)
+        return wrist and (outcome is None or outcome.lifted >= 1)  # no bricks seen before: the plate can't veto
 
     cell.before_pick = snapshot
-    io.see_grip(lambda: also() and brick_left_plate())
+    io.see_grip(grasp_seen)
 
 
 def bowl_checker(scene: dict) -> Callable[[str, object, object], bool] | None:

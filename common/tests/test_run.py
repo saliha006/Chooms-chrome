@@ -480,3 +480,23 @@ def test_a_brick_that_left_the_plate_counts_as_held(monkeypatch):
     wrist[0] = False
     cell.before_pick()
     assert held[0]() is False  # the plate says lifted, the gripper camera says empty: not held
+
+
+def test_a_plate_photo_with_no_bricks_cannot_veto_a_grasp(monkeypatch):
+    import numpy as np
+
+    from perception import plate as plate_module
+    from robot import io
+
+    monkeypatch.setattr(plate_module, "find_bricks", lambda frame, roi: [])
+    held = []
+    monkeypatch.setattr(io, "see_grip", held.append)
+
+    class Capture:
+        def frame(self, role):
+            return np.zeros((8, 8, 3), np.uint8)
+
+    cell = type("C", (), {})()
+    run.use_plate_camera(cell, Capture(), [[0, 0], [9, 0], [9, 9]], also=lambda: True)
+    cell.before_pick()
+    assert held[0]() is True
