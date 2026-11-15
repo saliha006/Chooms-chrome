@@ -122,6 +122,10 @@ cp .env.example .env   # then add your own keys; never commit .env
 The screen and the log always say what moved the arm (`pick: scripted | place: smolvla on GPU`). A scripted
 placement is never presented as SmolVLA.
 
+### How the code works
+
+The whole codebase, layer by layer, with one brick traced end to end: [`docs/how-it-works.md`](docs/how-it-works.md).
+
 ### Station setup
 
 Every step, in order, with how to tell it worked: [`docs/station.md`](docs/station.md). The demo itself:
