@@ -5,7 +5,7 @@ home: [-15.6, -98.5, 55.4, 83.2, -3.0, 2.1]
 pick_above: [-32.2, 26.5, 18.5, 30.5, -3.0, 2.1]   # over the taped pick zone, gripper open
 pick: [-32.1, 56.8, 6.2, 0.6, -2.9, 14.8]   # down at the brick, gripper open
 pick_drop: [-32.1, 56.8, 6.2, 0.6, -2.9, 14.8]   # where a re-grasp puts the brick down (usually the pick pose)
-inspect: [26.2, -97.4, 74.0, 76.7, -3.0, 14.8]   # brick held in front of the inspection camera
+inspect: [14.1, -98.2, 71.0, 71.4, -3.1, 2.1]   # brick held in front of the inspection camera
 bowl_red: [26.1, 60.4, -24.9, 46.6, -2.7, 14.8]   # over the red bowl
 bowl_blue: [78.0, 43.3, 16.3, 46.5, -2.8, 14.8]   # over the blue bowl
 # Optional pick slots 2-5 (slot 1 = pick_above/pick): the scripted mover takes brick n from slot n, so 5 bricks on
