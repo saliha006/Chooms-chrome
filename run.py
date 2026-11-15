@@ -82,6 +82,7 @@ class Cell:
         # didn't get there. `approach_cm` is the planned distance, said before it moves. None = no base, no drive.
         self.approach: Callable[[], float | None] | None = None
         self.approach_cm: float | None = None
+        self.dock_offset: Callable[[], tuple[float, float] | None] | None = None  # (cm, degrees) from the dock
         # narrator.naming.ObjectNamer around Saliha's naming model: says what an unfamiliar object is. None = off.
         self.namer = None
         self.stage_ms: dict[str, float] = {}
@@ -160,16 +161,44 @@ class Cell:
         narrator.say("drive", cm=self.approach_cm)
         started = time.monotonic()
         try:
-            with self._stage("DRIVE", 0, note=None if self.approach_cm is None else f"{self.approach_cm:.0f} cm planned") as row:
+            with self._stage("DRIVE", 0) as row:
                 travelled = self.approach()
                 timed_out = deadline.expired()
                 row["outcome"] = "arrived" if travelled is not None else "failed"
+                row["note"] = self._drive_note(travelled)
             if travelled is None:
                 raise HelpNeeded(Reason.TIMEOUT if timed_out else Reason.DRIVE_FAILED, "base")
         except Exception as exc:
             self._ask_for_help(0, exc)
             return
         narrator.say("arrived", cm=travelled, seconds=time.monotonic() - started)
+
+    def _drive_note(self, travelled: float | None) -> str:
+        """What the drive report reads back (telemetry/drive_report.py): planned, travelled, and where it stopped."""
+        parts = [] if self.approach_cm is None else [f"{self.approach_cm:.0f} cm planned"]
+        if travelled is not None:
+            parts.append(f"{travelled:.1f} cm travelled")
+        if self.dock_offset is not None:
+            try:
+                offset = self.dock_offset()
+            except Exception as exc:  # the overhead frame or the marker: the drive result still counts
+                _log.info("couldn't measure the dock offset (%s)", type(exc).__name__)
+                offset = None
+            if offset is not None:
+                parts.append(f"{offset[0]:.1f} cm {offset[1]:.0f} deg from the dock")
+        return "; ".join(parts)
+
+    def drive_trials(self, n: int, ready: Callable[[str], str] = input) -> int:
+        """Only the drive, n times, the board put back at the start by hand in between. Returns attempts made."""
+        self.pause_on_help = False  # a failed attempt is logged and the next one starts
+        for attempt in range(1, n + 1):
+            if ready(f"Drive {attempt} of {n}: board at the start? Enter to drive, q to stop: ").strip().lower() == "q":
+                return attempt - 1
+            try:
+                self._drive_to_table()
+            except HelpNeeded as exc:
+                _log.info("drive %d: %s", attempt, exc)
+        return n
 
     def sort_one(self, brick_id: int) -> None:
         # Unprompted: why this brick. The scene check takes the most isolated brick (CountLocator chooses nothing).
@@ -515,6 +544,12 @@ def use_base(cell: Cell, capture) -> None:
     cell.approach = lambda: drive.approach(lambda: capture.frame("top"), dock, stroke)
     cell.approach_cm = drive.PLANNED_CM
 
+    def offset() -> tuple[float, float] | None:
+        tag = drive.find_tag(capture.frame("top"))
+        return None if tag is None else (tag.cm_to(dock), tag.degrees_to(dock))
+
+    cell.dock_offset = offset
+
 
 def bowl_checker(scene: dict) -> Callable[[str, object, object], bool] | None:
     """Place verification from the clicked bowl regions (perception.scene.brick_in_bowl, decisions.md D22)."""
@@ -586,6 +621,7 @@ def main() -> None:
     ap.add_argument("--no-listen", action="store_true", help="don't listen to the microphone (the H key still toggles the hat)")
     ap.add_argument("--drive", type=float, metavar="CM", help="--mock only: a stand-in base drives CM to the table first (rehearse the voice-over)")
     ap.add_argument("--base", action="store_true", help="real runs: the arm drives its wheeled board into the dock first (needs config/dock.yaml and the drive stroke)")
+    ap.add_argument("--drive-trials", type=int, metavar="N", help="only the drive, N times (board back at the start by hand in between), then its success report")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
 
@@ -609,6 +645,15 @@ def main() -> None:
     # None when Aiven isn't configured: the JSONL file alone
     sync = telemetry_sync.start(sync_stop, events, drift_alarm(cell, run_id)) if args.aiven or not args.mock else None
     try:
+        if args.drive_trials:
+            if cell.approach is None:
+                ap.error("--drive-trials needs the drive: --base on the station, or --mock --drive CM to rehearse")
+            cell.drive_trials(args.drive_trials)
+            telemetry.stop()  # flush, so the report sees the last attempt
+            from telemetry import drive_report
+
+            print(drive_report.report(drive_report.attempts(events, run_id)))
+            return
         if args.headless:
             error = headless(cell)
         else:

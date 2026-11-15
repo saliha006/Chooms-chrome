@@ -400,3 +400,37 @@ def test_facts_include_what_pix_sees_and_survive_a_camera_failure(make_cell):
 
     cell.look = broken
     assert cell.facts()["sight"] is None
+
+
+def test_drive_trials_log_every_attempt_and_carry_on_after_a_failure(make_cell, tmp_path, monkeypatch):
+    monkeypatch.setattr(run.narrator, "say", lambda event, **kw: None)
+    events = tmp_path / "events.jsonl"
+    telemetry.start(events)
+    cell, _ = make_cell(("perfect",))
+    results = iter([41.0, None, 40.5])
+    cell.approach, cell.approach_cm = (lambda: next(results)), 41.0
+    cell.dock_offset = lambda: (0.6, 2.0)
+    made = cell.drive_trials(3, ready=lambda prompt: "")
+    telemetry.stop()
+    drives = [json.loads(line) for line in events.read_text().splitlines() if '"DRIVE"' in line]
+    assert made == 3 and [d["outcome"] for d in drives] == ["arrived", "failed", "arrived"]
+    assert "41.0 cm travelled" in drives[0]["note"] and "0.6 cm 2 deg from the dock" in drives[0]["note"]
+
+
+def test_drive_trials_stop_on_q(make_cell, monkeypatch):
+    monkeypatch.setattr(run.narrator, "say", lambda event, **kw: None)
+    cell, _ = make_cell(("perfect",))
+    cell.approach = lambda: 41.0
+    answers = iter(["", "q"])
+    assert cell.drive_trials(5, ready=lambda prompt: next(answers)) == 1
+
+
+def test_a_broken_dock_measurement_does_not_spoil_the_attempt(make_cell):
+    cell, _ = make_cell(("perfect",))
+    cell.approach_cm = 41.0
+
+    def blind():
+        raise TimeoutError("no top frame")
+
+    cell.dock_offset = blind
+    assert cell._drive_note(40.0) == "41 cm planned; 40.0 cm travelled"

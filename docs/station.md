@@ -122,6 +122,18 @@ Press **S**. Five bricks, no human. **E** = e-stop (torque off), **P** pause, **
 
 After a lighting or table change: `make rebaseline`. Before every run: check the home pose by eye.
 
+## 6b. How reliable is the drive?
+
+Only the drive, as many times as you have patience for (20 gives a useful interval), the board put back at its start
+spot by hand between attempts:
+```bash
+.venv/bin/python run.py --scripted pick,place --base --drive-trials 20 --no-listen
+```
+Enter starts each attempt, q stops early. At the end it prints, e.g. "Drive arrived 18 of 20 (90%, 95% interval
+68-99%)", the median time, distance and how far the board stopped from the dock, and the failures by reason. Any
+time later: `python -m telemetry.drive_report runs/events.jsonl`. Rehearse it without the robot:
+`python run.py --mock --drive 42 --drive-trials 3`.
+
 ## 7. The full box-room run
 
 Once: board seated in the dock → `python -m robot.drive --teach-dock`; `python -m fallback.teach drive_reach
