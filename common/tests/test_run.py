@@ -119,7 +119,8 @@ def test_every_stage_writes_an_events_row(make_cell, tmp_path):
     cell.run()
     telemetry.stop()
     rows = [json.loads(line) for line in path.read_text().splitlines()]
-    assert [r["state"] for r in rows] == ["LOCATE", "PICK", "VERIFY_GRASP", "INSPECT", "DECIDE", "PLACE", "LOG", "LOCATE"]
+    # ENERGY only appears where RAPL is readable (the Intel laptop, not a dev PC)
+    assert [r["state"] for r in rows if r["state"] != "ENERGY"] == ["LOCATE", "PICK", "VERIFY_GRASP", "INSPECT", "DECIDE", "PLACE", "LOG", "LOCATE"]
     columns = {"run_id", "brick_id", "ts", "state", "label", "score", "device", "stage", "latency_ms", "outcome", "note"}
     assert all(set(r) == columns for r in rows)
 
