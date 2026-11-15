@@ -44,7 +44,7 @@ MOCK_DRIVE_S = 3.0  # the stand-in base's drive, long enough to hear the opening
 
 # TUNE on the arm. Motion stages only: the deadline stops the motion loop, so a stuck move ends as TIMEOUT.
 # DRIVE: 4-5 floor strokes of ~5.5 s each into the dock, plus settling (Nate, robot/drive.py).
-DEADLINE_S = {"PICK": 20.0, "REINSPECT": 25.0, "PLACE": 15.0, "HOME": 15.0, "DRIVE": 60.0}
+DEADLINE_S = {"PICK": 20.0, "REINSPECT": 25.0, "PLACE": 15.0, "HOME": 15.0, "DRIVE": 120.0}
 
 
 class Cell:

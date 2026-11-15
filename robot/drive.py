@@ -32,12 +32,12 @@ TAG_ID = 7
 TAG_CM = 10.0  # side of the printed black square
 DEMO_STROKE = CONFIG / "drive_stroke.yaml"  # written by --learn-stroke from the recorded drives
 PLANNED_CM = 41.0  # TUNE: 29 cm start area + 12 cm of travel, as built (D35)
-BLIND_STROKES = 5  # TUNE: strokes from the start into the corner stops, used while the tag can't be seen
-MAX_STROKES = 8  # TUNE
+BLIND_STROKES = 10  # strokes into the corner stops while the tag can't be seen (was 5: gave up short at the station)
+MAX_STROKES = 15  # keeps attempting: big swoops, then more until docked (was 8)
 DOCK_CM = 1.0  # TUNE: this close to the taught pose counts as docked
 DOCK_DEG = 5.0  # TUNE
 PROGRESS_CM = 1.0  # TUNE: a stroke that gains less than this made no progress
-STALL_STROKES = 2  # TUNE: strokes without progress before giving up (stuck on a guide, or slipping)
+STALL_STROKES = 4  # strokes without progress before giving up (was 2: too quick to give up)
 
 _DICTIONARY = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 _DETECTOR = cv2.aruco.ArucoDetector(_DICTIONARY)
