@@ -136,6 +136,12 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-15 03:25 — docs — Pitch slides; ElevenLabs write-up, README and demo script brought up to Pix — @harry [conflicts: @saliha @nate]
+- **Where:** `main` @ `cc5dfd6` (docs) · slides: https://claude.ai/artifact/KsuECp6J2nvritHEstYSjN (private until Harry shares it)
+- **Did:** six slides for the pitch: cover (Pix), the four layers with their chips, Intel deployment (measured: PaDiM INT8 GPU 1.00 / NPU 7.17 / CPU 8.91 ms, NPU ~11 W and steady over 5 min, ACT on the NPU 8.9 ms; stand-in-brick caveat on the slide), Pix's voice loop, reliability (trial numbers as [__] placeholders until the 20 trials), close. `docs/submission.md` ElevenLabs section, README and the demo script describe Pix as it is now.
+- **📨 Needs:** after the trials, fill the [__] on the reliability slide from `bench.trials`; @saliha: replace the device numbers if the real-brick re-run changes them
+- **Status:** open
+
 ### 2026-11-15 03:10 — feat — Pix is funny — @harry [conflicts: none]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
 - **Did:** every cached line, live verdict, summary and spoken answer rewritten with humour: calm Pix dry and deadpan ("Cleaner than my code. Purple bowl."), cowboy Pix folksy ("More scuffs than my boots. Orange bowl."). Facts first (score, threshold, mark, bowl), joke after; verdicts choose among 2-3 wordings by score, the grip line rotates by brick; the e-stop line stays plain. 58 clips regenerated (3,409 characters), levelled to -12 dBFS. 390 tests pass.
