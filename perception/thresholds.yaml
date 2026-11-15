@@ -1,5 +1,8 @@
-t_low: 0.20361913323402406
-t_high: 0.6262581884860993
-model_xml: runs\export\padim\int8\weights\openvino\model.xml
-n_good: 30
-n_defective: 40
+t_low: 65.38039825439454
+t_high: 67.14659309387207
+pixel_threshold: 64.27917449951173
+good_mean: 62.882064978281655
+model: patchcore
+ckpt: /home/intel/Documents/Chooms-chrome/runs/evaluate/patchcore/patchcore/final/runs/Patchcore/eval/v0/weights/lightning/model.ckpt
+good_images: 24
+defective_dev_images: 24

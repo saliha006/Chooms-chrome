@@ -23,7 +23,10 @@ from robot import io
 
 CONFIG = Path(__file__).resolve().parents[1] / "config"
 TARGET_BRIGHTNESS = 125  # mean grey level of the crop the detector sees
-INSERT_S = 5.0  # time to swap the brick while the jaws are open
+INSERT_S = 4.0  # time to swap the brick while the jaws are open
+CARRY_STEP_DEG = 4.0  # gentler than the runtime cap while carrying: a brick held at the jaw tips slips out
+EMPTY_JAWS = Path("runs/empty_jaws.png")  # a photo of the closed, empty gripper at the inspect pose
+EMPTY_DIFF = 18.0  # TUNE: mean grey difference below this = the photos show no brick
 
 
 def camera() -> dict:
@@ -56,6 +59,15 @@ def lock_exposure(cam: dict, box) -> int:
     return gain
 
 
+def looks_empty(photo: Path) -> bool:
+    """True when the photo matches the empty-gripper reference: the brick fell out on the way up."""
+    if not EMPTY_JAWS.exists():
+        return False
+    a = cv2.cvtColor(cv2.imread(str(photo)), cv2.COLOR_BGR2GRAY).astype(float)
+    b = cv2.cvtColor(cv2.imread(str(EMPTY_JAWS)), cv2.COLOR_BGR2GRAY).astype(float)
+    return float(np.abs(a - b).mean()) < EMPTY_DIFF
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", nargs="?", choices=("good", "defective"))
@@ -78,16 +90,22 @@ def main() -> None:
         time.sleep(INSERT_S)
         hand[io.GRIPPER] = 0.0  # closes on the brick (a Duplo held at the tips reads ~2, deeper in ~17)
         io.move_to(hand, seconds=1.5)
-        time.sleep(0.5)
+        time.sleep(1.0)  # grip settles before lifting
+        io.MAX_STEP_DEG = CARRY_STEP_DEG
         held = np.asarray(wp["inspect"], float)
         held[io.GRIPPER] = 0.0
         io.move_to(held, seconds=5.0)
-        time.sleep(1.0)  # let the brick stop swinging
+        time.sleep(0.5)  # let the brick stop swinging
         if args.lock:
             lock_exposure(cam, box)
         else:
-            saved = capture(args.root / args.kind, args.n, cam["path"], box, interval_s=0.25, brick=args.brick, fourcc=cam.get("fourcc"))
-            print(f"{len(saved)} photos of {args.kind} brick {args.brick} -> {args.root / args.kind}")
+            saved = capture(args.root / args.kind, args.n, cam["path"], box, interval_s=0.12, brick=args.brick, fourcc=cam.get("fourcc"))
+            if looks_empty(saved[0]):
+                for path in saved:
+                    path.unlink()
+                print(f"NO BRICK in the jaws: the {len(saved)} photos were deleted. Redo brick {args.brick} (push it deeper in).")
+            else:
+                print(f"{len(saved)} photos of {args.kind} brick {args.brick} -> {args.root / args.kind}")
         home = np.asarray(wp["home"], float)
         home[io.GRIPPER] = 0.0  # keeps holding the brick; the next run opens first
         io.move_to(home, seconds=5.0)

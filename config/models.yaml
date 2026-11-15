@@ -1,10 +1,10 @@
 # Model files for the real run (python run.py). Paths are relative to the repo root.
 inspector:
-  xml: runs/rebaseline/export/padim/int8/weights/openvino/model.xml   # what `make rebaseline` writes
+  xml: runs/detector/ov/patchcore/model.xml   # real-brick PatchCore, converted straight from PyTorch (the ONNX route hits Anomalib #3883)
   thresholds: perception/thresholds.yaml
-  model: padim
+  model: patchcore
   camera: wrist   # the gripper camera scores the held brick: it is always in the same spot of its picture (2026-11-15)
-  crop: [200, 170, 300]   # [x, y, side] around the held brick in the wrist image (2026-11-15 06:30); training photos use the same
+  crop: [140, 80, 400]   # [x, y, side] around the held brick in the wrist image (2026-11-15 06:30); training photos use the same
 policies:
   act: null        # ACT export dir, once it passes the 17:00 gate
   smolvla: null    # SmolVLA export dir, once it passes the 19:00 gate
