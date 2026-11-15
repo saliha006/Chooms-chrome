@@ -2,7 +2,7 @@
 
     modal run train/export.py --job <job> --policy act        # Studio ACT: the job's latest .ckpt
     modal run train/export.py --job <job> --policy smolvla    # LeRobot SmolVLA: the latest pretrained_model/
-    modal volume get sortsense-runs <job>/openvino ./exports/<job>/   # then copy to the Intel laptop
+    .venv-robot/bin/python -m train.fetch <job> --modal .venv/bin/modal   # on the Intel laptop: fetch, then check on CPU and GPU
 
 The check loads the export with Studio's `InferenceModel` on CPU, the call path the laptop uses, gives it a zero
 observation (SmolVLA also gets the exact `perfect` task string from config/rules.yaml, or --task) and reports whether
@@ -19,6 +19,7 @@ from pathlib import Path
 
 import modal
 
+from train.fetch import zero_observation
 from train.modal_train import volume
 
 app = modal.App("sortsense-export")
@@ -66,8 +67,7 @@ def export(job: str, policy: str, task: str) -> str:
 
     # The laptop's call path: the manifest's own preprocessing (resize, newline, normalise, tokenise) and denormalising
     runtime = InferenceModel(str(out), device="CPU")
-    observation = {f.name: [task] if f.ftype == "LANGUAGE" else np.zeros((1, *f.shape), np.float32)
-                   for f in runtime.input_features}
+    observation = zero_observation(runtime.input_features, task)
     start = time.monotonic()
     chunk = runtime.predict_action_chunk(observation)
     report.append(f"InferenceModel on CPU, first call: {', '.join(observation)} -> action chunk {chunk.shape} in "
