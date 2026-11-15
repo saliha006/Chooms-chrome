@@ -224,7 +224,7 @@ class Cell:
         instruction = self.rules[label]
         self.trace.append(f"decision: {instruction}")
         bowl = "purple" if "purple" in instruction else "orange"
-        narrator.say("placing", text=placing_line(bowl, label, signal))
+        narrator.say("placing", text=placing_line(bowl, self.last_signal))
         with self._stage("PLACE", brick_id, note=instruction) as row:
             placed = self.placer.place(instruction)
             timed_out = deadline.expired()
@@ -289,7 +289,7 @@ class Cell:
             if self.reasoner is not None:
                 self.reasoner.submit(frame, signal, persona=narrator.current_persona())
             where = region(signal.bbox)
-            self.trace.append(f"{step}: {signal.score:.1f} vs {signal.t_low:.1f} / {signal.t_high:.1f} -> {signal.label}"
+            self.trace.append(f"{step}: {signal.score:.2f} vs {signal.t_low:.2f} / {signal.t_high:.2f} -> {signal.label}"
                               + (f" at {where}" if where else ""))
             if step != "first look":
                 self.steps.append((step, signal.score))
@@ -418,12 +418,13 @@ class Cell:
             time.sleep(0.05)
 
 
-def placing_line(bowl: str, label: str, signal: DefectSignal) -> str:
-    """Said while the arm carries the brick: where it goes, and the number that decided it."""
-    if label == "perfect":
-        return f"Heading to the {bowl} bowl: it scored {signal.score:.0f}, under my limit of {signal.t_low:.0f}."
-    if label == "defective":
-        return f"Heading to the {bowl} bowl: it scored {signal.score:.0f}, over my limit of {signal.t_high:.0f}."
+def placing_line(bowl: str, signal: DefectSignal) -> str:
+    """Said while the arm carries the brick: where it goes, and the number from the look that settled it.
+    Two decimals: the PatchCore lines sit 1.8 apart (65.38 / 67.15), so whole numbers would say "65, under 65"."""
+    if signal.label == "perfect":
+        return f"Heading to the {bowl} bowl: it scored {signal.score:.2f}, under my limit of {signal.t_low:.2f}."
+    if signal.label == "defective":
+        return f"Heading to the {bowl} bowl: it scored {signal.score:.2f}, over my limit of {signal.t_high:.2f}."
     return f"Still unsure after looking again, so it goes to the {bowl} bowl to be safe."
 
 
@@ -470,7 +471,7 @@ def load_policy(export_dir: str, devices: list[str]):
     raise RuntimeError(f"no device could load {export_dir}: {errors}")
 
 
-def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False) -> Cell:
+def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False, search_cm: float = 0.0) -> Cell:
     """Real station. Checks every config value first, so a missing one fails before anything moves."""
     from common.capture import OpenCVCamera
     from fallback.scripted import ScriptedMover, load_waypoints
@@ -500,7 +501,7 @@ def build_real(scripted: set[str], bricks: int, run_id: str, base: bool = False)
 
     movers = {}
     if scripted:
-        scripted_mover = ScriptedMover(poses)
+        scripted_mover = ScriptedMover(poses, search_cm)
         movers |= {part: scripted_mover for part in scripted}
     if learned:
         from policies.mover import LearnedMover
@@ -640,6 +641,8 @@ def main() -> None:
     ap.add_argument("--no-listen", action="store_true", help="don't listen to the microphone (the H key still toggles the hat)")
     ap.add_argument("--drive", type=float, metavar="CM", help="--mock only: a stand-in base drives CM to the table first (rehearse the voice-over)")
     ap.add_argument("--base", action="store_true", help="real runs: the arm drives its wheeled board into the dock first (needs config/dock.yaml and the drive stroke)")
+    ap.add_argument("--search-cm", type=float, default=0.0, metavar="CM",
+                    help="scripted pick: a missed slot is tried once more CM to the side before the next slot (off by default)")
     ap.add_argument("--drive-trials", type=int, metavar="N", help="only the drive, N times (board back at the start by hand in between), then its success report")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")
@@ -648,7 +651,7 @@ def main() -> None:
     run_id = ("mock-" if args.mock else "") + time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     if args.base and args.mock:
         ap.error("--base drives the real board; rehearse the voice-over with --mock --drive CM")
-    cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id, args.base)
+    cell = build_mock(args.bricks, run_id) if args.mock else build_real(args.scripted, args.bricks, run_id, args.base, args.search_cm)
     cell.pause_on_help = not args.headless
     if args.drive and args.mock:
         cell.approach_cm = args.drive

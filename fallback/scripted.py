@@ -23,6 +23,8 @@ SLOT_POSES = tuple(f"{kind}_{n}" for n in range(2, 6) for kind in ("pick_above",
 GRIPPER_CLOSED = 0.0
 ARRIVE_TOLERANCE_DEG = 4.0  # a scripted move is done: the loaded shoulder settles up to 3.5° short (dry run, 2026-11-15 01:35)
 MOVE_SECONDS = 3.0  # TUNE: longest single move before it counts as blocked
+REACH_CM = 25.0  # TUNE: shoulder axis to a pick slot, turns a sideways search in cm into shoulder_pan degrees
+SHOULDER_PAN = io.JOINTS.index("shoulder_pan")
 
 
 def load_waypoints(path: Path) -> dict[str, np.ndarray]:
@@ -48,22 +50,38 @@ def bowl_for(instruction: str) -> str:
 
 
 class ScriptedMover:
-    def __init__(self, poses: dict[str, np.ndarray]):
+    """`search_cm` > 0: a missed slot is tried once more that far to the side (the other side at that slot's next
+    miss) before the next slot, for a brick laid a little off its marked spot. 0 = every pick takes a new slot."""
+
+    def __init__(self, poses: dict[str, np.ndarray], search_cm: float = 0.0):
         self.poses = poses
         self.slots = [("pick_above", "pick")] + [(f"pick_above_{n}", f"pick_{n}") for n in range(2, 6)
                                                  if f"pick_{n}" in poses and f"pick_above_{n}" in poses]
         self._next_slot = 0
+        self._search_deg = np.degrees(search_cm / REACH_CM)
+        self._missed: tuple[str, str] | None = None  # the slot to search around on the next pick
+        self._side: dict[str, int] = {}  # pick pose -> the side its next search tries
 
     def pick_and_present(self) -> bool:
+        if self._missed is not None:
+            above, pick = self._missed
+            self._missed = None
+            side = self._side.get(pick, 1)
+            self._side[pick] = -side
+            pan = side * io.units(self._search_deg)[SHOULDER_PAN]
+            return self._pick_from(above, pick, pan)
         above, pick = self.slots[self._next_slot % len(self.slots)]
         self._next_slot += 1
-        return self._pick_from(above, pick)
+        held = self._pick_from(above, pick)
+        if not held and self._search_deg:
+            self._missed = (above, pick)
+        return held
 
-    def _pick_from(self, above: str, pick: str) -> bool:
-        if not (self._go(above, io.GRIPPER_OPEN) and self._go(pick, io.GRIPPER_OPEN)):
+    def _pick_from(self, above: str, pick: str, pan: float = 0.0) -> bool:
+        if not (self._go(above, io.GRIPPER_OPEN, pan) and self._go(pick, io.GRIPPER_OPEN, pan)):
             return False
         self._set_gripper(GRIPPER_CLOSED)
-        return self._go(above, GRIPPER_CLOSED) and self._go("inspect", GRIPPER_CLOSED) and self._settled_holding()
+        return self._go(above, GRIPPER_CLOSED, pan) and self._go("inspect", GRIPPER_CLOSED) and self._settled_holding()
 
     def place(self, instruction: str) -> bool:
         if not self._go(bowl_for(instruction), GRIPPER_CLOSED):
@@ -98,10 +116,14 @@ class ScriptedMover:
         time.sleep(io.GRIPPER_SETTLE_S)
         return io.holding()
 
-    def _go(self, name: str, gripper: float) -> bool:
+    def _go(self, name: str, gripper: float, pan: float = 0.0) -> bool:
         target = self.poses[name].copy()
         target[io.GRIPPER] = gripper
-        return self._move(target)
+        target[SHOULDER_PAN] += pan
+        arrived = self._move(target)
+        if arrived and pan:
+            io.act(target)  # the arrival band is wider than a search shift: without this the arm may not shift at all
+        return arrived
 
     def _move(self, target: np.ndarray) -> bool:
         """Step toward target until the arm joints arrive. The gripper is left out of the check: while

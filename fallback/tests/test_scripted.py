@@ -160,3 +160,78 @@ def test_a_regrasp_does_not_use_up_a_slot(monkeypatch):
     mover.reinspect(0)
     mover.pick_and_present()
     assert visited == ["pick", "pick"]
+
+
+class OffSpotRobot(io.MockRobot):
+    """A brick lies at `brick_pan` on the slot-1 row: the gripper only closes on it when shut there at pick height."""
+
+    def __init__(self, brick_pan):
+        super().__init__()
+        self.brick_pan, self.held = brick_pan, False
+
+    def send_action(self, action, *, goal_time=0.1):
+        action = np.asarray(action, float).copy()
+        at_brick = abs(self.joints[0] - self.brick_pan) < 1.0 and self.joints[1] > POSES["pick_above"][1] + 4  # down at the slot
+        if action[io.GRIPPER] < BRICK_WIDTH and at_brick:
+            self.held = True
+        if action[io.GRIPPER] > 30:
+            self.held = False
+        if self.held:
+            action[io.GRIPPER] = max(action[io.GRIPPER], BRICK_WIDTH)
+        super().send_action(action, goal_time=goal_time)
+
+
+def search_mover(search_cm):
+    poses = {k: np.asarray(v, float) for k, v in POSES.items()}
+    poses["pick_above_2"], poses["pick_2"] = np.array([40.0, 5, 0, 0, 0, 60]), np.array([40.0, 15, 0, 0, 0, 60])
+    return ScriptedMover(poses, search_cm)
+
+
+@pytest.fixture
+def off_spot():
+    shift = float(np.degrees(1.5 / scripted.REACH_CM))  # the brick 1.5 cm to one side of slot 1
+
+    def make(side):
+        io.connect(mock=True)
+        io._robot = OffSpotRobot(POSES["pick"][0] + side * shift)
+        io._robot.connect()
+        return io._robot
+
+    yield make
+    io.disconnect()
+
+
+def test_without_search_a_miss_moves_on_to_the_next_slot(off_spot):
+    robot = off_spot(+1)
+    mover = search_mover(0.0)
+    assert mover.pick_and_present() is False
+    assert mover.pick_and_present() is False and robot.joints[0] != POSES["pick"][0]  # went to slot 2 instead
+    assert not robot.held
+
+
+def test_a_miss_is_searched_once_to_the_side_then_held(off_spot):
+    robot = off_spot(+1)
+    mover = search_mover(1.5)
+    assert mover.pick_and_present() is False
+    assert mover.pick_and_present() is True and robot.held
+    assert at("inspect", robot)
+
+
+def test_each_miss_is_searched_once_and_a_slot_alternates_sides(off_spot):
+    robot = off_spot(-1)  # nothing on slot 2, slot 1's brick on the - side
+    mover = search_mover(1.5)
+    shift = float(np.degrees(1.5 / scripted.REACH_CM))
+    pans = []
+    send = robot.send_action
+    robot.send_action = lambda action, **kw: pans.append(np.asarray(action)[0]) or send(action, **kw)
+
+    def pick():
+        pans.clear()
+        return mover.pick_and_present()
+
+    assert pick() is False and pick() is False  # slot 1, then its search to the + side
+    assert np.isclose(pans, POSES["pick"][0] + shift).any()
+    assert pick() is False and max(pans) == 40.0  # never searched twice: slot 2
+    assert pick() is False and np.isclose(pans, 40.0 + shift).any()  # slot 2's own search
+    assert pick() is False  # slot 1 again
+    assert pick() is True and robot.held  # slot 1's second search tries the - side
