@@ -166,6 +166,8 @@ def start_listening(voices: dict, answer: Callable[[str], str] | None = None):
 
 def react(meant: str, answer: Callable[[str], str] | None) -> None:
     """What Pix does with something said to it: stop talking, then the hat or a spoken answer."""
+    if meant == "unknown":
+        return  # "picks" also hears as the name: a presenter saying "the robot picks a brick" must not cut Pix off
     interrupt()
     if meant == "hat_on":
         trigger("hat")

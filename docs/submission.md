@@ -20,17 +20,19 @@ every model on the Intel Core Ultra laptop's NPU, GPU or CPU on purpose.
 
 ## Short description (about 100 words)
 
-SortSense is a closed-loop defect-sorting cell. An SO-101 arm picks a brick with an ACT policy and holds it up
-to an inspection camera. Anomalib, trained only on good bricks and running INT8 on the NPU, scores it perfect,
+SortSense is a closed-loop defect-sorting cell. An SO-101 arm picks a brick and holds it up
+to its wrist camera. Anomalib PatchCore, trained only on good bricks and running with OpenVINO on the NPU, scores it perfect,
 defective or uncertain; uncertain bricks get a second look, a wrist roll and a re-grasp before a decision. The
-verdict becomes the language instruction for SmolVLA, which places the brick in the right bowl. Every stage
+verdict becomes a language instruction, and the arm places the brick in the right bowl. In the demo both moves
+are hand-taught waypoints; the ACT and SmolVLA path is built and has data, but no trained policy yet. Every stage
 proves it worked before the next one starts. On top, the robot talks through its reasoning, and an obstacle or a
 cowboy hat flips it into a cowboy persona until the moment passes.
 
 ## Intel x Ignite Next: Physical AI
 
-**What it does.** Pick (ACT, Physical AI Studio's trainer) → inspect (Anomalib) → decide (two thresholds from
-the score histograms, `config/rules.yaml`) → place (SmolVLA). A state machine on the CPU runs it with a deadline
+**What it does.** Pick → inspect (Anomalib) → decide (two thresholds from
+the score histograms, `config/rules.yaml`) → place. The pick and place run on the scripted mover (hand-taught
+waypoints); ACT and SmolVLA plug in behind the same interface once trained. A state machine on the CPU runs it with a deadline
 per stage, a reason code for every failure, and a recovery chain for uncertain bricks: look again, roll the
 wrist 90°, re-grasp. A failure sends the arm home, says why, and waits for a person.
 
@@ -38,7 +40,7 @@ wrist 90°, re-grasp. A failure sends the arm home, says why, and waits for a pe
 gate and a "brick or not" check on the top camera, Anomalib as the only defect detector. Reasoning: the
 uncertainty band and the rules turn a score into an instruction that carries the verdict ("the brick is
 defective, place it in the orange bowl"). Planning: the state machine (next brick, recovery, deadlines, grasp and
-place checks). Manipulation: ACT picks, SmolVLA places, a scripted mover behind the same interface as insurance.
+place checks). Manipulation: a scripted mover (what runs in the demo), with ACT and SmolVLA movers built behind the same interface and not yet trained.
 
 **Intel technology.** OpenVINO for every model, measured on the Intel laptop (Core Ultra X9 388H, OpenVINO
 2026.4.1, NPU driver 1.38.0, mains power; `bench/results.md`). Every one of the detector's 378 operators runs on the CPU, GPU
@@ -48,7 +50,7 @@ inference: **GPU 2.94 ms, NPU 28.94 ms, CPU 36.48 ms**. Net energy per inference
 25.5 ms on the CPU, but scores shift by up to 9 points, so it is measured and not deployed. On the earlier stand-in
 model, five minutes at full load: the NPU holds its speed (0.96×), the GPU slows to 1.43×. ACT (Studio's export with
 our three cameras) compiles on the NPU in 2.3 s and runs in 8.9 ms per call (GPU 4.2 ms, CPU 65.7 ms). Placement:
-the detector on the NPU (lowest power, steady under load, frees the GPU), ACT and SmolVLA on the iGPU with a CPU
+the detector on the NPU (lowest power, steady under load, frees the GPU), ACT and SmolVLA planned for the iGPU with a CPU
 fallback; Intel's Physical AI Studio for recording; the
 `physicalai` runtime. Every real run measures its own package energy, average power and peak temperature and logs
 joules per brick (`bench/power.py`, an `ENERGY` row per run); energy per brick over the 20 trials: TBD.
@@ -86,7 +88,7 @@ talks cuts it off mid-sentence and it answers (measured: answer ready 0.4 s afte
 stops it answering its own voice. Every defective brick earns one cowboy exclamation ("Holy smokes!") even in the
 calm voice.
 
-**It sees, then says.** A CLIP model running locally on the Intel laptop (OpenVINO) names what the wrist camera
+**It sees, then says.** (built and tested; the CLIP model is not exported on the demo laptop, so this part is off in the live demo) A CLIP model running locally on the Intel laptop (OpenVINO) names what the wrist camera
 shows, and Pix says it: "I can see an orange bowl in front of my camera", or "There's something I don't
 recognise. My best guess is a mug."
 
@@ -121,7 +123,7 @@ Required: model, what it does, why it matters, how we improved its outputs.
 
 ## Modal
 
-- **What runs on Modal:** all training, nothing at demo time. ACT (the pick policy) trains with Intel's Physical AI
+- **What runs on Modal:** all training, nothing at demo time. No policy from Modal runs in the demo: the runs so far are smoke and failed runs (below), and the pick dataset was never recorded. ACT (the pick policy) trains with Intel's Physical AI
   Studio trainer and SmolVLA (the place policy) fine-tunes from `lerobot/smolvla_base` with LeRobot, each in its own
   pinned image on an A100, from one script (`train/modal_train.py`). Checkpoints land on a Modal Volume, and a Modal
   CPU job exports them to OpenVINO and checks them (`train/export.py`), because Studio's tooling does not run on our
