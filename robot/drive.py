@@ -30,6 +30,7 @@ STROKE = ("drive_reach", "drive_touch", "drive_drag", "drive_lift")  # taught by
 STROKE_S = (1.5, 1.0, 2.0, 1.0)  # TUNE: a slow drag keeps the gripper from slipping on the floor
 TAG_ID = 7
 TAG_CM = 10.0  # side of the printed black square
+DEMO_STROKE = CONFIG / "drive_stroke.yaml"  # written by --learn-stroke from the recorded drives
 PLANNED_CM = 41.0  # TUNE: 29 cm start area + 12 cm of travel, as built (D35)
 BLIND_STROKES = 5  # TUNE: strokes from the start into the corner stops, used while the tag can't be seen
 MAX_STROKES = 8  # TUNE
@@ -103,12 +104,48 @@ def save_dock(pose: TagPose, path: Path = CONFIG / "dock.yaml") -> None:
 
 
 def one_stroke(poses: dict[str, np.ndarray]) -> bool:
-    """Reach, touch the floor, drag back, lift. False if the stage deadline fired; E raises from robot.io."""
+    """Reach, touch the floor, drag back, lift. False if the stage deadline fired; E raises from robot.io.
+    With a stroke learned from the recorded drives (`--learn-stroke`), that recorded path is replayed instead."""
+    if DEMO_STROKE.exists():
+        return _replay(np.asarray(yaml.safe_load(DEMO_STROKE.read_text())["path"], float))
     for name, seconds in zip(STROKE, STROKE_S):
         if deadline.expired():
             return False
         io.move_to(poses[name], seconds)
     return True
+
+
+def _replay(path: np.ndarray) -> bool:
+    io.move_to(path[0], seconds=2.0)
+    for target in path[1:]:  # recorded at 30 Hz; robot.io's speed cap still bounds every step
+        if deadline.expired():
+            return False
+        io.act(target)
+        time.sleep(1 / io.CONTROL_HZ)
+    return True
+
+
+def demo_strokes(states: list[np.ndarray], min_reach: float = 40.0) -> list[np.ndarray]:
+    """Cut recorded drives into single strokes: shoulder_lift troughs (arm raised) separate them, and a stroke
+    must reach out past `min_reach` between two troughs. Each state array is (frames, 6) in normalized units."""
+    strokes = []
+    for s in states:
+        lift = np.convolve(s[:, 1], np.ones(9) / 9, mode="same")
+        troughs = [i for i in range(10, len(lift) - 10) if lift[i] == lift[i - 10:i + 11].min()]
+        troughs = [t for k, t in enumerate(troughs) if k == 0 or t - troughs[k - 1] > 15]
+        strokes += [s[a:b] for a, b in zip(troughs, troughs[1:]) if s[a:b, 1].max() > min_reach and 20 <= b - a <= 150]
+    return strokes
+
+
+def typical_stroke(strokes: list[np.ndarray], samples: int = 60) -> np.ndarray:
+    """The real stroke closest to the average shape (a medoid): a move that physically worked, unlike a plain
+    average, which can blend two strokes into one that never reaches the floor."""
+    def shape(x: np.ndarray) -> np.ndarray:
+        grid = np.linspace(0, len(x) - 1, samples)
+        return np.stack([np.interp(grid, np.arange(len(x)), x[:, j]) for j in range(x.shape[1])], 1)
+    shapes = np.stack([shape(x) for x in strokes])
+    mean = shapes.mean(0)
+    return strokes[int(np.argmin([np.abs(sh - mean).mean() for sh in shapes]))]
 
 
 def approach(top_frame: Callable[[], np.ndarray], dock: TagPose | None = None,
@@ -165,6 +202,22 @@ def run_once(dock_path: Path = CONFIG / "dock.yaml", waypoints: Path = CONFIG / 
     return cm
 
 
+def learn_stroke(dataset: Path, skip: set[int], out: Path = DEMO_STROKE) -> np.ndarray:
+    import pandas as pd
+
+    frames = pd.concat([pd.read_parquet(f) for f in sorted((dataset / "data").rglob("*.parquet"))])
+    states = [np.stack(g.sort_values("frame_index")["observation.state"].to_numpy())
+              for ep, g in frames.groupby("episode_index") if ep not in skip]
+    strokes = demo_strokes(states)
+    if not strokes:
+        raise SystemExit(f"no strokes found in {dataset}")
+    best = typical_stroke(strokes)
+    out.write_text(yaml.safe_dump({"source": str(dataset), "strokes_seen": len(strokes),
+                                   "path": [[round(float(v), 2) for v in row] for row in best]}))
+    print(f"{len(strokes)} strokes in {len(states)} drives; saved the typical one ({len(best) / io.CONTROL_HZ:.1f} s) to {out}")
+    return best
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Box-room drive tools (decisions.md D35).")
     action = ap.add_mutually_exclusive_group(required=True)
@@ -172,9 +225,14 @@ def main() -> None:
     action.add_argument("--teach-dock", action="store_true", help="board seated in the dock: save the tag's pose")
     action.add_argument("--check", action="store_true", help="where the tag is now, and how far from the dock")
     action.add_argument("--run", action="store_true", help="drive once, on its own (no sorting), and report: for testing")
+    action.add_argument("--learn-stroke", type=Path, metavar="DATASET", help="pick the typical stroke from recorded drives")
+    ap.add_argument("--skip", default="", help="--learn-stroke: episode indices to leave out, e.g. 2,9 (audit warnings)")
     args = ap.parse_args()
     if args.run:
         run_once()
+        return
+    if args.learn_stroke:
+        learn_stroke(args.learn_stroke, {int(e) for e in args.skip.split(",") if e})
         return
     if args.make_tag:
         args.make_tag.parent.mkdir(parents=True, exist_ok=True)

@@ -151,3 +151,19 @@ def test_run_once_drives_blind_without_a_taught_dock_then_goes_home(tmp_path, mo
     cm = drive.run_once(dock_path=tmp_path / "missing.yaml", waypoints=waypoints)
     assert cm == drive.PLANNED_CM  # blind strokes into the corner stops
     assert np.allclose(io.observe(), 0)  # ends at home
+
+
+def test_typical_stroke_is_a_real_recorded_stroke_near_the_average():
+    import numpy as np
+
+    from robot import drive
+
+    t = np.linspace(0, 2 * np.pi, 90)
+    def drive_run(amplitude):  # three strokes: shoulder_lift swings from raised (-80) out to the floor and back
+        lift = -80 + amplitude * (1 - np.cos(np.tile(t, 3))) / 2
+        return np.stack([np.zeros_like(lift), lift, np.zeros_like(lift), np.zeros_like(lift), np.zeros_like(lift), np.full_like(lift, 14)], 1)
+    strokes = drive.demo_strokes([drive_run(150), drive_run(160), drive_run(170)])
+    assert len(strokes) == 3  # each run's middle stroke: the first and last have no trough on both sides
+    best = drive.typical_stroke(strokes)
+    assert any(np.array_equal(best, s) for s in strokes)  # a medoid, not a blend
+    assert 160 - 8 < best[:, 1].max() - best[:, 1].min() < 160 + 8  # the middle amplitude wins
