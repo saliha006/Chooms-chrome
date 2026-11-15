@@ -127,9 +127,14 @@ placement is never presented as SmolVLA.
 Every step, in order, with how to tell it worked: [`docs/station.md`](docs/station.md). The demo itself:
 [`docs/demo-script.md`](docs/demo-script.md).
 
-## The personality layer
+## The personality layer: Pix
 
-- **It explains as it works, live:** each verdict with its score, the threshold it crossed and where the mark is;
+Pix is dry and deadpan; cowboy Pix is folksy. Every line says the facts first (score, threshold, mark, bowl), then
+the joke ("That scores 0.41, over my 0.33 line, with a mark at the top left. I don't make the rules. Well, I do.
+Orange bowl."). Several wordings per moment, chosen by the brick, so twenty bricks don't repeat. The e-stop line
+stays plain.
+
+- **It explains as it works, live, unprompted:** why it picks the brick it picks and the tally so far; each verdict with its score, the threshold it crossed and where the mark is;
   the running tally between bricks; the borderline score before each recovery step; how far it has to drive and,
   on arrival, how far and how long it took; a spoken summary of the run. These lines are synthesised on the fly
   with ElevenLabs Flash, several at once and never out of order (0.5–1.6 s per line on a good connection).
@@ -141,8 +146,16 @@ Every step, in order, with how to tell it worked: [`docs/station.md`](docs/stati
   sorted?", "…why that bowl?", "…what are you doing?", "…who are you?", and "Hey Pix, I'm putting a cowboy hat on
   you" / "…I'm taking the hat off" for the cowboy voice. Answers come from what it knows right now (stage, last
   score and threshold, tally), so they are instant and always true. **H** toggles the hat if the room is too loud.
-- **It names what it doesn't recognise:** something on the plates that isn't a brick gets an instant
-  "Holy smokes!", then, from a naming model, "…there's a coffee mug in my zone! That ain't no brick."
+- **You can interrupt it:** "Hey Pix, …" while it talks cuts it off mid-sentence and it answers you (about
+  0.4 s after the interruption); an echo guard stops it answering its own voice.
+- **It sees what's in front of it:** `narrator/vision.py` runs CLIP's image encoder locally through OpenVINO and
+  names what the wrist camera shows (brick, plate, purple or orange bowl, or "unknown" with a best guess); zero-shot
+  out of the box, then a small classifier trained on our own photos on the Intel laptop in seconds
+  (`docs/station.md` 5b). Something on the plates that isn't a brick gets an instant "Holy smokes!".
+- **Loud and even:** the calm voice came out of ElevenLabs 12.6 dB quieter than the cowboy, so every line is
+  levelled to -12 dBFS with a soft ceiling (`narrator/loudness.py`).
+- **Microphone check:** `python -m narrator.listen` shows a loudness bar, prints what it heard and what Pix
+  understood, and speaks Pix's reply.
 - **Subtitles and reasoning panel:** what it is saying runs under the camera feed (amber for the cowboy), and each
   brick's chain (score vs thresholds, every recovery step, the decision) is shown and logged.
 

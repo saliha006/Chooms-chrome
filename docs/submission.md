@@ -63,19 +63,38 @@ demonstrations, every episode audited by code before training (`train/audit.py`)
 
 ## ElevenLabs (MLH)
 
-The robot explains itself out loud. Every event and every failure reason has a line in two voices, a calm one
-and a cowboy (David, deep southern cowboy, from the Voice Library), pre-generated with `eleven_multilingual_v2`
-so the voice works offline and never waits on the network (19 calm + 20 cowboy clips). An obstacle in the pick
-zone or the cowboy hat flips the robot into the cowboy persona at once ("Holy smokes!"); once the obstacle is
-gone and one more brick is done it drifts back through a half-way line ("Right, partner... I mean, right.").
-Playback runs on its own thread, so speech never delays the arm.
+The robot is **Pix**, and it talks: it explains every decision out loud, live, with that brick's own numbers, and
+you can talk back. Two ElevenLabs voices: a calm, dry Pix and a cowboy Pix (David, deep southern cowboy, from the
+Voice Library).
 
-The robot also explains each verdict live, with that brick's own numbers: "That scores 0.41, over my 0.63
-line, with a mark at the top left. Orange bowl." These lines are synthesised on the fly with `eleven_flash_v2_5`
-(625–1953 ms per line on the venue Wi-Fi); a warm-up call opens the connection before the first brick, and a line
-not back within 3 s falls back to the cached clip, so the voice keeps up even when the network doesn't. On real
-runs, NVIDIA Nemotron's explanation of what it sees follows in the same voice. Time from verdict to first audio
-on the demo laptop: TBD.
+**It thinks out loud, live.** Before each pick it says the tally and why that brick ("That's 2 sorted: 1 perfect,
+1 defective. Next I'll take the one standing furthest from the rest; it's the safest grab."); each verdict comes
+with its score, the threshold it crossed and where the mark is, then a joke ("That scores 0.41, over my 0.33 line,
+with a mark at the top left. I don't make the rules. Well, I do. Orange bowl."); a borderline brick gets its
+recovery narrated ("Still 0.27, right between my lines. Rolling it ninety degrees for a better look."); the run
+ends with a spoken summary. These lines are synthesised on the fly with `eleven_flash_v2_5`, several at once and
+never out of order: 0.4–1.6 s per line on a good connection, measured at real arm pace. Several wordings per
+moment, chosen by the brick's score or number, so twenty bricks never sound like one.
+
+**You can talk to it.** The microphone is cut into utterances by loudness and transcribed with ElevenLabs
+speech-to-text (`scribe_v1`, "Pix" as a key term): 0.6–1.3 s per sentence. Pix acts only on sentences that name it,
+so a busy hall doesn't trigger it: "Hey Pix, what do you see now?", "…how many have you sorted?", "…why that
+bowl?", "…who are you?" are answered from what it knows at that moment. "Hey Pix, I'm putting a cowboy hat on you"
+switches it to the cowboy voice ("Yeehowdy! Now that's a hat. Saddle up, partner, Pix is ridin' tonight.") until
+"Hey Pix, I'm taking the hat off" ("Ohhh, I'm no longer a cowboy… Nobody saw that."). Saying "Hey Pix" while it
+talks cuts it off mid-sentence and it answers (measured: answer ready 0.4 s after the interruption); an echo guard
+stops it answering its own voice. Every defective brick earns one cowboy exclamation ("Holy smokes!") even in the
+calm voice.
+
+**It sees, then says.** A CLIP model running locally on the Intel laptop (OpenVINO) names what the wrist camera
+shows, and Pix says it: "I can see an orange bowl in front of my camera", or "There's something I don't
+recognise. My best guess is a mug."
+
+**It never goes silent, and it is loud enough for a hall.** Every line also exists as a cached clip in both voices
+(58 clips, `eleven_multilingual_v2`); a live line not back within 3 s, a network drop or a spent budget (12,000
+characters per run) plays the cached clip instead, and the arm never waits for speech. The calm voice measured
+12.6 dB quieter than the cowboy, so every line, cached or live, is levelled to -12 dBFS with a soft ceiling.
+Time from verdict to first audio on the demo laptop: TBD.
 
 ## Aiven
 

@@ -30,21 +30,21 @@ puts on a cowboy persona when you hand it a hat, and sorts every brick with anom
 
 ## The two minutes
 
-| Time | Who does what | On screen | Robot says (live lines use the real numbers) |
+| Time | Who does what | On screen | Pix says (live lines use the real numbers; wordings vary) |
 |---|---|---|---|
-| 0:00 | Talk: factory inspection is done by eye; this robot sees, decides and explains. Ask **"Hey Pix, who are you?"** | Mission control, "Press S to start" | "I'm Pix. I spot defects in bricks, sort them into the right bowl and tell you why, and I'm partial to a cowboy hat." |
-| 0:10 | Press **S** | `DRIVE`, subtitles under the feed | "The bricks are about 80 centimetres out of my reach, so I'm driving over to them." |
-| 0:15 | As it sets off, say **"Hey Pix, I'm putting a cowboy hat on you"** and put it on | Subtitle turns amber | "Well I'll be, a cowboy hat! Yeehaw, partner. Let's ride." |
-| 0:20 | The arm scrapes the base across the floor | `DRIVE` | Cowboy: "Whoa there. 80 centimetres in 12 seconds. In position, let's get sortin'." |
-| 0:35 | First brick (perfect) | Feed, heatmap, `PERFECT`, score vs `t_low / t_high`, reasoning panel | "First critter of the day…" then "Scorin' 0.12, well under my 0.20 line. Clean as a whistle, partner. Purple bowl." |
-| 0:50 | Defective brick | Heatmap lights up the marker, `DEFECTIVE` | Tally: "1 down, partner: 1 clean, 0 busted. Next one." then "Whoa, 0.41, past my 0.33 line, got a mark at the top left. Orange bowl it is." |
-| 1:05 | Say **"Hey Pix, I'm taking the hat off"** and take it off | Subtitle back to white | "Ohhh, I'm no longer a cowboy… Ahem. Back to business." |
-| 1:10 | Borderline brick | `UNCERTAIN`; the panel lists look again → wrist roll → re-grasp | "Hmm, 0.27. That's between my two lines…" then "Still 0.27, right between my lines. Rolling it ninety degrees for a better look." then the verdict |
-| 1:20 | Ask **"Hey Pix, why that bowl?"** (or "what do you see now?") | Subtitles | "Because the last brick scored 0.41, over my 0.33 line, with a mark at the top left. That's why it went in the orange bowl." |
-| 1:25 | Put the mug on a plate | Obstacle noted; the arm skips it | "Holy smokes!" then, if the naming model is in: "…there's a coffee mug in my zone! That ain't no brick, so I'm leavin' it be." |
-| 1:35 | Talk over the architecture slide: four layers, NPU / GPU / CPU; speech and Nemotron off the control path | Slide (README diagram) | — |
+| 0:00 | Talk: factory inspection is done by eye; this robot sees, decides and explains. Ask **"Hey Pix, who are you?"** | Mission control, "Press S to start" | "I'm Pix. I find the defects in bricks, sort them into the right bowl and explain myself, which is more than most coworkers do. Also, I look great in a hat." |
+| 0:10 | Press **S** (with `--base`) | `DRIVE`, subtitles under the feed | "The bricks are about 41 centimetres out of my reach, so I'm driving over to them." |
+| 0:15 | As it sets off, say **"Hey Pix, I'm putting a cowboy hat on you"** and put it on | Subtitle turns amber | "Yeehowdy! Now that's a hat. Saddle up, partner, Pix is ridin' tonight." |
+| 0:25 | The arm scrapes the base into the dock | `DRIVE` | "Whoa there. 41 centimetres in 24 seconds. In position, let's get sortin'." |
+| 0:35 | First brick (perfect) | Feed, heatmap, `PERFECT`, score vs `t_low / t_high`, reasoning panel | "First critter of the day. Goin' for the one with the most elbow room…" · "Lassoed! Now let's see what you're made of." · "Scorin' 0.12, under my 0.20 line. Purdier than a prairie sunset. Purple bowl." |
+| 0:50 | Defective brick | Heatmap lights up the marker, `DEFECTIVE` | "1 down, partner: 1 clean, 0 busted…" · "Whoa, 0.41, past my 0.33 line, got a mark at the top left. More scuffs than my boots. Orange bowl." |
+| 1:05 | Say **"Hey Pix, I'm taking the hat off"** and take it off | Subtitle back to white | "Ohhh, I'm no longer a cowboy… Ahem. Back to business. Nobody saw that." |
+| 1:10 | Borderline brick | `UNCERTAIN`; the panel lists look again → wrist roll → re-grasp | "Hmm, 0.27. Right between my lines, and I refuse to guess. Another look." · "Still 0.27, right between my lines. Rolling it ninety degrees for a better look." · then the verdict |
+| 1:20 | **Interrupt it mid-sentence:** "Hey Pix, why that bowl?" (or "what do you see now?") | Subtitles | It stops talking, then: "Because the last brick scored 0.41, over my 0.33 line, with a mark at the top left. That's why it went in the orange bowl." |
+| 1:25 | Put the mug on a plate | Obstacle noted; the arm skips it | "Holy smokes! There ain't enough room on this table for the two of us." Ask "Hey Pix, what do you see now?": "There's something in front of my camera I don't recognise. My best guess is a mug." |
+| 1:35 | Talk over the architecture slide: four layers, NPU / GPU / CPU; speech, recognition and Nemotron off the control path | Slide | — |
 | 1:45 | Benchmark and reliability: device table, energy per brick, the n = 20 slide | Slides (`bench/results.md`, `docs/trials-slide.md`) | — |
-| 1:55 | Zone empty | `DANCE` | "That's the last one. 3 bricks sorted: 2 perfect, 1 defective, and 1 needed a second look." then the dance |
+| 1:55 | Zone empty | `DANCE` | "That's the last one. 3 bricks sorted: 2 perfect, 1 defective, and 1 needed a second look. I'd like to thank my gripper." then the dance |
 
 ## If a beat goes wrong
 
