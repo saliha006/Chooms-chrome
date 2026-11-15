@@ -19,6 +19,10 @@ from narrator.listen import RATE, Listener, intent, utterances
     ("Hey Pix, why that bowl?", "why"),
     ("Pix, what are you doing?", "doing"),
     ("Hey Pix, who are you?", "who"),
+    ("Hey, Pix, I'm turning you into a cowboy", "hat_on"),  # heard in the 02:50 microphone check
+    ("Hey Pix, you're a cowboy now", "hat_on"),
+    ("Hey Pix, stop being a cowboy", "hat_off"),
+    ("Hey Pix, you're no longer a cowboy", "hat_off"),
     ("Hey Pix, sing me a song", "unknown"),
     ("I'm putting a cowboy hat on you.", None),  # not addressed to Pix: ignored
     ("What do you see now?", None),
@@ -116,3 +120,17 @@ def test_no_microphone_at_all_means_none(monkeypatch):
     monkeypatch.setattr(listen.shutil, "which", lambda tool: None)
     monkeypatch.setattr(listen, "SoundDeviceMic", broken)
     assert listen.microphone("default") is None
+
+
+def test_react_puts_on_the_hat_takes_it_off_and_answers(monkeypatch):
+    import narrator
+
+    done = []
+    monkeypatch.setattr(narrator, "trigger", lambda kind: done.append(("trigger", kind)))
+    monkeypatch.setattr(narrator, "take_off_hat", lambda: done.append(("off",)))
+    monkeypatch.setattr(narrator, "say", lambda event, text=None, **kw: done.append((event, text)))
+    narrator.react("hat_on", None)
+    narrator.react("hat_off", None)
+    narrator.react("who", lambda meaning: f"answer to {meaning}")
+    narrator.react("who", None)  # no answer function: nothing said
+    assert done == [("trigger", "hat"), ("off",), ("answer", "answer to who")]

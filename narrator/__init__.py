@@ -128,16 +128,18 @@ def start_listening(voices: dict, answer: Callable[[str], str] | None = None):
     if not key or mic is None:
         _log.info("not listening (%s): the H key toggles the hat", "no key" if not key else "no microphone")
         return None
-    def act(meant: str) -> None:
-        if meant == "hat_on":
-            trigger("hat")
-        elif meant == "hat_off":
-            take_off_hat()
-        elif answer is not None:
-            say("answer", text=answer(meant))
+    return Listener(mic, elevenlabs_transcriber(key, voices.get("stt_model", "scribe_v1")),
+                    lambda meant: react(meant, answer), listen.get("threshold", 600))
 
-    return Listener(mic, elevenlabs_transcriber(key, voices.get("stt_model", "scribe_v1")), act,
-                    listen.get("threshold", 600))
+
+def react(meant: str, answer: Callable[[str], str] | None) -> None:
+    """What Pix does with something said to it: the hat, or a spoken answer."""
+    if meant == "hat_on":
+        trigger("hat")
+    elif meant == "hat_off":
+        take_off_hat()
+    elif answer is not None:
+        say("answer", text=answer(meant))
 
 
 def wait_idle(timeout_s: float = 10.0) -> bool:

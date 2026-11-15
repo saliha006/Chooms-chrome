@@ -33,7 +33,7 @@ MAX_S = 6.0
 
 # Speech-to-text sometimes writes the name as a sound-alike; "Pix" is also passed to it as a key term.
 NAMES = {"pix", "picks", "pics", "pixs", "pyx", "pixie"}
-HAT_OFF = {"off", "take", "taking", "took", "remove", "removing"}
+HAT_OFF = {"off", "take", "taking", "took", "remove", "removing", "stop", "longer", "anymore", "normal"}
 HAT_ON = {"on", "put", "putting", "give", "giving", "wear", "wearing", "here's"}
 # First match wins; each entry is (meaning, words that must all appear).
 QUESTIONS = (
@@ -51,10 +51,10 @@ def intent(text: str | None) -> str | None:
     words = set(re.findall(r"[a-z']+", (text or "").lower()))
     if not words & NAMES:
         return None
-    if "hat" in words:
+    if "hat" in words or "cowboy" in words:  # "turning you into a cowboy" means the hat too (heard 02:50)
         if words & HAT_OFF:
             return "hat_off"
-        if words & HAT_ON:
+        if words & HAT_ON or "cowboy" in words:
             return "hat_on"
     for meaning, needed in QUESTIONS:
         if needed <= words:
@@ -161,7 +161,8 @@ def microphone(device: str = "default"):
 
 
 def main() -> None:
-    """Microphone check: live loudness, then what was heard and what Pix took it to mean. Ctrl+C to stop.
+    """Microphone check, out loud: a live loudness bar, what was heard, what Pix took it to mean, and Pix's spoken
+    reply (as before a run starts: no brick yet). Ctrl+C to stop.
 
         python -m narrator.listen               # speak normally from where you'll stand; tune listen.threshold
     """
@@ -178,6 +179,11 @@ def main() -> None:
     if mic is None:
         raise SystemExit("no microphone could be opened")
     transcribe = elevenlabs_transcriber(os.environ["ELEVENLABS_API_KEY"], voices.get("stt_model", "scribe_v1"))
+    import narrator
+    from narrator import answers
+
+    narrator.enable_live(voices)
+    before_a_run = {"state": "IDLE", "sorted": 0, "tally": {}, "decided": None, "obstacles": 0, "signal": None}
 
     class Metered:  # prints a loudness bar every ~0.3 s so the threshold can be set by eye
         def __init__(self, stream):
@@ -196,9 +202,13 @@ def main() -> None:
     try:
         for utterance in utterances(Metered(mic), threshold):
             text = transcribe(utterance)
-            print(f"\nheard {text!r} -> {intent(text)}")
+            meant = intent(text)
+            print(f"\nheard {text!r} -> {meant}")
+            if meant:
+                narrator.react(meant, lambda m: answers.answer(m, before_a_run))
     except KeyboardInterrupt:
         print()
+    narrator.wait_idle(10)
 
 
 if __name__ == "__main__":
