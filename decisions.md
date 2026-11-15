@@ -329,6 +329,22 @@
 - **Evidence:** OpenVINO IR 176 MB, conversion 5.6 s, 18.1 ms per frame on Harry's laptop CPU; held-out accuracy on our photos: TBD (printed by `train`).
 - **Pitch line:** "Ask Pix what it sees: it recognises the objects on its table with a model we trained on this laptop, then tells you."
 
+### D37 · Robotics perception · A grasp must be seen on the plate camera as well as the gripper camera — Status: Built (unit tests only; not tried on the arm) · Owner: @saliha · Updated: 2026-11-15 10:05
+- **Decision:** the `inspect` camera now looks down at the plate the bricks start on. `perception/plate.py` finds the bricks there by colour and reports which left the plate; `run.py` photographs the plate before each grasp attempt, and a grasp counts as held only when the gripper-camera check (`perception/grasp.py`) and the plate camera both agree. Without a `plate:` region in `config/scene.yaml` the old single check applies.
+- **Why:** a held brick reads like an empty gripper by the gripper position alone (D14-era note in `robot/io.py`), and one camera can be fooled by the held brick's own look; a brick that was on the plate and is gone is independent evidence, and the existing retry (`GRASP_ATTEMPTS`) then does the "keep trying" part.
+- **Alternatives rejected:** a live closed loop that retries until grasped (the state machine's deadlines and verification are on the never-cut list, so the attempts stay bounded); steering SmolVLA with bowl pixel coordinates (it takes only the text instruction; pixel targets mean retraining or the scripted placer, too late for submission).
+- **Trade-off / risk:** if the arm hides the plate at the inspect pose, a real grasp reads as not held and the run retries, then asks for help. Cut by deleting the `plate:` line.
+- **Evidence:** TBD (live trial: `python -m perception.plate`, then `VERIFY_GRASP` outcomes in the run log).
+- **Pitch line:** the robot checks a grasp from two cameras, the gripper's and the table's, and only counts a brick it saw leave the plate.
+
+### D38 · Voice · Pix understands "seeing" and a question after a bare "Hey Pix" — Status: Built (unit tests; heard on the station log 09:07 before the fix) · Owner: @saliha · Updated: 2026-11-15 10:05
+- **Decision:** the phrase check matches word stems (`see` hears "seeing", `sort` hears "sorted") and a bare "Hey, Pix" opens an 8 s window in which the next sentence counts as addressed to Pix.
+- **Why:** the 09:07 station log showed "Hey Pix, what are you seeing right now?" returning `unknown`, and "Hey, Pix" and "What do you do?" arriving as separate sentences, the second without the name. Still a phrase check, not a language model, so it stays predictable on stage.
+- **Alternatives rejected:** a language model deciding the intent (slower, less predictable live); answering every unknown sentence (the sound-alike "picks" would make Pix cut in whenever a presenter says "the robot picks a brick").
+- **Trade-off / risk:** a bare name followed by unrelated speech within 8 s is read as a question to Pix.
+- **Evidence:** TBD (a spoken test on the station once the speaker and mic are set up, docs/station.md 2c).
+- **Pitch line:** say its name, then ask; it answers from facts it already holds.
+
 ## Pitch cheat sheet (fill the numbers only when measured)
 | Judge cares about | Our answer | Where the proof will be |
 |---|---|---|
