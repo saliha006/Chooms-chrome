@@ -13,6 +13,7 @@ control step. --teach-dock and --check open the overhead camera themselves: run 
 
 import argparse
 import math
+import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -146,13 +147,35 @@ def _top_frame() -> np.ndarray:
     return frames[-1]
 
 
+def run_once(dock_path: Path = CONFIG / "dock.yaml", waypoints: Path = CONFIG / "waypoints.yaml") -> float | None:
+    """The drive alone, from the start area, as `run.py --base` would do it, then home. Prints what happened."""
+    poses, home = load_stroke(waypoints), yaml.safe_load(waypoints.read_text())["home"]
+    # No taught dock yet: a pose the tag can never reach, so the drive ends on the blind stroke count (corner stops).
+    dock = load_dock(dock_path) if dock_path.exists() else TagPose(x_px=-1e6, y_px=-1e6, heading_deg=0.0, side_px=1.0)
+    robot = yaml.safe_load((CONFIG / "robot.yaml").read_text())
+    io.connect(port=robot["port"], calibration=robot["calibration"])
+    start = time.monotonic()
+    try:
+        cm = approach(_top_frame, dock, poses)
+        print(f"drive: {'docked, ' + format(cm, '.0f') + ' cm' if cm is not None else 'did not arrive'} "
+              f"in {time.monotonic() - start:.0f} s ({'tag dock' if dock_path.exists() else 'blind, no dock taught'})")
+        io.move_to(np.asarray(home, float), seconds=4.0)
+    finally:
+        io.disconnect()
+    return cm
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Box-room drive tools (decisions.md D35).")
     action = ap.add_mutually_exclusive_group(required=True)
     action.add_argument("--make-tag", type=Path, metavar="PNG", help="write the printable tag at 300 dpi")
     action.add_argument("--teach-dock", action="store_true", help="board seated in the dock: save the tag's pose")
     action.add_argument("--check", action="store_true", help="where the tag is now, and how far from the dock")
+    action.add_argument("--run", action="store_true", help="drive once, on its own (no sorting), and report: for testing")
     args = ap.parse_args()
+    if args.run:
+        run_once()
+        return
     if args.make_tag:
         args.make_tag.parent.mkdir(parents=True, exist_ok=True)
         cv2.imwrite(str(args.make_tag), tag_image())

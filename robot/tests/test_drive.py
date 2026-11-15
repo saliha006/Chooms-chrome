@@ -133,3 +133,21 @@ def test_the_dock_round_trips_and_says_how_to_teach_it(tmp_path):
         drive.load_dock(path)
     drive.save_dock(DOCK, path)
     assert drive.load_dock(path) == DOCK
+
+
+def test_run_once_drives_blind_without_a_taught_dock_then_goes_home(tmp_path, monkeypatch):
+    import numpy as np
+    import yaml
+
+    from robot import drive, io
+
+    waypoints = tmp_path / "waypoints.yaml"
+    poses = {name: [0, 10, 10, 0, 0, 0] for name in drive.STROKE} | {"home": [0, 0, 0, 0, 0, 0]}
+    waypoints.write_text(yaml.safe_dump(poses))
+    monkeypatch.setattr(io, "connect", lambda **kw: setattr(io, "_robot", io.MockRobot()) or io._robot.connect())
+    monkeypatch.setattr(io.time, "sleep", lambda s: None)
+    monkeypatch.setattr(drive, "_top_frame", lambda: np.full((480, 640, 3), 255, np.uint8))  # no tag in view
+    monkeypatch.setattr(io, "disconnect", lambda: None)  # keep the mock arm to read where it ended
+    cm = drive.run_once(dock_path=tmp_path / "missing.yaml", waypoints=waypoints)
+    assert cm == drive.PLANNED_CM  # blind strokes into the corner stops
+    assert np.allclose(io.observe(), 0)  # ends at home
