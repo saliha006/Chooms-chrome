@@ -142,6 +142,13 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-15 08:00 — bench — INT8 PatchCore measured, not deployed — @saliha [conflicts: none]
+- **Where:** `aiml-perception-saliha` @ `660396a` · merged to `main`: yes (`a220160`)
+- **Did:** NNCF INT8 of the real-brick PatchCore: 29 MB vs 114 MB, CPU 25.5 ms vs 43.9, GPU 3.0, NPU 27.2. Scores shift by up to 9 points, so the FP32 thresholds don't carry over (same verdict on 8 of 20 photos); good and defective still separate (gap 25.9 vs 42.3). The demo keeps FP32. Table in `bench/results.md`; decisions D6 (PatchCore, Verified) and D8 updated on `context`.
+- **Touched:** `bench/results.md`
+- **Brief task:** none
+- **⚠️ Conflicts:** none
+
 ### 2026-11-15 07:46 — feat — `scene.brick_px`: pixel centre of the biggest brick in a wrist frame — @saliha [conflicts: none]
 - **Where:** `aiml-perception-saliha` @ `a6fffb3` · merged to `main`: yes
 - **Did:** for a later visual-servo pick; same saturation mask as `analyse` (now shared), returns None below 200 px (TUNE). Not wired anywhere; tested on synthetic images only. After merging Nate's latest `main`: 405 pass (`-m "not slow"`), mock sorts 5.
