@@ -136,6 +136,12 @@ on the `context` branch (`CLAUDE.md`, `prd.md`, `builder-briefs/`): doc owner pu
 
 ## Log (newest first)
 
+### 2026-11-15 02:45 — feat — Pix hears you on Windows too; microphone check command — @harry [conflicts: none]
+- **Where:** `systems-voice-harry` → `main` @ `8068a6e` · merged to `main`: yes
+- **Did:** where there is no `arecord`, the microphone comes from `sounddevice` (new dependency, Harry's call, declared in `requirements.txt`; ~1 MB, recording only), the same raw 16 kHz mono stream, so "Hey Pix" can be rehearsed with `python run.py --mock` on a dev laptop. `python -m narrator.listen` = microphone check: live loudness bar, then what was heard and what Pix took it to mean (for `listen.threshold` at the station). The Intel laptop keeps using `arecord`. 374 tests pass.
+- **Touched:** `narrator/listen.py`, `narrator/__init__.py`, `requirements.txt`, tests
+- **Status:** open
+
 ### 2026-11-15 02:20 — feat — Pix's eyes: object recognition on the wrist camera, trainable on the Intel laptop — @harry [conflicts: @saliha]
 - **Where:** `systems-voice-harry` → `main` · merged to `main`: yes
 - **Did:** `narrator/vision.py`: CLIP ViT-B/32 image encoder converted to OpenVINO (176 MB IR, built in 5.6 s here), names brick / plate / purple bowl / orange bowl or "unknown" + a best guess from 19 everyday things; `capture` / `train` / `check` commands; trained softmax classifier on our own photos replaces zero-shot once it exists. `Cell.look` (wrist camera) feeds "Hey Pix, what do you see now?". Measured on Harry's laptop: 18 ms per frame on CPU. Honest limit: on a drawn red block zero-shot says "unknown, guess person", so the real-photo training step matters. 372 tests pass (incl. the built model on a frame).
