@@ -116,14 +116,15 @@ class ScriptedMover:
     def _pick_from(self, above: str, pick: str, pan: float = 0.0, retry: bool = False) -> bool:
         self._carrying = False  # the jaws open on the way to pick_above
         opening, depth = (RETRY_OPEN, 1.0 + DEEPER) if retry else (io.GRIPPER_OPEN, 1.0)
-        if not (self._go(above, opening, pan) and self._slow(self._along(above, pick, depth, opening, pan))):
+        if not self._go(above, opening, pan):
             return False
+        # A move only waits for the arm joints, so the jaws may still be half open: open them fully before going down.
+        self._set_gripper(opening)
+        if not self._slow(self._along(above, pick, depth, opening, pan)):
+            return False
+        # No servo-reading check here: a Duplo brick held squarely reads 2.9 on the station (08:55), the same as
+        # empty jaws, so only the wrist camera (io.holding at inspect) can tell; a miss is retried by the next call.
         self._close()
-        # Read the servo itself: io.holding()'s camera check is what lets a tip grasp through.
-        if io.observe()[io.GRIPPER] < io.GRIPPER_EMPTY_BELOW:
-            self._set_gripper(opening)
-            self._slow(self._along(above, pick, depth + DEEPER, opening, pan))
-            self._close()
         self._carrying = True
         time.sleep(POST_CLOSE_S)
         return (self._slow(self._pose(above, GRIPPER_CLOSED, pan)) and self._go("inspect", GRIPPER_CLOSED)
