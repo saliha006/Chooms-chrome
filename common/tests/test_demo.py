@@ -223,3 +223,37 @@ def test_mock_drive_opens_the_run(monkeypatch, tmp_path, spoken):
     drive = next(r for r in rows if r["state"] == "DRIVE")
     assert drive["outcome"] == "arrived" and drive["note"] == "41 cm planned; 41.0 cm travelled"
     assert sum(r["state"] == "LOG" for r in rows) == 2
+
+
+class WideBrickRobot(io.MockRobot):
+    """Only jaws opened wider than usual fit round this brick (a brick turned at an angle)."""
+
+    def __init__(self):
+        super().__init__()
+        self.widest, self.held, self.max_pan = 0.0, False, 0.0
+
+    def send_action(self, action, *, goal_time=0.1):
+        action = np.asarray(action, float).copy()
+        self.widest = max(self.widest, self.joints[io.GRIPPER])
+        self.max_pan = max(self.max_pan, action[0])
+        if action[io.GRIPPER] < 17.0 and self.widest > io.GRIPPER_OPEN + 5:
+            self.held = True
+        if self.held:
+            action[io.GRIPPER] = max(action[io.GRIPPER], 17.0)
+        super().send_action(action, goal_time=goal_time)
+
+
+def test_a_missed_grasp_is_retried_on_the_same_brick(make_cell, spoken):
+    poses = {k: np.asarray(v, float) for k, v in POSES.items()}
+    poses["pick_above_2"], poses["pick_2"] = np.array([40.0, 5, 0, 0, 0, 60]), np.array([40.0, 15, 0, 0, 0, 60])
+    io.connect(mock=True)
+    io._robot = WideBrickRobot()
+    io._robot.connect()
+    try:
+        cell, _ = make_cell(mover=scripted.ScriptedMover(poses))
+        cell.pause_on_help = False
+        cell.run()
+        assert cell.sorted == 1 and io._robot.max_pan < 40  # never went to slot 2
+    finally:
+        io.disconnect()
+    assert said(spoken(), "Missed it.")

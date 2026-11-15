@@ -642,7 +642,7 @@ def main() -> None:
     ap.add_argument("--drive", type=float, metavar="CM", help="--mock only: a stand-in base drives CM to the table first (rehearse the voice-over)")
     ap.add_argument("--base", action="store_true", help="real runs: the arm drives its wheeled board into the dock first (needs config/dock.yaml and the drive stroke)")
     ap.add_argument("--search-cm", type=float, default=0.0, metavar="CM",
-                    help="scripted pick: a missed slot is tried once more CM to the side before the next slot (off by default)")
+                    help="scripted pick: the retry of a missed slot also shifts CM to the side (off by default)")
     ap.add_argument("--drive-trials", type=int, metavar="N", help="only the drive, N times (board back at the start by hand in between), then its success report")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s", datefmt="%H:%M:%S")

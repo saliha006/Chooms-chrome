@@ -1,3 +1,5 @@
+import time
+import types
 from pathlib import Path
 
 import numpy as np
@@ -201,12 +203,116 @@ def off_spot():
     io.disconnect()
 
 
-def test_without_search_a_miss_moves_on_to_the_next_slot(off_spot):
-    robot = off_spot(+1)
+def record(robot, mover=None):
+    """Every command the arm gets, with the step cap and carry flag in force when it was sent."""
+    sent = []
+    send = robot.send_action
+
+    def logged(action, **kw):
+        before = robot.joints.copy()
+        send(action, **kw)
+        sent.append((robot.joints.copy(), robot.joints - before, io.MAX_STEP_DEG, mover and mover._carrying))
+
+    robot.send_action = logged
+    return sent
+
+
+def test_a_miss_is_retried_at_the_same_slot_wider_and_deeper(arm):
+    robot = arm(brick=False)
     mover = search_mover(0.0)
+    sent = record(robot)
     assert mover.pick_and_present() is False
-    assert mover.pick_and_present() is False and robot.joints[0] != POSES["pick"][0]  # went to slot 2 instead
-    assert not robot.held
+    assert max(j[1] for j, *_ in sent) == pytest.approx(16.0)  # jaws shut on nothing: once more 10% deeper
+    assert max(j[io.GRIPPER] for j, *_ in sent) == io.GRIPPER_OPEN
+    sent.clear()
+    assert mover.pick_and_present() is False  # the retry: slot 1 again, not slot 2
+    assert max(j[0] for j, *_ in sent) == POSES["pick"][0]
+    assert max(j[io.GRIPPER] for j, *_ in sent) == scripted.RETRY_OPEN
+    assert max(j[1] for j, *_ in sent) == pytest.approx(16.0)  # never past 110% of pick_above -> pick
+    sent.clear()
+    assert mover.pick_and_present() is False and max(j[0] for j, *_ in sent) == 40.0  # then slot 2
+
+
+class LowBrickRobot(io.MockRobot):
+    """The brick sits a little below the taught pick: only a deeper grasp gets it."""
+
+    def __init__(self):
+        super().__init__()
+        self.held = False
+
+    def send_action(self, action, *, goal_time=0.1):
+        action = np.asarray(action, float).copy()
+        if action[io.GRIPPER] < BRICK_WIDTH and self.joints[1] > POSES["pick"][1] + 0.5:
+            self.held = True
+        if action[io.GRIPPER] > 30:
+            self.held = False
+        if self.held:
+            action[io.GRIPPER] = max(action[io.GRIPPER], BRICK_WIDTH)
+        super().send_action(action, goal_time=goal_time)
+
+
+def test_jaws_shut_on_nothing_open_and_close_again_deeper():
+    io.connect(mock=True)
+    io._robot = robot = LowBrickRobot()
+    robot.connect()
+    try:
+        assert search_mover(0.0).pick_and_present() is True and robot.held
+    finally:
+        io.disconnect()
+
+
+def test_far_moves_raise_then_turn_then_lower(arm, mover):
+    robot = arm()
+    assert mover._go("inspect", 0.0)
+    sent = record(robot)
+    assert mover._go("bowl_blue", 0.0)
+    start, end = POSES["inspect"][0], POSES["bowl_blue"][0]
+    turning = [j for j, *_ in sent if j[0] != start]
+    assert turning and all(np.allclose(j[1:4], 0) for j in turning if j[0] != end)  # turns only when raised
+    assert np.allclose(sent[-1][0][:5], POSES["bowl_blue"][:5])
+
+
+def test_carrying_and_the_descent_are_slow(arm, mover):
+    robot = arm()
+    before = io.MAX_STEP_DEG
+    sent = record(robot, mover)
+    assert mover.pick_and_present() and mover.place("the brick is perfect, place it in the purple bowl")
+    carried = [(delta, cap) for _, delta, cap, carrying in sent if carrying]
+    assert carried and all(np.abs(delta[:io.GRIPPER]).max() <= scripted.CARRY_STEP_DEG for delta, _ in carried)
+    assert all(np.abs(delta[:io.GRIPPER]).max() <= cap + 1e-9 for _, delta, cap, _ in sent)
+    assert any(cap == scripted.APPROACH_STEP_DEG for *_, cap, _ in sent)
+    assert io.MAX_STEP_DEG == before
+
+
+def test_step_cap_is_restored_after_an_estop(arm, mover, monkeypatch):
+    from common import estop
+
+    arm()
+    before = io.MAX_STEP_DEG
+    mover._carrying = True
+    monkeypatch.setattr(estop, "requested", lambda: True)
+    with pytest.raises(estop.EStopped):
+        mover._slow(np.asarray(POSES["pick"], float))
+    assert io.MAX_STEP_DEG == before
+
+
+def test_settles_before_closing_and_lifting_and_at_the_bowl(arm, mover, monkeypatch):
+    robot = arm()
+    events = []
+    # Only this module's clock: patching time.sleep itself would also catch other tests' camera threads.
+    monkeypatch.setattr(scripted, "time", types.SimpleNamespace(
+        monotonic=time.monotonic, sleep=lambda s: s == 1 / io.CONTROL_HZ or events.append(s)))
+    send = robot.send_action
+    robot.send_action = lambda action, **kw: (send(action, **kw), events.append(("gripper", robot.joints[io.GRIPPER])))
+    assert mover.pick_and_present()
+    assert mover.place("the brick is perfect, place it in the purple bowl")
+    waits = [e for e in events if not isinstance(e, tuple)]
+    assert waits[:2] == [scripted.PRE_CLOSE_S, scripted.POST_CLOSE_S]
+    assert waits[-2:] == [scripted.BOWL_SETTLE_S, scripted.RELEASE_S]
+    at_bowl = events[len(events) - 1 - events[::-1].index(scripted.BOWL_SETTLE_S):]
+    opening = [e[1] for e in at_bowl[:at_bowl.index(scripted.RELEASE_S)] if isinstance(e, tuple)]
+    assert opening and opening[-1] >= io.GRIPPER_OPEN - scripted.ARRIVE_TOLERANCE_DEG  # open before the wait
+    assert not [e for e in at_bowl[at_bowl.index(scripted.RELEASE_S):] if isinstance(e, tuple)]  # left after it
 
 
 def test_a_miss_is_searched_once_to_the_side_then_held(off_spot):
