@@ -91,3 +91,28 @@ def test_speech_while_still_transcribing_is_dropped():
     listener.thread.join(3)  # the whole stream is read while the first transcription is still running
     release.set()
     assert calls == [1]
+
+
+def test_without_arecord_the_microphone_comes_from_sounddevice(monkeypatch):
+    from narrator import listen
+
+    opened = []
+
+    class FakeMic:
+        def __init__(self, device=None):
+            opened.append(device)
+
+    monkeypatch.setattr(listen.shutil, "which", lambda tool: None)
+    monkeypatch.setattr(listen, "SoundDeviceMic", FakeMic)
+    assert isinstance(listen.microphone("default"), FakeMic) and opened == [None]
+
+
+def test_no_microphone_at_all_means_none(monkeypatch):
+    from narrator import listen
+
+    def broken(device=None):
+        raise OSError("no input device")
+
+    monkeypatch.setattr(listen.shutil, "which", lambda tool: None)
+    monkeypatch.setattr(listen, "SoundDeviceMic", broken)
+    assert listen.microphone("default") is None

@@ -6,7 +6,8 @@ and the team talking nearby never trigger it.
 The microphone is read continuously (`arecord`, raw 16 kHz mono), but only stretches loud enough to be speech
 are sent to ElevenLabs speech-to-text, one at a time; anything said while one is being transcribed is dropped.
 A short phrase check, not a language model, decides what was meant: on stage it has to be predictable.
-Everything runs on its own thread; the arm never waits for it. No `arecord` (Windows) or no key: off, H still works.
+Everything runs on its own thread; the arm never waits for it. The microphone is `arecord` on Linux (the Intel laptop)
+and `sounddevice` elsewhere (Windows dev laptops), both raw 16 kHz mono. No key: off, H still works.
 """
 
 import io
@@ -131,10 +132,74 @@ def elevenlabs_transcriber(api_key: str, model: str, timeout_s: float = 8.0) -> 
     return transcribe
 
 
+class SoundDeviceMic:
+    """The same raw 16 kHz mono stream as arecord's, through PortAudio: lets a Windows laptop rehearse "Hey Pix"."""
+
+    def __init__(self, device: str | int | None = None):
+        import sounddevice
+
+        self._stream = sounddevice.RawInputStream(samplerate=RATE, channels=1, dtype="int16", device=device,
+                                                  blocksize=int(RATE * FRAME_S))
+        self._stream.start()
+
+    def read(self, n: int) -> bytes:
+        data, _overflowed = self._stream.read(n // 2)  # frames of 2 bytes; an overflow only loses a few ms
+        return bytes(data)
+
+
 def microphone(device: str = "default"):
-    """arecord's raw stream, or None where there is no arecord (Windows dev laptops)."""
-    if shutil.which("arecord") is None:
+    """arecord's raw stream on Linux, PortAudio's elsewhere, or None when neither can open a microphone."""
+    if shutil.which("arecord") is not None:
+        process = subprocess.Popen(["arecord", "-q", "-D", device, "-f", "S16_LE", "-r", str(RATE), "-c", "1", "-t", "raw"],
+                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        return process.stdout
+    try:
+        return SoundDeviceMic(None if device == "default" else device)
+    except Exception as exc:  # no sounddevice installed, or no input device: the H key still works
+        _log.info("no microphone (%s)", type(exc).__name__)
         return None
-    process = subprocess.Popen(["arecord", "-q", "-D", device, "-f", "S16_LE", "-r", str(RATE), "-c", "1", "-t", "raw"],
-                               stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    return process.stdout
+
+
+def main() -> None:
+    """Microphone check: live loudness, then what was heard and what Pix took it to mean. Ctrl+C to stop.
+
+        python -m narrator.listen               # speak normally from where you'll stand; tune listen.threshold
+    """
+    import os
+
+    import yaml
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    voices = yaml.safe_load(open("config/voices.yaml"))
+    listen = voices.get("listen", {})
+    threshold = listen.get("threshold", THRESHOLD)
+    mic = microphone(listen.get("device", "default"))
+    if mic is None:
+        raise SystemExit("no microphone could be opened")
+    transcribe = elevenlabs_transcriber(os.environ["ELEVENLABS_API_KEY"], voices.get("stt_model", "scribe_v1"))
+
+    class Metered:  # prints a loudness bar every ~0.3 s so the threshold can be set by eye
+        def __init__(self, stream):
+            self.stream, self.n = stream, 0
+
+        def read(self, size):
+            chunk = self.stream.read(size)
+            self.n += 1
+            if chunk and self.n % 10 == 0:
+                level = float(np.sqrt(np.mean(np.frombuffer(chunk, np.int16).astype(np.float32) ** 2)))
+                bar = "#" * min(int(level / 100), 40)
+                print(f"\rloudness {level:6.0f} {bar:40} threshold {threshold}", end="", flush=True)
+            return chunk
+
+    print('Say: "Hey Pix, what do you see now?"  (Ctrl+C to stop)')
+    try:
+        for utterance in utterances(Metered(mic), threshold):
+            text = transcribe(utterance)
+            print(f"\nheard {text!r} -> {intent(text)}")
+    except KeyboardInterrupt:
+        print()
+
+
+if __name__ == "__main__":
+    main()

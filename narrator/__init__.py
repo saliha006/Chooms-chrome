@@ -126,7 +126,7 @@ def start_listening(voices: dict, answer: Callable[[str], str] | None = None):
     listen = voices.get("listen", {})
     mic = microphone(listen.get("device", "default"))
     if not key or mic is None:
-        _log.info("not listening (%s): the H key toggles the hat", "no key" if not key else "no arecord")
+        _log.info("not listening (%s): the H key toggles the hat", "no key" if not key else "no microphone")
         return None
     def act(meant: str) -> None:
         if meant == "hat_on":
