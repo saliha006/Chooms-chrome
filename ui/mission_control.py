@@ -19,6 +19,7 @@ FEED = (20, 90, 840, 400)  # x, y, w, h: leaves room below for the reasoning pan
 TRACE_Y = 518  # reasoning panel: this brick's steps, newest last (H7)
 TRACE_LINES = 6  # a full chain: first look, look again, roll, re-grasp, verdict, decision
 PANEL_X = 890
+PANEL_W = WIDTH - PANEL_X - 20
 BG, TEXT, DIM = (24, 24, 24), (235, 235, 235), (150, 150, 150)
 LABEL_COLOURS = {"perfect": (255, 150, 30), "defective": (40, 40, 230), "uncertain": (0, 200, 255)}  # BGR
 STATE_COLOURS = {"E-STOP": (0, 0, 255), "STOPPED": (0, 0, 255), "DONE": (80, 200, 80)}
@@ -72,7 +73,10 @@ def handle_key(key: int, control: Control) -> bool:
     return True
 
 
-def _text(img, text, org, scale=1.0, colour=TEXT, thickness=2) -> None:
+def _text(img, text, org, scale=1.0, colour=TEXT, thickness=2, max_w: int | None = None) -> None:
+    """`max_w`: shrink a long line to that width instead of running it off its panel."""
+    if max_w is not None:
+        scale = min(scale, scale * max_w / max(cv2.getTextSize(text, FONT, scale, thickness)[0][0], 1))
     cv2.putText(img, text, org, FONT, scale, colour, thickness, cv2.LINE_AA)
 
 
@@ -135,11 +139,10 @@ def render(cell, control: Control, feed: np.ndarray | None) -> np.ndarray:
         banner, colour = "PAUSED (P to resume)", (0, 200, 255)
     else:
         banner, colour = cell.state, STATE_COLOURS.get(cell.state, TEXT)
-    (w, _), _ = cv2.getTextSize(banner, FONT, 1.6, 3)
-    _text(img, banner, (20, 60), min(1.6, 1.6 * (PANEL_X - 40) / w), colour, 3)  # long banners shrink to fit
-    _text(img, cell.mode, (PANEL_X, 60), 0.8, DIM)
+    _text(img, banner, (20, 60), 1.6, colour, 3, max_w=PANEL_X - 40)
+    _text(img, cell.mode, (PANEL_X, 60), 0.8, DIM, max_w=PANEL_W)  # the learned movers' names run long
     if cell.drift_alert:
-        _text(img, "LIGHTING DRIFT: make rebaseline", (PANEL_X, 84), 0.7, (0, 140, 255))
+        _text(img, "LIGHTING DRIFT: make rebaseline", (PANEL_X, 84), 0.7, (0, 140, 255), max_w=PANEL_W)
 
     x, y, w, h = FEED
     if feed is not None:
@@ -161,8 +164,10 @@ def render(cell, control: Control, feed: np.ndarray | None) -> np.ndarray:
         img[90:90 + view.shape[0], PANEL_X:PANEL_X + view.shape[1]] = view
     if signal is not None:
         _text(img, signal.label.upper(), (PANEL_X, 400), 1.6, LABEL_COLOURS.get(signal.label, TEXT), 4)
-        _text(img, f"score {signal.score:.2f}  ({signal.t_low:.2f} / {signal.t_high:.2f})", (PANEL_X, 440), 0.8)
-        _text(img, f"{signal.model} on {signal.device}, {signal.latency_ms:.0f} ms", (PANEL_X, 470), 0.7, DIM)
+        _text(img, f"score {signal.score:.2f}  ({signal.t_low:.2f} / {signal.t_high:.2f})", (PANEL_X, 440), 0.8,
+              max_w=PANEL_W)
+        _text(img, f"{signal.model} on {signal.device}, {signal.latency_ms:.0f} ms", (PANEL_X, 470), 0.7, DIM,
+              max_w=PANEL_W)
 
     _text(img, f"Bricks sorted: {cell.sorted}", (PANEL_X, 525), 1.1)
     for i, stage in enumerate(STAGES):
