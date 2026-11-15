@@ -1,5 +1,5 @@
 """SortSense cell: one brick at a time through the PRD 7.1 state machine.
-`   1`  123w`1q2` pp
+
     python run.py --mock                    # whole loop with stand-ins, no hardware
     python run.py --mock --headless         # same, no window (tests, SSH without a display)
     python run.py --scripted pick,place     # real station, scripted motion (the 15:30 gate)
