@@ -16,6 +16,7 @@ import yaml
 from dotenv import load_dotenv
 
 from narrator.lines import LINES
+from narrator.loudness import level_wav
 
 CLIPS = Path(__file__).parent / "clips"
 VOICES = Path(__file__).resolve().parents[1] / "config" / "voices.yaml"
@@ -57,7 +58,7 @@ def main() -> None:
         )
         path = clip_path(persona, key)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(b"".join(audio))
+        path.write_bytes(level_wav(b"".join(audio)))  # same loudness for both voices
         print(f"  {path.relative_to(CLIPS.parent)}")
 
 

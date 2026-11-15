@@ -12,6 +12,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
+from narrator.loudness import level_wav
 from narrator.naming import with_article
 
 _log = logging.getLogger("narrator.live")
@@ -24,7 +25,7 @@ TIMEOUT_S = 3.0
 RUN_BUDGET_CHARS = 12_000
 ACCOUNT_FLOOR_CHARS = 10_000
 LIVE_EVENTS = {"perfect", "defective", "uncertain", "empty", "quit", "drive", "arrived", "obstacle_named",
-               "next", "roll", "regrasp"}
+               "first", "next", "roll", "regrasp"}
 
 # Conversational on purpose: the robot thinks aloud. {where} is empty or " at the top left".
 TEMPLATES = {
@@ -60,13 +61,40 @@ OBSTACLE = {
 
 # Between bricks and during recovery: only facts the audience can't see yet (the tally, the borderline score).
 STEPS = {
-    "calm": {"next": "That's {n} sorted so far: {perfect} perfect, {defective} defective. On to the next one.",
-             "roll": "Still {score}, right between my lines. Rolling it ninety degrees for a better look.",
+    "calm": {"roll": "Still {score}, right between my lines. Rolling it ninety degrees for a better look.",
              "regrasp": "Still undecided at {score}. I'll set it down and pick it up fresh."},
-    "cowboy": {"next": "{n} down, partner: {perfect} clean, {defective} busted. Next one.",
-               "roll": "Still {score}, smack between my lines. Turnin' it ninety degrees for a better look.",
+    "cowboy": {"roll": "Still {score}, smack between my lines. Turnin' it ninety degrees for a better look.",
                "regrasp": "Still can't call it at {score}. Settin' it down to grab it fresh."},
 }
+
+# Before each pick, unprompted: the tally so far and why this brick (the scene check takes the most isolated one).
+TALLY = {"calm": "That's {n} sorted: {perfect} perfect, {defective} defective.",
+         "cowboy": "{n} down, partner: {perfect} clean, {defective} busted."}
+OPENER = {"calm": "First brick.", "cowboy": "First critter of the day."}
+# Three wordings of the same fact, taken in turn by brick number, so twenty bricks don't sound like one.
+CHOICE = {"calm": ("I'm going for the brick with the most room around it, so I won't knock the others.",
+                   "Next I'll take the one standing furthest from the rest; it's the safest grab.",
+                   "This one has the most space around it, so that's the one I'll pick."),
+          "cowboy": ("Goin' for the one with the most elbow room, so I don't spook the others.",
+                     "That loner out on its own, that's my next one.",
+                     "Pickin' the one with the most open range around it.")}
+NO_CHOICE = {"calm": "On to the next one.", "cowboy": "Next one."}
+AVOID = {"calm": "And I'll keep clear of that thing that isn't a brick.",
+         "cowboy": "And I'm steerin' clear of that critter that ain't a brick."}
+
+
+def _picking(persona: str, event: str, facts: dict) -> str | None:
+    """None when there is nothing beyond the cached line to say (first brick, and no scene check choosing)."""
+    chose, n = facts.get("chose"), facts.get("n", 0)
+    if event == "first" and not chose:
+        return None
+    parts = [OPENER[persona]] if event == "first" else [TALLY[persona].format(
+        n=n, perfect=facts.get("perfect", 0), defective=facts.get("defective", 0))]
+    parts.append(CHOICE[persona][n % len(CHOICE[persona])] if chose else NO_CHOICE[persona])
+    if facts.get("obstacles"):
+        parts.append(AVOID[persona])
+    return " ".join(parts)
+
 
 # run.py's `after` values -> what a person would say
 AFTER = {"looked again": "Second look: ", "reinspect 90": "After a wrist roll, ", "reinspect 0": "After a re-grasp, "}
@@ -100,8 +128,8 @@ def summary(persona: str, event: str, n: int = 0, perfect: int = 0, defective: i
 def compose(persona: str, event: str, score: float | None = None, t_low: float | None = None,
             t_high: float | None = None, where: str | None = None, after: str | None = None, **counts) -> str | None:
     """The live line for a verdict, or None when the numbers it needs are missing (then the cached clip plays)."""
-    if event == "next":
-        return STEPS[persona][event].format(**{k: counts.get(k, 0) for k in ("n", "perfect", "defective")})             if counts.get("n") else None
+    if event in ("first", "next"):
+        return _picking(persona, event, counts)
     if event in ("roll", "regrasp"):
         return None if score is None else STEPS[persona][event].format(score=_number(score))
     if event == "obstacle_named":
@@ -162,6 +190,11 @@ class Live:
         threading.Thread(target=self._say, args=(seq, text, persona, fallback, priority, time.monotonic()),
                          name="narrator-live", daemon=True).start()
 
+    def cancel(self) -> None:
+        """Someone said "Hey Pix": lines still being synthesised are dropped when they come back."""
+        with self._lock:
+            self._sent = self._asked + 1
+
     def wait_idle(self, timeout_s: float) -> bool:
         """End of a run: the last line (the summary) is still being synthesised; let it reach the player."""
         return self._idle.wait(timeout_s)
@@ -198,7 +231,7 @@ class Live:
                       type(exc).__name__)
             return cached
         path = self._dir / f"line-{seq % 8}.wav"  # a small ring: the player is done with older files
-        path.write_bytes(audio)
+        path.write_bytes(level_wav(audio))  # same loudness as the cached clips
         _log.info("live line ready in %.0f ms", took * 1000)
         return path
 

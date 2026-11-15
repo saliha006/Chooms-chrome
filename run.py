@@ -172,10 +172,13 @@ class Cell:
         narrator.say("arrived", cm=travelled, seconds=time.monotonic() - started)
 
     def sort_one(self, brick_id: int) -> None:
+        # Unprompted: why this brick. The scene check takes the most isolated brick (CountLocator chooses nothing).
+        choice = {"chose": getattr(self.locator, "target", None) is not None,
+                  "obstacles": len(getattr(self.locator, "obstacles", []))}
         if self.sorted:
-            narrator.say("next", n=self.sorted, **self.tally)
+            narrator.say("next", n=self.sorted, **self.tally, **choice)
         else:
-            narrator.say("first")
+            narrator.say("first", **choice)
         # The arm is home here (start, or after the last place), so the bowls are in clear view.
         bowls_before = self._top_frame() if self.bowl_check else None
         self._pick(brick_id)
@@ -233,6 +236,7 @@ class Cell:
                 held = presented and not self.picker.gripper_empty()
                 row["outcome"] = "held" if held else "empty"
             if held:
+                narrator.say("grip")
                 return
             if attempt < GRASP_ATTEMPTS:
                 narrator.say("grasp_fail")

@@ -204,11 +204,21 @@ def test_past_the_run_budget_the_cached_clip_plays(tmp_path):
 
 def test_step_lines_carry_the_tally_and_the_borderline_score():
     assert compose("calm", "next", n=3, perfect=2, defective=1) == \
-        "That's 3 sorted so far: 2 perfect, 1 defective. On to the next one."
+        "That's 3 sorted: 2 perfect, 1 defective. On to the next one."  # no scene check: no choice to explain
     assert compose("cowboy", "roll", score=0.271) == \
         "Still 0.27, smack between my lines. Turnin' it ninety degrees for a better look."
     assert compose("calm", "regrasp", score=0.26).startswith("Still undecided at 0.26.")
-    assert compose("calm", "next", n=0) is None and compose("calm", "roll") is None  # the cached line covers it
+    assert compose("calm", "first") is None and compose("calm", "roll") is None  # the cached line covers it
+
+
+def test_before_a_pick_pix_says_why_this_brick():
+    assert compose("calm", "first", chose=True) == \
+        "First brick. I'm going for the brick with the most room around it, so I won't knock the others."
+    assert compose("cowboy", "next", n=2, perfect=1, defective=1, chose=True, obstacles=1) == (
+        "2 down, partner: 1 clean, 1 busted. Pickin' the one with the most open range around it. "
+        "And I'm steerin' clear of that critter that ain't a brick.")
+    wordings = {compose("calm", "next", n=n, chose=True) for n in range(1, 4)}
+    assert len(wordings) == 3  # three bricks in a row, three different wordings
 
 
 def test_a_calm_defective_verdict_gets_a_rotating_cowboy_exclamation_first(fake_live, monkeypatch):
@@ -217,7 +227,7 @@ def test_a_calm_defective_verdict_gets_a_rotating_cowboy_exclamation_first(fake_
     for _ in range(3):
         narrator.say("defective", **NUMBERS)
     # the rotation is shared by the whole program, so only the order-free part is fixed: three in a row, all different
-    assert {s[:2] for s in submitted} == {("cowboy", "obstacle"), ("cowboy", "well_ill_be"), ("cowboy", "yeehaw")}
+    assert {s[:2] for s in submitted} == {("cowboy", "holy_smokes"), ("cowboy", "well_ill_be"), ("cowboy", "yeehaw")}
     assert all(priority for _, _, priority in submitted)
     assert len(fake_live) == 3  # each explanation still goes out, in the calm voice
     assert all(persona == "calm" for _, persona, _ in fake_live)
@@ -229,3 +239,20 @@ def test_no_extra_exclamation_when_already_the_cowboy_or_for_other_verdicts(fake
     narrator.say("defective", persona="cowboy", **NUMBERS)
     narrator.say("perfect", **NUMBERS)
     assert submitted == []
+
+
+def test_cancel_drops_lines_still_being_synthesised():
+    spy, release = Spy(), threading.Event()
+
+    def slow(text, persona):
+        release.wait(2)
+        return text.encode()
+
+    live = Live(slow, spy, timeout_s=5)
+    live.speak("old line", "calm", fallback=None)
+    time.sleep(0.05)
+    live.cancel()  # "Hey Pix" came in while "old line" was on its way
+    release.set()
+    assert live.wait_idle(3) and spy.played == []
+    live.speak("answer", "calm", fallback=None)  # lines asked after the interrupt still play
+    assert spy.done.wait(2) and spy.played[-1][1] == b"answer"

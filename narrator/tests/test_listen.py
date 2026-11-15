@@ -129,8 +129,42 @@ def test_react_puts_on_the_hat_takes_it_off_and_answers(monkeypatch):
     monkeypatch.setattr(narrator, "trigger", lambda kind: done.append(("trigger", kind)))
     monkeypatch.setattr(narrator, "take_off_hat", lambda: done.append(("off",)))
     monkeypatch.setattr(narrator, "say", lambda event, text=None, **kw: done.append((event, text)))
+    monkeypatch.setattr(narrator, "interrupt", lambda: None)
     narrator.react("hat_on", None)
     narrator.react("hat_off", None)
     narrator.react("who", lambda meaning: f"answer to {meaning}")
     narrator.react("who", None)  # no answer function: nothing said
     assert done == [("trigger", "hat"), ("off",), ("answer", "answer to who")]
+
+
+def test_pix_does_not_answer_its_own_voice(monkeypatch):
+    import narrator
+
+    monkeypatch.setattr(narrator, "_recent", [])
+    narrator._remember("I'm Pix. I spot defects in bricks, sort them into the right bowl and tell you why.")
+    assert narrator.said_recently("I'm Pix, I spot defects in bricks, sort them into the right bowl")
+    assert not narrator.said_recently("Hey Pix, why that bowl?")  # short questions are never echoes
+    assert not narrator.said_recently("Hey Pix, what did you just put in the orange bowl for?")
+
+
+def test_the_listener_skips_an_echo(monkeypatch):
+    acted, tried = [], threading.Event()
+
+    def transcribe(wav):
+        tried.set()
+        return "Hey Pix, I'm putting a cowboy hat on you"
+
+    Listener(io.BytesIO(pcm((1, True), (1, False))), transcribe, acted.append, echo=lambda heard: True)
+    assert tried.wait(3)
+    time.sleep(0.05)
+    assert acted == []
+
+
+def test_react_interrupts_before_it_answers(monkeypatch):
+    import narrator
+
+    order = []
+    monkeypatch.setattr(narrator, "interrupt", lambda: order.append("interrupt"))
+    monkeypatch.setattr(narrator, "say", lambda event, text=None, **kw: order.append(event))
+    narrator.react("who", lambda meaning: "I'm Pix.")
+    assert order == ["interrupt", "answer"]

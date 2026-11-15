@@ -15,6 +15,7 @@ LINES: dict[str, dict[str, str]] = {
         "still_uncertain": "Still can't tell, so I'll play it safe. Orange bowl.",
         "grasp_fail": "Missed it. Let me try that again.",
         "first": "First brick. Let's see what we've got.",
+        "grip": "Got it. It's in my grip, so let's take a close look.",
         "next": "On to the next one.",
         "roll": "Rolling it for a better look.",
         "regrasp": "Setting it down to pick it up fresh.",
@@ -44,6 +45,7 @@ LINES: dict[str, dict[str, str]] = {
         "still_uncertain": "Can't rightly tell, so I'm playin' it safe. Orange bowl.",
         "grasp_fail": "Dang, slipped right outta my hand. One more go.",
         "first": "First critter of the day. Let's see what we got.",
+        "grip": "Got 'er. Let's take a good look at this one.",
         "next": "Next one, partner.",
         "roll": "Turnin' it over for a better look.",
         "regrasp": "Settin' it down to grab it fresh.",
@@ -62,15 +64,16 @@ LINES: dict[str, dict[str, str]] = {
         "drive": "Them bricks are out of reach, partner. Movin' the whole outfit over.",
         "arrived": "Whoa there. We're in position. Let's get sortin'.",
         "drift": "Light's shiftin' out here, partner. My scores are driftin', best rebaseline me.",
-        "obstacle": "Holy smokes!",
-        "hat_on": "Well I'll be, a cowboy hat! Yeehaw, partner. Let's ride.",
+        "obstacle": "Holy smokes! There ain't enough room on this table for the two of us.",
+        "holy_smokes": "Holy smokes!",  # the short exclamation before a defective verdict (trigger C)
+        "hat_on": "Yeehowdy! Now that's a hat. Saddle up, partner, Pix is ridin' tonight.",
         "yeehaw": "Yeehaw!",
         "well_ill_be": "Well I'll be!",
     },
 }
 
 # Every event run.py says out loud; tests check each has a line in both personas.
-EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance", "drift", "drive", "arrived", "first", "next", "roll", "regrasp",
+EVENTS = ("perfect", "defective", "uncertain", "still_uncertain", "grasp_fail", "empty", "quit", "estop", "dance", "drift", "drive", "arrived", "first", "next", "grip", "roll", "regrasp",
           *(f"help.{reason.value}" for reason in Reason))
 
 

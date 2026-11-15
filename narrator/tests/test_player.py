@@ -16,10 +16,12 @@ class SlowSpeaker:
         if not hold_first:
             self.release.set()
 
-    def __call__(self, path: Path):
+    def __call__(self, path: Path, stop: threading.Event | None = None):
         self.played.append(path.name)
         self.release.wait(5)
-        time.sleep(self.seconds)
+        if stop is None or not stop.wait(self.seconds):
+            return
+        self.cut = path.name  # interrupted mid-clip
 
 
 def test_submit_never_waits_for_audio():
@@ -55,7 +57,7 @@ def test_help_and_estop_lines_are_never_dropped():
 
 
 def test_a_broken_speaker_does_not_stop_anything():
-    def broken(path):
+    def broken(path, stop=None):
         raise OSError("no audio device")
 
     player = Player(broken)
@@ -77,3 +79,17 @@ def test_say_plays_the_cached_clip_for_the_line(monkeypatch):
     narrator.say("perfect", text="a live line from the reasoner")  # no clip for live text yet
     narrator.wait_idle(5)
     assert speaker.played == ["help.grasp_failed.wav"]
+
+
+def test_interrupt_cuts_the_line_playing_and_drops_the_queue():
+    speaker = SlowSpeaker(seconds=2.0)
+    player = Player(speaker)
+    player.submit(Path("long.wav"))
+    time.sleep(0.1)  # "long.wav" is playing
+    player.submit(Path("queued.wav"))
+    started = time.monotonic()
+    player.interrupt()
+    assert player.wait_idle(1) and time.monotonic() - started < 1.0  # cut well before its 2 s
+    assert speaker.played == ["long.wav"] and speaker.cut == "long.wav"
+    player.submit(Path("answer.wav"))  # the next line plays normally
+    assert player.wait_idle(3) and speaker.played == ["long.wav", "answer.wav"]

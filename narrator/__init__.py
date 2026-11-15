@@ -10,6 +10,7 @@ bring it back.
 import itertools
 import logging
 import os
+import re
 import time
 from collections.abc import Callable
 
@@ -25,8 +26,12 @@ _player = Player(system_player())
 _live: Live | None = None
 # Trigger C (Saliha 21:35, Harry yes 23:30): every defective verdict in the calm voice gets one short cowboy
 # exclamation first, rotating so it never repeats twice in a row; the explanation stays calm.
-_defect_exclaims = itertools.cycle(("obstacle", "well_ill_be", "yeehaw"))  # "Holy smokes!", "Well I'll be!", "Yeehaw!"
+_defect_exclaims = itertools.cycle(("holy_smokes", "well_ill_be", "yeehaw"))  # short ones only: they lead into a verdict
 _last: tuple[str, str, float] | None = None  # (line, persona, when) for the on-screen subtitle
+_recent: list[tuple[float, set[str]]] = []  # (when, words) of what Pix said lately: the microphone hears it too
+ECHO_S = 20.0
+ECHO_SHARE = 0.7  # this share of a heard sentence's words in one of Pix's lines = Pix hearing itself
+ECHO_MIN_WORDS = 5  # shorter sentences ("Hey Pix, why that bowl?") are never treated as an echo
 SUBTITLE_S = 6.0
 
 
@@ -41,6 +46,7 @@ def say(event: str, text: str | None = None, persona: str | None = None, **kw) -
     global _last
     shown = spoken or line_for(persona, event, reason) or event
     _last = (shown, persona, time.monotonic())
+    _remember(shown)
     _log.info("[%s] %s", persona, shown)
     if spoken is not None and _live is not None:
         _live.speak(spoken, persona, fallback=None if text else clip, priority=priority)
@@ -48,9 +54,35 @@ def say(event: str, text: str | None = None, persona: str | None = None, **kw) -
         _player.submit(clip, priority=priority)
 
 
+def _words(text: str) -> set[str]:
+    return set(re.findall(r"[a-z']+", text.lower()))
+
+
+def _remember(line: str) -> None:
+    now = time.monotonic()
+    _recent[:] = [(t, w) for t, w in _recent if now - t < ECHO_S] + [(now, _words(line))]
+
+
+def said_recently(heard: str) -> bool:
+    """True when the microphone picked up Pix's own voice rather than a person (so it never answers itself)."""
+    words = _words(heard)
+    if len(words) < ECHO_MIN_WORDS:
+        return False
+    now = time.monotonic()
+    return any(now - t < ECHO_S and len(words & said) >= ECHO_SHARE * len(words) for t, said in _recent)
+
+
+def interrupt() -> None:
+    """Stop talking now: cut the clip playing, drop the queue and any live line still on its way."""
+    _player.interrupt()
+    if _live is not None:
+        _live.cancel()
+
+
 def _exclaim() -> None:
     key = next(_defect_exclaims)
     _log.info("[cowboy] %s", line_for("cowboy", key))
+    _remember(line_for("cowboy", key))
     exclaim = clip_path("cowboy", key)
     if exclaim.exists():
         _player.submit(exclaim, priority=True)  # played before the calm explanation that follows it
@@ -129,11 +161,12 @@ def start_listening(voices: dict, answer: Callable[[str], str] | None = None):
         _log.info("not listening (%s): the H key toggles the hat", "no key" if not key else "no microphone")
         return None
     return Listener(mic, elevenlabs_transcriber(key, voices.get("stt_model", "scribe_v1")),
-                    lambda meant: react(meant, answer), listen.get("threshold", 600))
+                    lambda meant: react(meant, answer), listen.get("threshold", 600), echo=said_recently)
 
 
 def react(meant: str, answer: Callable[[str], str] | None) -> None:
-    """What Pix does with something said to it: the hat, or a spoken answer."""
+    """What Pix does with something said to it: stop talking, then the hat or a spoken answer."""
+    interrupt()
     if meant == "hat_on":
         trigger("hat")
     elif meant == "hat_off":

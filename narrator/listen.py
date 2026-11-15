@@ -90,8 +90,9 @@ def utterances(stream, threshold: float = THRESHOLD, rate: int = RATE) -> Iterat
 
 class Listener:
     def __init__(self, stream, transcribe: Callable[[bytes], str], act: Callable[[str], None],
-                 threshold: float = THRESHOLD):
+                 threshold: float = THRESHOLD, echo: Callable[[str], bool] = lambda heard: False):
         self._stream, self._transcribe, self._act, self._threshold = stream, transcribe, act, threshold
+        self._echo = echo  # True for Pix's own voice coming back through the microphone
         self._busy = threading.Lock()
         self.heard: list[str] = []
         self.thread = threading.Thread(target=self._run, name="listener", daemon=True)
@@ -110,6 +111,9 @@ class Listener:
                 text = self._transcribe(utterance)
             except Exception as exc:  # network or permission: the H key still works
                 _log.info("could not transcribe (%s)", type(exc).__name__)
+                return
+            if self._echo(text):
+                _log.info("ignored %r: Pix's own voice", text)
                 return
             meant = intent(text)
             _log.info("heard %r -> %s (%.0f ms)", text, meant, (time.monotonic() - started) * 1000)
@@ -202,6 +206,9 @@ def main() -> None:
     try:
         for utterance in utterances(Metered(mic), threshold):
             text = transcribe(utterance)
+            if narrator.said_recently(text):
+                print(f"\nignored {text!r} (Pix's own voice)")
+                continue
             meant = intent(text)
             print(f"\nheard {text!r} -> {meant}")
             if meant:

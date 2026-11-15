@@ -334,7 +334,8 @@ def test_the_robot_says_the_tally_between_bricks_and_each_recovery_step(make_cel
     cell.run()
     events = [event for event, _ in said]
     assert events[0] == "first"
-    assert ("next", {"n": 1, "perfect": 1, "defective": 0, "rechecked": 0}) in said
+    assert ("next", {"n": 1, "perfect": 1, "defective": 0, "rechecked": 0, "chose": False, "obstacles": 0}) in said
+    assert "grip" in events  # said once the gripper holds the brick
     assert events.index("roll") < events.index("regrasp")
     assert set(said[events.index("roll")][1]) == {"score"}  # the borderline score it is about to recheck
 
